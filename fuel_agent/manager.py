@@ -363,16 +363,16 @@ class Manager(object):
             with open(mtab_path, 'wb') as f:
                 f.write(mtab)
 
-    def umount_target(self, chroot, pseudo=True, try_lazy_umount=True):
+    def umount_target(self, chroot, pseudo=True):
         LOG.debug('Umounting target file systems: %s', chroot)
         if pseudo:
             for path in ('/proc', '/dev', '/sys'):
-                fu.umount_fs(chroot + path, try_lazy_umount=try_lazy_umount)
+                fu.umount_fs(chroot + path)
         for fs in self.driver.partition_scheme.fs_sorted_by_depth(
                 reverse=True):
             if fs.mount == 'swap':
                 continue
-            fu.umount_fs(chroot + fs.mount, try_lazy_umount=try_lazy_umount)
+            fu.umount_fs(chroot + fs.mount)
 
     # TODO(kozhukalov): write tests for this method
     # https://bugs.launchpad.net/fuel/+bug/1449609
@@ -637,7 +637,7 @@ class Manager(object):
             LOG.info('*** Finalizing image space ***')
             fu.umount_fs(proc_path)
             # umounting all loop devices
-            self.umount_target(chroot, pseudo=False, try_lazy_umount=False)
+            self.umount_target(chroot, pseudo=False)
 
             for image in self.driver.image_scheme.images:
                 # find fs with the same loop device object
@@ -701,7 +701,7 @@ class Manager(object):
             LOG.debug('Finally: umounting procfs %s', proc_path)
             fu.umount_fs(proc_path)
             LOG.debug('Finally: umounting chroot tree %s', chroot)
-            self.umount_target(chroot, pseudo=False, try_lazy_umount=False)
+            self.umount_target(chroot, pseudo=False)
             for image in self.driver.image_scheme.images:
                 LOG.debug('Finally: detaching loop device: %s',
                           str(image.target_device))

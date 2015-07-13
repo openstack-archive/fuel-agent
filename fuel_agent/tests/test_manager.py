@@ -512,14 +512,13 @@ none /run/shm tmpfs rw,nosuid,nodev 0 0"""
         self.mgr.driver.partition_scheme.add_fs(
             device='fake', mount='/var', fs_type='ext4')
         self.mgr.umount_target('fake_chroot')
-        self.assertEqual([mock.call('fake_chroot/proc', try_lazy_umount=True),
-                          mock.call('fake_chroot/dev', try_lazy_umount=True),
-                          mock.call('fake_chroot/sys', try_lazy_umount=True),
-                          mock.call('fake_chroot/var/lib',
-                                    try_lazy_umount=True),
-                          mock.call('fake_chroot/boot', try_lazy_umount=True),
-                          mock.call('fake_chroot/var', try_lazy_umount=True),
-                          mock.call('fake_chroot/', try_lazy_umount=True)],
+        self.assertEqual([mock.call('fake_chroot/proc'),
+                          mock.call('fake_chroot/dev'),
+                          mock.call('fake_chroot/sys'),
+                          mock.call('fake_chroot/var/lib'),
+                          mock.call('fake_chroot/boot'),
+                          mock.call('fake_chroot/var'),
+                          mock.call('fake_chroot/')],
                          mock_fu.umount_fs.call_args_list)
 
     @mock.patch('fuel_agent.manager.bu', create=True)
@@ -657,7 +656,7 @@ none /run/shm tmpfs rw,nosuid,nodev 0 0"""
             mock_fu.umount_fs.call_args_list)
         self.assertEqual(
             [mock.call(
-                '/tmp/imgdir', try_lazy_umount=False, pseudo=False)] * 2,
+                '/tmp/imgdir', pseudo=False)] * 2,
             mock_umount_target.call_args_list)
         self.assertEqual(
             [mock.call('/dev/loop0'), mock.call('/dev/loop1')] * 2,
