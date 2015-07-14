@@ -98,8 +98,27 @@ class Manager(object):
     def __init__(self, data):
         self.driver = utils.get_driver(CONF.data_driver)(data)
 
+    def do_clean_filesystems(self):
+        # All fs without keep_data flag and without image should be cleaned,
+        # mkfs will clean file table and such flags as --force are not needed
+        # TODO(asvechnikov): need to refactor processing keep_flag logic when
+        # data model will become flat
+        for fs in self.driver.partition_scheme.fss:
+            found_images = [img for img in self.driver.image_scheme.images
+                            if img.target_device == fs.device]
+
+            if not fs.keep_data and not found_images:
+                fu.make_fs(fs.type, fs.options, fs.label, fs.device)
+
     def do_partitioning(self):
         LOG.debug('--- Partitioning disks (do_partitioning) ---')
+
+        if self.driver.partition_scheme.skip_partitioning:
+            LOG.debug('Some of fs has keep_data flag, '
+                      'partitioning is skiping')
+            self.do_clean_filesystems()
+            return
+
         # If disks are not wiped out at all, it is likely they contain lvm
         # and md metadata which will prevent re-creating a partition table
         # with 'device is busy' error.
