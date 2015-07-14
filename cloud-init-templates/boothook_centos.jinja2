@@ -48,11 +48,13 @@ fi
 
 cloud-init-per instance conntrack_ipv4 /bin/sh -c 'echo nf_conntrack_ipv4 | tee -a /etc/rc.modules'
 cloud-init-per instance conntrack_ipv6 /bin/sh -c 'echo nf_conntrack_ipv6 | tee -a /etc/rc.modules'
+cloud-init-per instance conntrack_proto_gre /bin/sh -c 'echo nf_conntrack_proto_gre | tee -a /etc/rc.modules'
 cloud-init-per instance chmod_rc_modules chmod +x /etc/rc.modules
 cloud-init-per instance conntrack_max /bin/sh -c 'echo "net.nf_conntrack_max=1048576" | tee -a /etc/sysctl.conf'
 
 cloud-init-per instance conntrack_ipv4_load modprobe nf_conntrack_ipv4
 cloud-init-per instance conntrack_ipv6_load modprobe nf_conntrack_ipv6
+cloud-init-per instance conntrack_proto_gre_load modprobe nf_conntrack_proto_gre
 cloud-init-per instance conntrack_max_set sysctl -w "net.nf_conntrack_max=1048576"
 
 cloud-init-per instance mkdir_coredump mkdir -p /var/log/coredump
