@@ -7,6 +7,10 @@
 # Data driver (string value)
 #data_driver=nailgun
 
+# Directory where the image is supposed to be built (string
+# value)
+#image_build_dir=/tmp
+
 # Path to directory with cloud init templates (string value)
 #nc_template_path=/usr/share/fuel-agent/cloud-init-templates
 
@@ -29,11 +33,43 @@
 # value)
 #udev_rename_substr=.renamedrule
 
-# Directory where we build images (string value)
-#image_build_dir=/tmp
+# Correct empty rule for udev daemon (string value)
+#udev_empty_rule=empty_rule
 
-# Directory where we build images (string value)
+# Suffix which is used while creating temporary files (string
+# value)
 #image_build_suffix=.fuel-agent-image
+
+# Timeout in secs for GRUB (integer value)
+#grub_timeout=5
+
+# Maximum allowed loop devices count to use (integer value)
+#max_loop_devices_count=255
+
+# Size of sparse file in MiBs (integer value)
+#sparse_file_size=8192
+
+# System-wide major number for loop device (integer value)
+#loop_device_major_number=7
+
+# Maximum allowed debootstrap/apt-get attempts to execute
+# (integer value)
+#fetch_packages_attempts=10
+
+# File where to store apt setting for unsigned packages
+# (string value)
+#allow_unsigned_file=allow_unsigned_packages
+
+# File where to store apt setting for forcing IPv4 usage
+# (string value)
+#force_ipv4_file=force_ipv4
+
+# Create configdrive file, use pre-builded if set to False
+# (boolean value)
+#prepare_configdrive=true
+
+# Add udev rules for NIC remapping (boolean value)
+#fix_udev_net_rules=true
 
 
 #
@@ -120,7 +156,6 @@ logging_debug_format_suffix=
 # Deprecated group/name - [DEFAULT]/logfile
 log_file=/var/log/fuel-agent.log
 
-
 # (Optional) The base directory used for relative --log-file
 # paths. (string value)
 # Deprecated group/name - [DEFAULT]/logdir
@@ -151,20 +186,6 @@ log_file=/var/log/fuel-agent.log
 
 
 #
-# Options defined in fuel_agent.utils.build
-#
-
-# Maximum allowed loop devices count to use (integer value)
-#max_loop_count=255
-
-# Size of sparse file in MiBs (integer value)
-#sparse_file_size=2048
-
-# System-wide major number for loop device (integer value)
-#loop_dev_major=7
-
-
-#
 # Options defined in fuel_agent.utils.utils
 #
 
@@ -182,3 +203,9 @@ log_file=/var/log/fuel-agent.log
 # Block size of data to read for calculating checksum (integer
 # value)
 #read_chunk_size=1048576
+
+# Delay in seconds before the next exectuion will retry
+# (floating point value)
+#execute_retry_delay=2.0
+
+

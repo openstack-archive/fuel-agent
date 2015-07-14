@@ -16,6 +16,7 @@ import itertools
 import math
 import os
 
+from oslo_config import cfg
 import six
 from six.moves.urllib.parse import urljoin
 from six.moves.urllib.parse import urlparse
@@ -32,6 +33,10 @@ from fuel_agent.utils import utils
 
 
 LOG = logging.getLogger(__name__)
+
+CONF = cfg.CONF
+CONF.import_opt('prepare_configdrive', 'fuel_agent.manager')
+CONF.import_opt('config_drive_path', 'fuel_agent.manager')
 
 
 def match_device(hu_disk, ks_disk):
@@ -422,7 +427,9 @@ class Nailgun(BaseDataDriver):
                         self._boot_done = True
 
             # this partition will be used to put there configdrive image
-            if partition_scheme.configdrive_device() is None:
+            if (partition_scheme.configdrive_device() is None and
+                    CONF.prepare_configdrive or
+                    os.path.isfile(CONF.config_drive_path)):
                 LOG.debug('Adding configdrive partition on disk %s: size=20' %
                           disk['name'])
                 parted.add_partition(size=20, configdrive=True)
@@ -591,6 +598,22 @@ class Nailgun(BaseDataDriver):
                 md5=imeta.get('raw_md5'),
             )
         return image_scheme
+
+
+class Ironic(Nailgun):
+    def __init__(self, data):
+        super(Ironic, self).__init__(data)
+
+    def parse_configdrive_scheme(self):
+        pass
+
+    def parse_partition_scheme(self):
+        # FIXME(yuriyz): Using of internal attributes of base class is very
+        # fragile. This code acts only as temporary solution. Ironic should
+        # use own driver, based on simple driver.
+        self._boot_partition_done = True
+        self._boot_done = True
+        return super(Ironic, self).parse_partition_scheme()
 
 
 class NailgunBuildImage(BaseDataDriver):
