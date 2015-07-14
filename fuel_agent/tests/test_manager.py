@@ -19,6 +19,7 @@ import signal
 from oslo.config import cfg
 from oslotest import base as test_base
 
+from fuel_agent.drivers import nailgun
 from fuel_agent import errors
 from fuel_agent import manager
 from fuel_agent import objects
@@ -438,7 +439,7 @@ class TestManager(test_base.BaseTestCase):
                                        mock_fu):
         mock_os.path.islink.return_value = True
         mock_utils.execute.return_value = (None, None)
-        self.mgr.driver.partition_scheme = objects.PartitionScheme()
+        self.mgr.driver._partition_scheme = objects.PartitionScheme()
         self.mgr.mount_target('fake_chroot')
         mock_open.assert_called_once_with('fake_chroot/etc/mtab', 'wb')
         mock_os.path.islink.assert_called_once_with('fake_chroot/etc/mtab')
@@ -451,7 +452,7 @@ class TestManager(test_base.BaseTestCase):
     @mock.patch('fuel_agent.manager.os', create=True)
     def test_mount_target(self, mock_os, mock_open, mock_utils, mock_fu):
         mock_os.path.islink.return_value = False
-        self.mgr.driver.partition_scheme = objects.PartitionScheme()
+        self.mgr.driver._partition_scheme = objects.PartitionScheme()
         self.mgr.driver.partition_scheme.add_fs(
             device='fake', mount='/var/lib', fs_type='xfs')
         self.mgr.driver.partition_scheme.add_fs(
@@ -500,7 +501,7 @@ none /run/shm tmpfs rw,nosuid,nodev 0 0"""
 
     @mock.patch('fuel_agent.manager.fu', create=True)
     def test_umount_target(self, mock_fu):
-        self.mgr.driver.partition_scheme = objects.PartitionScheme()
+        self.mgr.driver._partition_scheme = objects.PartitionScheme()
         self.mgr.driver.partition_scheme.add_fs(
             device='fake', mount='/var/lib', fs_type='xfs')
         self.mgr.driver.partition_scheme.add_fs(
@@ -522,6 +523,38 @@ none /run/shm tmpfs rw,nosuid,nodev 0 0"""
                           mock.call('fake_chroot/', try_lazy_umount=True)],
                          mock_fu.umount_fs.call_args_list)
 
+
+class TestImageBuild(test_base.BaseTestCase):
+
+    @mock.patch('yaml.load')
+    @mock.patch.object(utils, 'init_http_request')
+    @mock.patch.object(utils, 'get_driver')
+    def setUp(self, mock_driver, mock_http, mock_yaml):
+        super(self.__class__, self).setUp()
+        mock_driver.return_value = nailgun.NailgunBuildImage
+        image_conf = {
+            "image_data": {
+                "/": {
+                    "container": "gzip",
+                    "format": "ext4",
+                    "uri": "http:///centos_65_x86_64.img.gz",
+                },
+            },
+            "output": "/var/www/nailgun/targetimages",
+            "repos": [
+                {
+                    "name": "repo",
+                    "uri": "http://some",
+                    'type': 'deb',
+                    'suite': '/',
+                    'section': '',
+                    'priority': 1001
+                }
+            ],
+            "codename": "trusty"
+        }
+        self.mgr = manager.Manager(image_conf)
+
     @mock.patch('fuel_agent.manager.bu', create=True)
     @mock.patch('fuel_agent.manager.fu', create=True)
     @mock.patch('fuel_agent.manager.utils', create=True)
@@ -540,17 +573,17 @@ none /run/shm tmpfs rw,nosuid,nodev 0 0"""
 
         loops = [objects.Loop(), objects.Loop()]
 
-        self.mgr.driver.image_scheme = objects.ImageScheme([
+        self.mgr.driver._image_scheme = objects.ImageScheme([
             objects.Image('file:///fake/img.img.gz', loops[0], 'ext4', 'gzip'),
             objects.Image('file:///fake/img-boot.img.gz',
                           loops[1], 'ext2', 'gzip')])
-        self.mgr.driver.partition_scheme = objects.PartitionScheme()
+        self.mgr.driver._partition_scheme = objects.PartitionScheme()
         self.mgr.driver.partition_scheme.add_fs(
             device=loops[0], mount='/', fs_type='ext4')
         self.mgr.driver.partition_scheme.add_fs(
             device=loops[1], mount='/boot', fs_type='ext2')
         self.mgr.driver.metadata_uri = 'file:///fake/img.yaml'
-        self.mgr.driver.operating_system = objects.Ubuntu(
+        self.mgr.driver._operating_system = objects.Ubuntu(
             repos=[
                 objects.DEBRepo('ubuntu', 'http://fakeubuntu',
                                 'trusty', 'fakesection', priority=900),
