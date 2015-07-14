@@ -125,7 +125,8 @@ class TestNailgunBuildImage(unittest2.TestCase):
         mock_ub_instance = mock_ub.return_value
         mock_ub_instance.packages = data['packages']
         driver = NailgunBuildImage(data)
-        mock_ub.assert_called_once_with(repos=[], packages=data['packages'])
+        mock_ub.assert_called_once_with(repos=[], packages=data['packages'],
+                                        major=14, minor=4)
         self.assertEqual(driver.operating_system.packages, data['packages'])
 
     @mock.patch('fuel_agent.objects.Ubuntu')
@@ -140,7 +141,8 @@ class TestNailgunBuildImage(unittest2.TestCase):
         mock_ub_instance.packages = NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES
         driver = NailgunBuildImage(data)
         mock_ub.assert_called_once_with(
-            repos=[], packages=NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES)
+            repos=[], packages=NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
+            major=14, minor=4)
         self.assertEqual(driver.operating_system.packages,
                          NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES)
 
@@ -170,7 +172,8 @@ class TestNailgunBuildImage(unittest2.TestCase):
         mock_ub_instance = mock_ub.return_value
         mock_ub_instance.repos = repos
         mock_ub.assert_called_once_with(
-            repos=repos, packages=NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES)
+            repos=repos, packages=NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
+            major=14, minor=4)
         self.assertEqual(mock_deb_expected_calls,
                          mock_deb.call_args_list[:len(REPOS_SAMPLE)])
         self.assertEqual(driver.operating_system.repos, repos)

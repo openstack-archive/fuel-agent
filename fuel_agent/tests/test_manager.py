@@ -38,10 +38,10 @@ CONF = cfg.CONF
 
 class TestManager(unittest2.TestCase):
 
-    @mock.patch('yaml.load')
-    @mock.patch.object(utils, 'init_http_request')
+    @mock.patch('fuel_agent.drivers.nailgun.Nailgun.parse_image_meta',
+                return_value={})
     @mock.patch.object(hu, 'list_block_devices')
-    def setUp(self, mock_lbd, mock_http, mock_yaml):
+    def setUp(self, mock_lbd, mock_image_meta):
         super(TestManager, self).setUp()
         mock_lbd.return_value = test_nailgun.LIST_BLOCK_DEVICES_SAMPLE
         self.mgr = manager.Manager(test_nailgun.PROVISION_SAMPLE_DATA)
@@ -123,6 +123,7 @@ class TestManager(unittest2.TestCase):
             else:
                 return ('FAKE_UUID', None)
         mock_utils.execute.side_effect = _fake_uuid
+        mock_grub.version = 2
         mock_gu.guess_grub_version.return_value = 2
         mock_grub.kernel_name = 'fake_kernel_name'
         mock_grub.initrd_name = 'fake_initrd_name'
@@ -144,6 +145,22 @@ class TestManager(unittest2.TestCase):
             device='fake', mount='swap', fs_type='swap')
         self.assertRaises(errors.WrongPartitionSchemeError,
                           self.mgr.do_bootloader)
+
+    @mock.patch('fuel_agent.manager.open',
+                create=True, new_callable=mock.mock_open)
+    @mock.patch('fuel_agent.manager.gu', create=True)
+    @mock.patch('fuel_agent.manager.utils', create=True)
+    @mock.patch.object(manager.Manager, 'mount_target')
+    @mock.patch.object(manager.Manager, 'umount_target')
+    def test_do_bootloader_grub_version_changes(
+            self, mock_umount, mock_mount, mock_utils, mock_gu, mock_open):
+        # actually covers only grub1 related logic
+        mock_utils.execute.return_value = ('fake_UUID\n', None)
+        mock_gu.guess_grub_version.return_value = 'expected_version'
+        self.mgr.do_bootloader()
+        mock_gu.guess_grub_version.assert_called_once_with(
+            chroot='/tmp/target')
+        self.assertEqual('expected_version', self.mgr.driver.grub.version)
 
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
@@ -245,12 +262,12 @@ class TestManager(unittest2.TestCase):
         mock_utils.makedirs_if_not_exists.assert_called_once_with(
             '/tmp/target/etc/nailgun-agent')
 
-    @mock.patch('yaml.load')
-    @mock.patch.object(utils, 'init_http_request')
+    @mock.patch('fuel_agent.drivers.nailgun.Nailgun.parse_image_meta',
+                return_value={})
     @mock.patch.object(hu, 'list_block_devices')
     @mock.patch.object(fu, 'make_fs')
     def test_do_partitioning_with_keep_data_flag(self, mock_fu_mf, mock_lbd,
-                                                 mock_http, mock_yaml):
+                                                 mock_image_meta):
         mock_lbd.return_value = test_nailgun.LIST_BLOCK_DEVICES_SAMPLE
         data = copy.deepcopy(test_nailgun.PROVISION_SAMPLE_DATA)
 
@@ -305,9 +322,9 @@ class TestManager(unittest2.TestCase):
         ]
         self.mgr.do_partitioning()
         self.assertEqual([mock.call('fake_md1', 'mirror',
-                                    ['/dev/sda1', '/dev/sdb1']),
+                                    ['/dev/sda1', '/dev/sdb1'], 'default'),
                           mock.call('fake_md2', 'mirror',
-                                    ['/dev/sdb3', '/dev/sdc1'])],
+                                    ['/dev/sdb3', '/dev/sdc1'], 'default')],
                          mock_mu_m.call_args_list)
 
     @mock.patch('six.moves.builtins.open')
@@ -395,6 +412,9 @@ class TestManager(unittest2.TestCase):
             mock.call('xfs', '', '', '/dev/mapper/image-glance')]
         self.assertEqual(mock_fu_mf_expected_calls, mock_fu_mf.call_args_list)
 
+    @mock.patch('fuel_agent.drivers.nailgun.Nailgun.parse_image_meta',
+                return_value={})
+    @mock.patch('fuel_agent.drivers.nailgun.Nailgun.parse_operating_system')
     @mock.patch.object(utils, 'calculate_md5')
     @mock.patch('os.path.getsize')
     @mock.patch('yaml.load')
@@ -403,7 +423,8 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(utils, 'render_and_save')
     @mock.patch.object(hu, 'list_block_devices')
     def test_do_configdrive(self, mock_lbd, mock_u_ras, mock_u_e,
-                            mock_http_req, mock_yaml, mock_get_size, mock_md5):
+                            mock_http_req, mock_yaml, mock_get_size, mock_md5,
+                            mock_parse_os, mock_image_meta):
         mock_get_size.return_value = 123
         mock_md5.return_value = 'fakemd5'
         mock_lbd.return_value = test_nailgun.LIST_BLOCK_DEVICES_SAMPLE
@@ -755,7 +776,8 @@ class TestImageBuild(unittest2.TestCase):
                 objects.DEBRepo('mos', 'http://fakemos',
                                 'mosX.Y', 'fakesection', priority=1000)],
             packages=['fakepackage1', 'fakepackage2'])
-
+        self.mgr.driver.operating_system.minor = 4
+        self.mgr.driver.operating_system.major = 14
         mock_os.path.exists.return_value = False
         mock_os.path.join.return_value = '/tmp/imgdir/proc'
         mock_os.path.basename.side_effect = ['img.img.gz', 'img-boot.img.gz']
@@ -881,7 +903,7 @@ class TestImageBuild(unittest2.TestCase):
              mock.call('/tmp/img-boot.gz', '/fake/img-boot.img.gz')],
             mock_shutil_move.call_args_list)
 
-        metadata = {}
+        metadata = {'os': {'name': 'Ubuntu', 'major': 14, 'minor': 4}}
         for repo in self.mgr.driver.operating_system.repos:
             metadata.setdefault('repos', []).append({
                 'type': 'deb',

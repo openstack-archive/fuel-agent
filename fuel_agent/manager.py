@@ -233,7 +233,7 @@ class Manager(object):
 
         # creating meta disks
         for md in self.driver.partition_scheme.mds:
-            mu.mdcreate(md.name, md.level, md.devices)
+            mu.mdcreate(md.name, md.level, md.devices, md.metadata)
 
         # creating physical volumes
         for pv in self.driver.partition_scheme.pvs:
@@ -414,7 +414,12 @@ class Manager(object):
 
         grub = self.driver.grub
 
-        grub.version = gu.guess_grub_version(chroot=chroot)
+        guessed_version = gu.guess_grub_version(chroot=chroot)
+        if guessed_version != grub.version:
+            grub.version = guessed_version
+            LOG.warning('Grub version differs from which the operating system '
+                        'should have by default. Found version in image: '
+                        '{0}'.format(guessed_version))
         boot_device = self.driver.partition_scheme.boot_device(grub.version)
         install_devices = [d.name for d in self.driver.partition_scheme.parteds
                            if d.install_bootloader]
@@ -522,6 +527,8 @@ class Manager(object):
         # TODO(kozhukalov): Implement metadata
         # as a pluggable data driver to avoid any fixed format.
         metadata = {}
+
+        metadata['os'] = self.driver.operating_system.to_dict()
 
         # TODO(kozhukalov): implement this using image metadata
         # we need to compare list of packages and repos

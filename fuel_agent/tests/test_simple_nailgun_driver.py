@@ -24,6 +24,8 @@ from fuel_agent.tests import base
 
 @mock.patch.multiple(
     simple.NailgunSimpleDriver,
+    parse_operating_system=lambda x: objects.OperatingSystem(None, None),
+    parse_image_meta=lambda x: {},
     parse_grub=lambda x: objects.Grub(),
     parse_configdrive_scheme=lambda x: objects.ConfigDriveScheme(),
     parse_image_scheme=lambda x: objects.ImageScheme())

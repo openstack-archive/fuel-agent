@@ -20,12 +20,14 @@ from fuel_agent.objects import base
 class MultipleDevice(base.Serializable):
 
     def __init__(self, name, level,
-                 devices=None, spares=None, keep_data=False):
+                 devices=None, spares=None, keep_data=False,
+                 metadata='default'):
         self.keep_data = keep_data
         self.name = name
         self.level = level
         self.devices = devices or []
         self.spares = spares or []
+        self.metadata = metadata
 
     def add_device(self, device):
         if device in self.devices or device in self.spares:
@@ -48,4 +50,5 @@ class MultipleDevice(base.Serializable):
             'devices': self.devices,
             'spares': self.spares,
             'keep_data': self.keep_data,
+            'metadata': self.metadata,
         }
