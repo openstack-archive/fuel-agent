@@ -17,8 +17,6 @@
 import abc
 import six
 
-from fuel_agent.utils.decorators import abstractclassmethod
-
 
 @six.add_metaclass(abc.ABCMeta)
 class Serializable(object):
@@ -27,6 +25,6 @@ class Serializable(object):
     def to_dict(self):
         pass
 
-    @abstractclassmethod
+    @classmethod
     def from_dict(cls, data):
-        pass
+        return cls(**data)

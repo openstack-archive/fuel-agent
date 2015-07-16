@@ -262,7 +262,9 @@ class Nailgun(BaseDataDriver):
                     if volume.get('mount') != '/boot':
                         LOG.debug('Adding partition on disk %s: size=%s' %
                                   (disk['name'], volume['size']))
-                        prt = parted.add_partition(size=volume['size'])
+                        prt = parted.add_partition(
+                            size=volume['size'],
+                            keep_data=volume.get('keep_data', False))
                         LOG.debug('Partition name: %s' % prt.name)
 
                     elif volume.get('mount') == '/boot' \
@@ -275,7 +277,9 @@ class Nailgun(BaseDataDriver):
                         # huge disks if it is possible.
                         LOG.debug('Adding /boot partition on disk %s: '
                                   'size=%s', disk['name'], volume['size'])
-                        prt = parted.add_partition(size=volume['size'])
+                        prt = parted.add_partition(
+                            size=volume['size'],
+                            keep_data=volume.get('keep_data', False))
                         LOG.debug('Partition name: %s', prt.name)
                         self._boot_partition_done = True
                     else:
@@ -388,6 +392,7 @@ class Nailgun(BaseDataDriver):
                             fs_type=volume.get('file_system', 'xfs'),
                             fs_label=self._getlabel(volume.get('disk_label')))
 
+        partition_scheme.elevate_keep_data()
         return partition_scheme
 
     def parse_configdrive_scheme(self):

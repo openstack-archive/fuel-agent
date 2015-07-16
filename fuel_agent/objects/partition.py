@@ -102,6 +102,11 @@ class Parted(base.Serializable):
             separator = 'p'
         return '%s%s%s' % (self.name, separator, self.next_count())
 
+    def partition_by_name(self, name):
+        found = filter(lambda x: (x.name == name), self.partitions)
+        if found:
+            return found[0]
+
     def to_dict(self):
         partitions = [partition.to_dict() for partition in self.partitions]
         return {
@@ -123,7 +128,8 @@ class Parted(base.Serializable):
 class Partition(base.Serializable):
 
     def __init__(self, name, count, device, begin, end, partition_type,
-                 flags=None, guid=None, configdrive=False):
+                 flags=None, guid=None, configdrive=False, keep_data=False):
+        self.keep_data = keep_data
         self.name = name
         self.count = count
         self.device = device
@@ -152,16 +158,15 @@ class Partition(base.Serializable):
             'flags': self.flags,
             'guid': self.guid,
             'configdrive': self.configdrive,
+            'keep_data': self.keep_data,
         }
-
-    @classmethod
-    def from_dict(cls, data):
-        return cls(**data)
 
 
 class PhysicalVolume(base.Serializable):
 
-    def __init__(self, name, metadatasize=16, metadatacopies=2):
+    def __init__(self, name, metadatasize=16,
+                 metadatacopies=2, keep_data=False):
+        self.keep_data = keep_data
         self.name = name
         self.metadatasize = metadatasize
         self.metadatacopies = metadatacopies
@@ -171,11 +176,8 @@ class PhysicalVolume(base.Serializable):
             'name': self.name,
             'metadatasize': self.metadatasize,
             'metadatacopies': self.metadatacopies,
+            'keep_data': self.keep_data,
         }
-
-    @classmethod
-    def from_dict(cls, data):
-        return cls(**data)
 
 
 PV = PhysicalVolume
@@ -183,7 +185,8 @@ PV = PhysicalVolume
 
 class VolumeGroup(base.Serializable):
 
-    def __init__(self, name, pvnames=None):
+    def __init__(self, name, pvnames=None, keep_data=False):
+        self.keep_data = keep_data
         self.name = name
         self.pvnames = pvnames or []
 
@@ -194,12 +197,9 @@ class VolumeGroup(base.Serializable):
     def to_dict(self):
         return {
             'name': self.name,
-            'pvnames': self.pvnames
+            'pvnames': self.pvnames,
+            'keep_data': self.keep_data,
         }
-
-    @classmethod
-    def from_dict(cls, data):
-        return cls(**data)
 
 
 VG = VolumeGroup
@@ -207,7 +207,8 @@ VG = VolumeGroup
 
 class LogicalVolume(base.Serializable):
 
-    def __init__(self, name, vgname, size):
+    def __init__(self, name, vgname, size, keep_data=False):
+        self.keep_data = keep_data
         self.name = name
         self.vgname = vgname
         self.size = size
@@ -222,11 +223,8 @@ class LogicalVolume(base.Serializable):
             'name': self.name,
             'vgname': self.vgname,
             'size': self.size,
+            'keep_data': self.keep_data,
         }
-
-    @classmethod
-    def from_dict(cls, data):
-        return cls(**data)
 
 
 LV = LogicalVolume
@@ -235,7 +233,8 @@ LV = LogicalVolume
 class MultipleDevice(base.Serializable):
 
     def __init__(self, name, level,
-                 devices=None, spares=None):
+                 devices=None, spares=None, keep_data=False):
+        self.keep_data = keep_data
         self.name = name
         self.level = level
         self.devices = devices or []
@@ -261,11 +260,8 @@ class MultipleDevice(base.Serializable):
             'level': self.level,
             'devices': self.devices,
             'spares': self.spares,
+            'keep_data': self.keep_data,
         }
-
-    @classmethod
-    def from_dict(cls, data):
-        return cls(**data)
 
 
 MD = MultipleDevice
@@ -273,8 +269,9 @@ MD = MultipleDevice
 
 class FileSystem(base.Serializable):
 
-    def __init__(self, device, mount=None,
-                 fs_type=None, fs_options=None, fs_label=None):
+    def __init__(self, device, mount=None, fs_type=None,
+                 fs_options=None, fs_label=None, keep_data=False):
+        self.keep_data = keep_data
         self.device = device
         self.mount = mount
         self.type = fs_type or 'xfs'
@@ -288,11 +285,8 @@ class FileSystem(base.Serializable):
             'fs_type': self.type,
             'fs_options': self.options,
             'fs_label': self.label,
+            'keep_data': self.keep_data,
         }
-
-    @classmethod
-    def from_dict(cls, data):
-        return cls(**data)
 
 
 FS = FileSystem
@@ -376,6 +370,11 @@ class PartitionScheme(object):
                     'names from /dev/md0 to /dev/md127 seem to be busy, '
                     'try to generate md name manually')
             count += 1
+
+    def partition_by_name(self, name):
+        return next((parted.partition_by_name(name)
+                    for parted in self.parteds
+                    if parted.partition_by_name(name)), None)
 
     def vg_by_name(self, vgname):
         found = filter(lambda x: (x.name == vgname), self.vgs)
@@ -471,6 +470,56 @@ class PartitionScheme(object):
             for prt in parted.partitions:
                 if prt.configdrive:
                     return prt.name
+
+    def elevate_keep_data(self):
+        LOG.debug('Elevate keep_data flag from partitions')
+
+        for vg in self.vgs:
+            for pvname in vg.pvnames:
+                partition = self.partition_by_name(pvname)
+                if partition and partition.keep_data:
+                    partition.keep_data = False
+                    vg.keep_data = True
+                    LOG.debug('Set keep_data to vg=%s' % vg.name)
+
+        for lv in self.lvs:
+            vg = self.vg_by_name(lv.vgname)
+            if vg.keep_data:
+                lv.keep_data = True
+
+        # Need to loop over lv again to remove keep flag from vg
+        for lv in self.lvs:
+            vg = self.vg_by_name(lv.vgname)
+            if vg.keep_data and lv.keep_data:
+                vg.keep_data = False
+
+        for fs in self.fss:
+            lv = self.lv_by_device_name(fs.device)
+            if lv:
+                if lv.keep_data:
+                    lv.keep_data = False
+                    fs.keep_data = True
+                    LOG.debug('Set keep_data to fs=%s from lv=%s' %
+                              (fs.mount, lv.name))
+                continue
+            partition = self.partition_by_name(fs.device)
+            if partition and partition.keep_data:
+                partition.keep_data = False
+                fs.keep_data = True
+                LOG.debug('Set keep flag to fs=%s from partition=%s' %
+                          (fs.mount, partition.name))
+
+    @property
+    def skip_partitioning(self):
+        if any(fs.keep_data for fs in self.fss):
+            return True
+        if any(lv.keep_data for lv in self.lvs):
+            return True
+        if any(vg.keep_data for vg in self.vgs):
+            return True
+        for parted in self.parteds:
+            if any(prt.keep_data for prt in parted.partitions):
+                return True
 
     def to_dict(self):
         return {
