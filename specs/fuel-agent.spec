@@ -49,6 +49,7 @@ Requires:    genisoimage
 Requires:    xfsprogs
 Requires:    pciutils
 Requires:    ethtool
+Requires:    debootstrap
 
 %description
 Fuel-agent package
