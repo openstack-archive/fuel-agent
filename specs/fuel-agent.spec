@@ -50,6 +50,8 @@ Requires:    xfsprogs
 Requires:    pciutils
 Requires:    ethtool
 Requires:    debootstrap
+Requires:    xz
+Requires:    coreutils
 
 %description
 Fuel-agent package
