@@ -62,6 +62,9 @@ class Target(object):
             os.fsync(f.fileno())
         LOG.debug('File is written: %s' % filename)
 
+    def __next__(self):
+        return self.next()
+
 
 class LocalFile(Target):
     def __init__(self, filename):
@@ -123,7 +126,7 @@ class GunzipStream(Target):
 
     def next(self):
         try:
-            return self.decompressor.decompress(self.stream.next())
+            return self.decompressor.decompress(next(self.stream))
         except StopIteration:
             raise
 
@@ -217,7 +220,7 @@ class Chain(object):
         def jump(proc, next_proc):
             # if next_proc is just a string we assume it is a filename
             # and we save stream into a file
-            if isinstance(next_proc, (str, unicode)):
+            if isinstance(next_proc, six.string_types):
                 LOG.debug('Processor target: %s' % next_proc)
                 proc.target(next_proc)
                 return LocalFile(next_proc)
@@ -225,4 +228,4 @@ class Chain(object):
             # initialized with the previous one
             else:
                 return next_proc(proc)
-        return reduce(jump, self.processors)
+        return six.moves.reduce(jump, self.processors)

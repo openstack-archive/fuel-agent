@@ -26,10 +26,10 @@ import time
 import jinja2
 from oslo_config import cfg
 import requests
+import six
 import stevedore.driver
 import urllib3
 
-from six.moves import zip_longest
 
 from fuel_agent import errors
 from fuel_agent.openstack.common import log as logging
@@ -76,7 +76,7 @@ CONF.register_opts(u_opts)
 def execute(*cmd, **kwargs):
     command = ' '.join(cmd)
     LOG.debug('Trying to execute command: %s', command)
-    commands = [c.strip() for c in re.split(ur'\|', command)]
+    commands = [c.strip() for c in re.split(r'\|', command)]
     env = kwargs.pop('env_variables', copy.deepcopy(os.environ))
     env['PATH'] = '/bin:/usr/bin:/sbin:/usr/sbin'
     env['LC_ALL'] = env['LANG'] = env['LANGUAGE'] = kwargs.pop('language', 'C')
@@ -96,7 +96,7 @@ def execute(*cmd, **kwargs):
     if to_filename:
         to_file = open(to_filename, 'wb')
 
-    for attempt in reversed(xrange(attempts)):
+    for attempt in reversed(six.moves.range(attempts)):
         try:
             process = []
             for c in commands:
@@ -104,7 +104,7 @@ def execute(*cmd, **kwargs):
                     # NOTE(eli): Python's shlex implementation doesn't like
                     # unicode. We have to convert to ascii before shlex'ing
                     # the command. http://bugs.python.org/issue6988
-                    encoded_command = c.encode('ascii')
+                    encoded_command = c.encode('ascii') if six.PY2 else c
 
                     process.append(subprocess.Popen(
                         shlex.split(encoded_command),
@@ -241,7 +241,7 @@ def makedirs_if_not_exists(path, mode=0o755):
 def grouper(iterable, n, fillvalue=None):
     """Collect data into fixed-length chunks or blocks"""
     args = [iter(iterable)] * n
-    return zip_longest(*args, fillvalue=fillvalue)
+    return six.moves.zip_longest(*args, fillvalue=fillvalue)
 
 
 def guess_filename(path, regexp, sort=True, reverse=True):

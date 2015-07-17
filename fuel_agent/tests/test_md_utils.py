@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
 import six
 import unittest2
 
@@ -24,8 +23,10 @@ from fuel_agent.utils import utils
 
 if six.PY2:
     OPEN_FUNCTION_NAME = '__builtin__.open'
+    import mock
 else:
     OPEN_FUNCTION_NAME = 'builtins.open'
+    import unittest.mock as mock
 
 
 class TestMdUtils(unittest2.TestCase):
