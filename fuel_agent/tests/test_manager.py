@@ -52,6 +52,105 @@ class TestManager(unittest2.TestCase):
     @mock.patch('fuel_agent.manager.utils', create=True)
     @mock.patch.object(manager.Manager, 'mount_target')
     @mock.patch.object(manager.Manager, 'umount_target')
+    def test_do_bootloader_grub1_kernel_initrd_guessed(self, mock_umount,
+                                                       mock_mount, mock_utils,
+                                                       mock_gu, mock_open):
+        mock_utils.execute.return_value = ('', '')
+        mock_gu.guess_grub_version.return_value = 1
+        # grub has kernel_name and initrd_name both set to None
+        self.mgr.driver.grub.kernel_name = None
+        self.mgr.driver.grub.initrd_name = None
+        self.mgr.driver.grub.kernel_params = 'fake_kernel_params'
+        self.mgr.driver.grub.kernel_regexp = 'fake_kernel_regexp'
+        self.mgr.driver.grub.initrd_regexp = 'fake_initrd_regexp'
+        mock_gu.guess_kernel.return_value = 'guessed_kernel'
+        mock_gu.guess_initrd.return_value = 'guessed_initrd'
+        self.mgr.do_bootloader()
+        self.assertFalse(mock_gu.grub2_cfg.called)
+        self.assertFalse(mock_gu.grub2_install.called)
+        mock_gu.grub1_cfg.assert_called_once_with(
+            kernel_params='fake_kernel_params root=UUID= ',
+            initrd='guessed_initrd', kernel='guessed_kernel',
+            chroot='/tmp/target')
+        mock_gu.grub1_install.assert_called_once_with(
+            ['/dev/sda', '/dev/sdb', '/dev/sdc'],
+            '/dev/sda3', chroot='/tmp/target')
+        mock_gu.guess_initrd.assert_called_once_with(
+            regexp='fake_initrd_regexp', chroot='/tmp/target')
+        mock_gu.guess_kernel.assert_called_once_with(
+            regexp='fake_kernel_regexp', chroot='/tmp/target')
+
+    @mock.patch('fuel_agent.manager.open',
+                create=True, new_callable=mock.mock_open)
+    @mock.patch('fuel_agent.manager.gu', create=True)
+    @mock.patch('fuel_agent.manager.utils', create=True)
+    @mock.patch.object(manager.Manager, 'mount_target')
+    @mock.patch.object(manager.Manager, 'umount_target')
+    def test_do_bootloader_grub1_kernel_initrd_set(self, mock_umount,
+                                                   mock_mount, mock_utils,
+                                                   mock_gu, mock_open):
+        mock_utils.execute.return_value = ('', '')
+        mock_gu.guess_grub_version.return_value = 1
+        self.mgr.driver.grub.kernel_params = 'fake_kernel_params'
+        # grub has kernel_name and initrd_name set
+        self.mgr.driver.grub.kernel_name = 'kernel_name'
+        self.mgr.driver.grub.initrd_name = 'initrd_name'
+        self.mgr.do_bootloader()
+        self.assertFalse(mock_gu.grub2_cfg.called)
+        self.assertFalse(mock_gu.grub2_install.called)
+        mock_gu.grub1_cfg.assert_called_once_with(
+            kernel_params='fake_kernel_params root=UUID= ',
+            initrd='initrd_name', kernel='kernel_name', chroot='/tmp/target')
+        mock_gu.grub1_install.assert_called_once_with(
+            ['/dev/sda', '/dev/sdb', '/dev/sdc'],
+            '/dev/sda3', chroot='/tmp/target')
+        self.assertFalse(mock_gu.guess_initrd.called)
+        self.assertFalse(mock_gu.guess_kernel.called)
+
+    @mock.patch('fuel_agent.objects.bootloader.Grub', autospec=True)
+    @mock.patch('fuel_agent.manager.open',
+                create=True, new_callable=mock.mock_open)
+    @mock.patch('fuel_agent.manager.gu', create=True)
+    @mock.patch('fuel_agent.manager.utils', create=True)
+    @mock.patch.object(manager.Manager, 'mount_target')
+    @mock.patch.object(manager.Manager, 'umount_target')
+    def test_do_bootloader_rootfs_uuid(self, mock_umount, mock_mount,
+                                       mock_utils, mock_gu, mock_open,
+                                       mock_grub):
+        def _fake_uuid(*args, **kwargs):
+            if args[5] == '/dev/mapper/os-root':
+                return ('FAKE_ROOTFS_UUID', None)
+            else:
+                return ('FAKE_UUID', None)
+        mock_utils.execute.side_effect = _fake_uuid
+        mock_gu.guess_grub_version.return_value = 2
+        mock_grub.kernel_name = 'fake_kernel_name'
+        mock_grub.initrd_name = 'fake_initrd_name'
+        mock_grub.kernel_params = 'fake_kernel_params'
+        self.mgr.driver._grub = mock_grub
+        self.mgr.do_bootloader()
+        mock_grub.append_kernel_params.assert_called_once_with(
+            'root=UUID=FAKE_ROOTFS_UUID ')
+        self.assertEqual(2, mock_grub.version)
+
+    @mock.patch('fuel_agent.manager.utils', create=True)
+    @mock.patch.object(manager.Manager, 'mount_target')
+    def test_do_bootloader_rootfs_not_found(self, mock_umount, mock_utils):
+        mock_utils.execute.return_value = ('fake', 'fake')
+        self.mgr.driver._partition_scheme = objects.PartitionScheme()
+        self.mgr.driver.partition_scheme.add_fs(
+            device='fake', mount='/boot', fs_type='ext2')
+        self.mgr.driver.partition_scheme.add_fs(
+            device='fake', mount='swap', fs_type='swap')
+        self.assertRaises(errors.WrongPartitionSchemeError,
+                          self.mgr.do_bootloader)
+
+    @mock.patch('fuel_agent.manager.open',
+                create=True, new_callable=mock.mock_open)
+    @mock.patch('fuel_agent.manager.gu', create=True)
+    @mock.patch('fuel_agent.manager.utils', create=True)
+    @mock.patch.object(manager.Manager, 'mount_target')
+    @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_grub1(self, mock_umount, mock_mount, mock_utils,
                                  mock_gu, mock_open):
         # actually covers only grub1 related logic
