@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import mock
-
 import unittest2
 
 from fuel_agent import errors
@@ -21,7 +20,6 @@ from fuel_agent import objects
 
 
 class TestMultipleDevice(unittest2.TestCase):
-
     def setUp(self):
         super(self.__class__, self).setUp()
         self.md = objects.MultipleDevice(name='name', level='level')
@@ -76,7 +74,6 @@ class TestMultipleDevice(unittest2.TestCase):
 
 
 class TestPartition(unittest2.TestCase):
-
     def setUp(self):
         super(TestPartition, self).setUp()
         self.pt = objects.Partition('name', 'count', 'device', 'begin',
@@ -109,7 +106,6 @@ class TestPartition(unittest2.TestCase):
 
 
 class TestPartitionScheme(unittest2.TestCase):
-
     def setUp(self):
         super(TestPartitionScheme, self).setUp()
         self.p_scheme = objects.PartitionScheme()
