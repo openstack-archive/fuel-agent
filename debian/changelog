@@ -1,0 +1,11 @@
+fuel-agent (7.0+git20150720-1) unstable; urgency=low
+
+  * Catch up the upstream.
+
+ -- Alexei Sheplyakov <asheplyakov@mirantis.com>  Mon, 20 Jul 2015 10:56:41 +0300
+
+fuel-agent (5.1-1) unstable; urgency=low
+
+  * Initial release. (Closes: #XXXXXX)
+
+ -- Thomas Goirand <zigo@debian.org>  Fri, 07 Nov 2014 00:57:55 +0800
