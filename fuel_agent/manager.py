@@ -229,7 +229,7 @@ class Manager(object):
 
         # creating meta disks
         for md in self.driver.partition_scheme.mds:
-            mu.mdcreate(md.name, md.level, *md.devices)
+            mu.mdcreate(md.name, md.level, md.devices)
 
         # creating physical volumes
         for pv in self.driver.partition_scheme.pvs:

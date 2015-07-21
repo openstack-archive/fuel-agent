@@ -153,7 +153,7 @@ localhost.localdomain)
         mock_bdevs.return_value = [{'device': '/dev/fake1'},
                                    {'device': '/dev/fake2'}]
 
-        mu.mdcreate('/dev/md0', 'mirror', '/dev/fake1', '/dev/fake2')
+        mu.mdcreate('/dev/md0', 'mirror', ['/dev/fake1', '/dev/fake2'])
         mock_mdclean_expected_calls = [mock.call('/dev/fake1'),
                                        mock.call('/dev/fake2')]
         self.assertEqual(mock_mdclean_expected_calls,
@@ -171,7 +171,7 @@ localhost.localdomain)
         mock_mddisplay.return_value = [{'name': '/dev/md0'}]
         self.assertRaises(
             errors.MDAlreadyExistsError, mu.mdcreate,
-            '/dev/md0', 'mirror', '/dev/fake')
+            '/dev/md0', 'mirror', ['/dev/fake'])
 
     @mock.patch.object(mu, 'mddisplay')
     def test_mdcreate_unsupported_level(self, mock_mddisplay):
@@ -180,7 +180,7 @@ localhost.localdomain)
         mock_mddisplay.return_value = [{'name': '/dev/md10'}]
         self.assertRaises(
             errors.MDWrongSpecError, mu.mdcreate,
-            '/dev/md0', 'badlevel', '/dev/fake')
+            '/dev/md0', 'badlevel', ['/dev/fake'])
 
     @mock.patch.object(hu, 'list_block_devices')
     @mock.patch.object(mu, 'mddisplay')
@@ -192,7 +192,7 @@ localhost.localdomain)
                                    {'device': '/dev/fake10'}]
         self.assertRaises(
             errors.MDNotFoundError, mu.mdcreate,
-            '/dev/md0', 'mirror', '/dev/fake1', '/dev/fake2')
+            '/dev/md0', 'mirror', ['/dev/fake1', '/dev/fake2'])
 
     @mock.patch.object(hu, 'list_block_devices')
     @mock.patch.object(mu, 'mddisplay')
@@ -205,7 +205,7 @@ localhost.localdomain)
                                    {'device': '/dev/fake2'}]
         self.assertRaises(
             errors.MDDeviceDuplicationError, mu.mdcreate,
-            '/dev/md0', 'mirror', '/dev/fake1', '/dev/fake2')
+            '/dev/md0', 'mirror', ['/dev/fake1', '/dev/fake2'])
 
     @mock.patch.object(utils, 'execute')
     @mock.patch.object(mu, 'mdclean')
@@ -217,7 +217,7 @@ localhost.localdomain)
         mock_mddisplay.return_value = []
         mock_bdevs.return_value = [{'device': '/dev/fake1'},
                                    {'device': '/dev/fake2'}]
-        mu.mdcreate('/dev/md0', 'mirror', '/dev/fake1', '/dev/fake2')
+        mu.mdcreate('/dev/md0', 'mirror', ['/dev/fake1', '/dev/fake2'])
         expected_calls = [mock.call('/dev/fake1'), mock.call('/dev/fake2')]
         self.assertEqual(mock_mdclean.call_args_list, expected_calls)
 
