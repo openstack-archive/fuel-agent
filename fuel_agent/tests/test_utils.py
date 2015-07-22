@@ -28,6 +28,36 @@ from fuel_agent.utils import utils
 
 CONF = cfg.CONF
 
+_LO_DEVICE = """lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state \
+UNKNOWN group default
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+"""
+
+_ETH_DEVICE_NO_IP = """eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc \
+pfifo_fast state UP group default qlen 1000
+    link/ether 08:60:6e:6f:7d:a5 brd ff:ff:ff:ff:ff:ff
+"""
+
+_ETH_DEVICE_IP = """inet 172.18.204.10/25 brd 172.18.204.127 scope global \
+eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::a60:6eff:fe6f:6da2/64 scope link
+       valid_lft forever preferred_lft forever
+"""
+
+_ETH_DEVICE = _ETH_DEVICE_NO_IP + _ETH_DEVICE_IP
+
+_DOCKER_DEVICE = """docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 \
+qdisc noqueue state DOWN group default
+    link/ether 56:86:7a:fe:97:79 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.42.1/16 scope global docker0
+
+"""
+
 
 class ExecuteTestCase(unittest2.TestCase):
     """This class is partly based on the same class in openstack/ironic."""
@@ -387,3 +417,61 @@ class TestUdevRulesBlacklisting(unittest2.TestCase):
         self.assertFalse(mock_os.remove.called)
         self.assertFalse(mock_os.rename.called)
         mock_udev.assert_called_once_with()
+
+
+@mock.patch.object(utils, 'execute')
+class GetIPTestCase(unittest2.TestCase):
+
+    def setUp(self):
+        super(GetIPTestCase, self).setUp()
+        self.mac = '08:60:6e:6f:7d:a5'
+        self.cmd = ('ip', 'addr', 'show', 'scope', 'global')
+
+    def _build_out(self, lines):
+        out = ''
+        for num, line in enumerate(lines, start=1):
+            out += str(num) + ': ' + line
+        return out
+
+    def test_get_interface_ip(self, mock_execute):
+        lines = _LO_DEVICE, _ETH_DEVICE, _DOCKER_DEVICE
+        out = self._build_out(lines)
+        mock_execute.return_value = out, ''
+        ip = utils.get_interface_ip(self.mac)
+        self.assertEqual('172.18.204.10', ip)
+        mock_execute.assert_called_once_with(*self.cmd)
+
+    def test_get_interface_no_mac(self, mock_execute):
+        lines = _LO_DEVICE, _DOCKER_DEVICE
+        out = self._build_out(lines)
+        mock_execute.return_value = out, ''
+        ip = utils.get_interface_ip(self.mac)
+        self.assertIsNone(ip)
+        mock_execute.assert_called_once_with(*self.cmd)
+
+    def test_get_interface_no_ip(self, mock_execute):
+        lines = _LO_DEVICE, _ETH_DEVICE_NO_IP, _DOCKER_DEVICE
+        out = self._build_out(lines)
+        mock_execute.return_value = out, ''
+        ip = utils.get_interface_ip(self.mac)
+        self.assertIsNone(ip)
+        mock_execute.assert_called_once_with(*self.cmd)
+
+    def test_get_interface_no_ip_last(self, mock_execute):
+        lines = _LO_DEVICE, _ETH_DEVICE_NO_IP
+        out = self._build_out(lines)
+        mock_execute.return_value = out, ''
+        ip = utils.get_interface_ip(self.mac)
+        self.assertIsNone(ip)
+        mock_execute.assert_called_once_with(*self.cmd)
+
+
+class ParseKernelCmdline(unittest2.TestCase):
+
+    def test_parse_kernel_cmdline(self):
+        data = 'foo=bar baz abc=def=123'
+        with mock.patch('six.moves.builtins.open',
+                        mock.mock_open(read_data=data)) as mock_open:
+            params = utils.parse_kernel_cmdline()
+            self.assertEqual('bar', params['foo'])
+            mock_open.assert_called_once_with('/proc/cmdline', 'rt')
