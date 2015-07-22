@@ -150,10 +150,12 @@ class Manager(object):
                     if os.path.exists(dst):
                         os.rename(dst, dst[:-len('.rules')] +
                                   CONF.udev_rename_substr)
+                        utils.execute('udevadm', 'settle', '--quiet')
                 except OSError:
                     LOG.debug("Skipping udev rule %s blacklising" % dst)
                 else:
                     os.symlink(empty_rule_path, dst)
+                    utils.execute('udevadm', 'settle', '--quiet')
         utils.execute('udevadm', 'control', '--reload-rules',
                       check_exit_code=[0])
 
@@ -199,6 +201,7 @@ class Manager(object):
                 if os.path.islink(src):
                     try:
                         os.remove(src)
+                        utils.execute('udevadm', 'settle', '--quiet')
                     except OSError:
                         LOG.debug(
                             "Skipping udev rule %s de-blacklisting" % src)
@@ -207,6 +210,7 @@ class Manager(object):
                     if os.path.exists(src):
                         os.rename(src, src[:-len(CONF.udev_rename_substr)] +
                                   '.rules')
+                        utils.execute('udevadm', 'settle', '--quiet')
                 except OSError:
                     LOG.debug("Skipping udev rule %s de-blacklisting" % src)
         utils.execute('udevadm', 'control', '--reload-rules',
