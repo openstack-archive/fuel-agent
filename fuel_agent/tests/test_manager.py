@@ -288,6 +288,48 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(pu, 'make_partition')
     @mock.patch.object(pu, 'make_label')
     @mock.patch.object(hu, 'list_block_devices')
+    def test_do_partitioning_md(self, mock_hu_lbd, mock_pu_ml, mock_pu_mp,
+                                mock_pu_spf, mock_pu_sgt, mock_mu_m, mock_lu_p,
+                                mock_lu_v, mock_lu_l, mock_fu_mf, mock_pvr,
+                                mock_vgr, mock_lvr, mock_mdr, mock_exec,
+                                mock_os_ld, mock_os_p, mock_os_r, mock_os_s,
+                                mock_open):
+        mock_os_ld.return_value = ['not_a_rule', 'fake.rules']
+        mock_os_p.exists.return_value = True
+        mock_hu_lbd.return_value = test_nailgun.LIST_BLOCK_DEVICES_SAMPLE
+        self.mgr.driver.partition_scheme.mds = [
+            objects.MD('fake_md1', 'mirror', devices=['/dev/sda1',
+                                                      '/dev/sdb1']),
+            objects.MD('fake_md2', 'mirror', devices=['/dev/sdb3',
+                                                      '/dev/sdc1']),
+        ]
+        self.mgr.do_partitioning()
+        self.assertEqual([mock.call('fake_md1', 'mirror',
+                                    ['/dev/sda1', '/dev/sdb1']),
+                          mock.call('fake_md2', 'mirror',
+                                    ['/dev/sdb3', '/dev/sdc1'])],
+                         mock_mu_m.call_args_list)
+
+    @mock.patch('six.moves.builtins.open')
+    @mock.patch.object(os, 'symlink')
+    @mock.patch.object(os, 'remove')
+    @mock.patch.object(os, 'path')
+    @mock.patch.object(os, 'listdir')
+    @mock.patch.object(utils, 'execute')
+    @mock.patch.object(mu, 'mdclean_all')
+    @mock.patch.object(lu, 'lvremove_all')
+    @mock.patch.object(lu, 'vgremove_all')
+    @mock.patch.object(lu, 'pvremove_all')
+    @mock.patch.object(fu, 'make_fs')
+    @mock.patch.object(lu, 'lvcreate')
+    @mock.patch.object(lu, 'vgcreate')
+    @mock.patch.object(lu, 'pvcreate')
+    @mock.patch.object(mu, 'mdcreate')
+    @mock.patch.object(pu, 'set_gpt_type')
+    @mock.patch.object(pu, 'set_partition_flag')
+    @mock.patch.object(pu, 'make_partition')
+    @mock.patch.object(pu, 'make_label')
+    @mock.patch.object(hu, 'list_block_devices')
     def test_do_partitioning(self, mock_hu_lbd, mock_pu_ml, mock_pu_mp,
                              mock_pu_spf, mock_pu_sgt, mock_mu_m, mock_lu_p,
                              mock_lu_v, mock_lu_l, mock_fu_mf, mock_pvr,

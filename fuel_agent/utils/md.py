@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import itertools
 import re
 
 from fuel_agent import errors
@@ -75,7 +76,7 @@ def mddisplay(names=None):
     return mds
 
 
-def mdcreate(mdname, level, device, *args):
+def mdcreate(mdname, level, devices):
     mds = mddisplay()
 
     # check if md device already exists
@@ -90,8 +91,6 @@ def mdcreate(mdname, level, device, *args):
             'Error while creating md device: '
             'level must be one of: %s' % ', '.join(supported_levels))
 
-    devices = [device] + list(args)
-
     # check if all necessary devices exist
     if not set(devices).issubset(
             set([bd['device'] for bd in hu.list_block_devices(disks=False)])):
@@ -100,8 +99,7 @@ def mdcreate(mdname, level, device, *args):
 
     # check if devices are not parts of some md array
     if set(devices) & \
-            set(reduce(lambda x, y: x + y,
-                       [md.get('devices', []) for md in mds], [])):
+            set(itertools.chain(*[md.get('devices', []) for md in mds])):
         raise errors.MDDeviceDuplicationError(
             'Error while creating md: at least one of devices is '
             'already in belongs to some md')
