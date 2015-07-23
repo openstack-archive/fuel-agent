@@ -269,8 +269,15 @@ class Nailgun(BaseDataDriver):
 
                     elif volume.get('mount') == '/boot' \
                             and not self._boot_partition_done \
+                            and 'nvme' not in disk['name'] \
                             and (disk in self.small_ks_disks or
                                  not self.small_ks_disks):
+                        # FIXME(agordeev): NVMe drives should be skipped as
+                        # accessing such drives during the boot typically
+                        # requires using UEFI which is still not supported
+                        # by fuel-agent (it always installs BIOS variant of
+                        # grub)
+                        # * grub bug (http://savannah.gnu.org/bugs/?41883)
                         # NOTE(kozhukalov): On some hardware GRUB is not able
                         # to see disks larger than 2T due to firmware bugs,
                         # so we'd better avoid placing /boot on such

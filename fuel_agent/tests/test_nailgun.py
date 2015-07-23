@@ -404,6 +404,48 @@ LIST_BLOCK_DEVICES_SAMPLE = [
      'size': 500107862016},
 ]
 
+LIST_BLOCK_DEVICES_SAMPLE_NVME = [
+    {'uspec':
+        {'DEVLINKS': [
+            'disk/by-id/scsi-SATA_VBOX_HARDDISK_VB69050467-b385c7cd',
+            '/dev/disk/by-id/ata-VBOX_HARDDISK_VB69050467-b385c7cd',
+            '/dev/disk/by-id/wwn-fake_wwn_1',
+            '/dev/disk/by-path/pci-0000:00:1f.2-scsi-0:0:0:0'],
+         'ID_SERIAL_SHORT': 'fake_serial_1',
+         'ID_WWN': 'fake_wwn_1',
+         'DEVPATH': '/devices/pci0000:00/0000:00:1f.2/ata1/host0/'
+                    'target0:0:0/0:0:0:0/block/sda',
+         'ID_MODEL': 'fake_id_model',
+         'DEVNAME': '/dev/sda',
+         'MAJOR': '8',
+         'DEVTYPE': 'disk', 'MINOR': '0', 'ID_BUS': 'ata'
+         },
+     'startsec': '0',
+     'device': '/dev/sda',
+     'espec': {'state': 'running', 'timeout': '30', 'removable': '0'},
+     'bspec': {
+         'sz': '976773168', 'iomin': '4096', 'size64': '500107862016',
+         'ss': '512', 'ioopt': '0', 'alignoff': '0', 'pbsz': '4096',
+         'ra': '256', 'ro': '0', 'maxsect': '1024'
+         },
+     'size': 500107862016},
+    {'uspec':
+        {'DEVLINKS': [],
+         'DEVPATH': '/devices/pci:00/:00:04.0/block/nvme0n1',
+         'DEVNAME': '/dev/nvme0n1',
+         'MAJOR': '259',
+         'DEVTYPE': 'disk', 'MINOR': '0',
+         },
+     'startsec': '0',
+     'device': '/dev/nvme0n1',
+     'espec': {'state': 'running', 'timeout': '30', 'removable': '0'},
+     'bspec': {
+         'sz': '976773168', 'iomin': '4096', 'size64': '500107862016',
+         'ss': '512', 'ioopt': '0', 'alignoff': '0', 'pbsz': '4096',
+         'ra': '256', 'ro': '0', 'maxsect': '1024'},
+     'size': 500107862016},
+]
+
 SINGLE_DISK_KS_SPACES = [
     {
         "name": "sda",
@@ -517,6 +559,96 @@ FIRST_DISK_HUGE_KS_SPACES = [
         "id": "sdb",
         "size": 65535
     }
+]
+
+FIRST_DISK_NVME_KS_SPACES = [
+    {
+        "name": "nvme0n1",
+        "extra": ["nvme0n1"],
+        "free_space": 1024,
+        "volumes": [
+            {
+                "type": "boot",
+                "size": 300
+            },
+            {
+                "mount": "/boot",
+                "size": 200,
+                "type": "raid",
+                "file_system": "ext2",
+                "name": "Boot"
+            },
+            {
+                "mount": "/",
+                "size": 200,
+                "type": "partition",
+                "file_system": "ext4",
+                "name": "Root"
+            },
+        ],
+        "type": "disk",
+        "id": "nvme0n1",
+        "size": 97153
+    },
+    {
+        "name": "sda",
+        "extra": ["sda"],
+        "free_space": 1024,
+        "volumes": [
+            {
+                "type": "boot",
+                "size": 300
+            },
+            {
+                "mount": "/boot",
+                "size": 200,
+                "type": "raid",
+                "file_system": "ext2",
+                "name": "Boot"
+            },
+            {
+                "mount": "/tmp",
+                "size": 200,
+                "type": "partition",
+                "file_system": "ext2",
+                "name": "TMP"
+            },
+        ],
+        "type": "disk",
+        "id": "sda",
+        "size": 65535
+    }
+]
+
+ONLY_ONE_NVME_KS_SPACES = [
+    {
+        "name": "nvme0n1",
+        "extra": ["/dev/nvme0n1"],
+        "free_space": 1024,
+        "volumes": [
+            {
+                "type": "boot",
+                "size": 300
+            },
+            {
+                "mount": "/boot",
+                "size": 200,
+                "type": "raid",
+                "file_system": "ext2",
+                "name": "Boot"
+            },
+            {
+                "mount": "/",
+                "size": 200,
+                "type": "partition",
+                "file_system": "ext4",
+                "name": "Root"
+            },
+        ],
+        "type": "disk",
+        "id": "nvme0n1",
+        "size": 97153
+    },
 ]
 
 MANY_HUGE_DISKS_KS_SPACES = [
@@ -1031,3 +1163,29 @@ class TestNailgun(unittest2.TestCase):
         mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
         self.assertRaises(errors.WrongPartitionSchemeError,
                           nailgun.Nailgun, data)
+
+    @mock.patch('fuel_agent.drivers.nailgun.yaml.load')
+    @mock.patch('fuel_agent.drivers.nailgun.utils.init_http_request')
+    @mock.patch('fuel_agent.drivers.nailgun.hu.list_block_devices')
+    def test_boot_partition_no_boot_nvme(self, mock_lbd,
+                                         mock_http_req, mock_yaml):
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        data['ks_meta']['pm_data']['ks_spaces'] = ONLY_ONE_NVME_KS_SPACES
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE_NVME
+        with self.assertRaisesRegexp(
+                errors.WrongPartitionSchemeError,
+                '/boot partition has not been created for some reasons'):
+            nailgun.Nailgun(data)
+
+    @mock.patch('fuel_agent.drivers.nailgun.yaml.load')
+    @mock.patch('fuel_agent.drivers.nailgun.utils.init_http_request')
+    @mock.patch('fuel_agent.drivers.nailgun.hu.list_block_devices')
+    def test_boot_partition_is_not_on_nvme(self, mock_lbd,
+                                           mock_http_req, mock_yaml):
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        data['ks_meta']['pm_data']['ks_spaces'] = FIRST_DISK_NVME_KS_SPACES
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE_NVME
+        drv = nailgun.Nailgun(data)
+        self.assertEqual(
+            drv.partition_scheme.fs_by_mount('/boot').device,
+            '/dev/sda3')
