@@ -142,7 +142,7 @@ def mdremove(mdname):
     #       too busy with events when we start to modifiy md devices hard.
     #           Thus `udevadm settle` is helping to avoid the later failure and
     #       to prevent strange behaviour of md device.
-    utils.execute('udevadm', 'settle', '--quiet', check_exit_code=[0])
+    utils.udevadm_settle()
     utils.execute('mdadm', '--stop', mdname, check_exit_code=[0])
     utils.execute('mdadm', '--remove', mdname, check_exit_code=[0, 1])
 

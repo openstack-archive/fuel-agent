@@ -212,3 +212,178 @@ class ExecuteTestCase(unittest2.TestCase):
         # by default files are sorted in backward direction
         self.assertEqual(filename, 'file1')
         mock_oslistdir.assert_called_once_with('/some/path')
+
+    @mock.patch.object(utils, 'execute')
+    def test_udevadm_settle(self, mock_exec):
+        utils.udevadm_settle()
+        mock_exec.assert_called_once_with('udevadm', 'settle', '--quiet',
+                                          check_exit_code=[0])
+
+
+@mock.patch.object(utils, 'open', create=True, new_callable=mock.mock_open)
+@mock.patch.object(utils, 'os', autospec=True)
+@mock.patch.object(utils, 'execute')
+@mock.patch.object(utils, 'udevadm_settle')
+class TestUdevRulesBlacklisting(unittest2.TestCase):
+    @staticmethod
+    def _fake_join(path1, path2):
+        return '{0}/{1}'.format(path1, path2)
+
+    def test_blacklist_udev_rules_rule_exists(self, mock_udev, mock_execute,
+                                              mock_os, mock_open):
+        mock_os.path.join.side_effect = self._fake_join
+        mock_os.path.basename.return_value = 'fake_basename'
+        mock_os.listdir.return_value = ['fake.rules', 'fake_err.rules']
+        mock_os.path.isdir.return_value = False
+        mock_os.path.exists.return_value = True
+        mock_os.rename.side_effect = [None, OSError]
+        utils.blacklist_udev_rules('/etc/udev/rules.d', '/lib/udev/rules.d',
+                                   '.renamedrule', 'empty_rule')
+        self.assertEqual([mock.call('/etc/udev/rules.d/fake.rules'),
+                          mock.call('/etc/udev/rules.d/fake_err.rules')],
+                         mock_os.path.exists.call_args_list)
+        self.assertEqual([mock.call('/etc/udev/rules.d/fake.rules',
+                                    '/etc/udev/rules.d/fake.renamedrule'),
+                          mock.call('/etc/udev/rules.d/fake_err.rules',
+                                    '/etc/udev/rules.d/fake_err.renamedrule')],
+                         mock_os.rename.call_args_list)
+        self.assertEqual([mock.call('/etc/udev/rules.d', 'fake_basename'),
+                          mock.call('/etc/udev/rules.d', 'fake.rules'),
+                          mock.call('/etc/udev/rules.d', 'fake_err.rules')],
+                         mock_os.path.join.call_args_list)
+        mock_os.symlink.assert_called_once_with(
+            '/etc/udev/rules.d/fake_basename',
+            '/etc/udev/rules.d/fake.rules')
+        self.assertEqual(2 * [mock.call()], mock_udev.call_args_list)
+
+    def test_blacklist_udev_rules_rule_doesnot_exist(self, mock_udev,
+                                                     mock_execute, mock_os,
+                                                     mock_open):
+        mock_os.path.join.side_effect = self._fake_join
+        mock_os.path.basename.return_value = 'fake_basename'
+        mock_os.listdir.return_value = ['fake.rules']
+        mock_os.path.isdir.return_value = False
+        mock_os.path.exists.return_value = False
+        utils.blacklist_udev_rules('/etc/udev/rules.d', '/lib/udev/rules.d',
+                                   '.renamedrule', 'empty_rule')
+        self.assertFalse(mock_os.rename.called)
+        mock_os.path.isdir.assert_called_once_with(
+            '/etc/udev/rules.d/fake.rules')
+        mock_os.path.exists.assert_called_once_with(
+            '/etc/udev/rules.d/fake.rules')
+        self.assertEqual([mock.call('/etc/udev/rules.d', 'fake_basename'),
+                          mock.call('/etc/udev/rules.d', 'fake.rules')],
+                         mock_os.path.join.call_args_list)
+        mock_os.symlink.assert_called_once_with(
+            '/etc/udev/rules.d/fake_basename',
+            '/etc/udev/rules.d/fake.rules')
+        mock_udev.assert_called_once_with()
+
+    def test_blacklist_udev_rules_not_a_rule(self, mock_udev, mock_execute,
+                                             mock_os, mock_open):
+        mock_os.path.join.side_effect = self._fake_join
+        mock_os.path.basename.return_value = 'fake_basename'
+        mock_os.listdir.return_value = ['not_a_rule', 'dir']
+        mock_os.path.isdir.side_effect = [False, True]
+        utils.blacklist_udev_rules('/etc/udev/rules.d', '/lib/udev/rules.d',
+                                   '.renamedrule', 'empty_rule')
+        self.assertFalse(mock_udev.called)
+        self.assertFalse(mock_os.symlink.called)
+        self.assertFalse(mock_os.rename.called)
+        self.assertFalse(mock_os.path.exists.called)
+        mock_os.listdir.assert_called_once_with('/lib/udev/rules.d')
+        self.assertEqual([mock.call('/etc/udev/rules.d/not_a_rule'),
+                          mock.call('/etc/udev/rules.d/dir')],
+                         mock_os.path.isdir.call_args_list)
+        self.assertEqual([mock.call('/etc/udev/rules.d', 'fake_basename'),
+                          mock.call('/etc/udev/rules.d', 'not_a_rule'),
+                          mock.call('/etc/udev/rules.d', 'dir')],
+                         mock_os.path.join.call_args_list)
+
+    def test_blacklist_udev_rules_create_empty_rule(self, mock_udev,
+                                                    mock_execute, mock_os,
+                                                    mock_open):
+        mock_os.path.join.side_effect = self._fake_join
+        mock_os.path.basename.return_value = 'fake_basename'
+        utils.blacklist_udev_rules('/etc/udev/rules.d', '/lib/udev/rules.d',
+                                   '.renamedrule', 'empty_rule')
+        mock_open.assert_called_once_with('/etc/udev/rules.d/fake_basename',
+                                          'w')
+        file_handler = mock_open.return_value.__enter__.return_value
+        file_handler.write.assert_called_once_with('#\n')
+        mock_os.path.basename.assert_called_once_with('empty_rule')
+
+    def test_blacklist_udev_rules_execute(self, mock_udev, mock_execute,
+                                          mock_os, mock_open):
+        utils.blacklist_udev_rules('/etc/udev/rules.d', '/lib/udev/rules.d',
+                                   '.renamedrule', 'empty_rule')
+        mock_execute.assert_called_once_with(
+            'udevadm', 'control', '--reload-rules', check_exit_code=[0])
+
+    def test_unblacklist_udev_rules_remove(self, mock_udev, mock_execute,
+                                           mock_os, mock_open):
+        mock_os.path.join.side_effect = self._fake_join
+        mock_os.listdir.return_value = ['fake.rules', 'fake_err.rules']
+        mock_os.remove.side_effect = [None, OSError]
+        mock_os.path.isdir.side_effect = 2 * [False]
+        mock_os.path.islink.return_value = True
+        utils.unblacklist_udev_rules('/etc/udev/rules.d', '.renamedrule')
+        self.assertFalse(mock_os.path.exists.called)
+        self.assertFalse(mock_os.rename.called)
+        mock_os.listdir.assert_called_once_with('/etc/udev/rules.d')
+        expected_rules_calls = [mock.call('/etc/udev/rules.d/fake.rules'),
+                                mock.call('/etc/udev/rules.d/fake_err.rules')]
+        self.assertEqual(expected_rules_calls,
+                         mock_os.path.islink.call_args_list)
+        self.assertEqual(expected_rules_calls,
+                         mock_os.remove.call_args_list)
+        self.assertEqual(2 * [mock.call()], mock_udev.call_args_list)
+
+    def test_unblacklist_udev_rules_executes(self, mock_udev, mock_execute,
+                                             mock_os, mock_open):
+        utils.unblacklist_udev_rules('/etc/udev/rules.d', '.renamedrule')
+        self.assertEqual([mock.call('udevadm', 'control', '--reload-rules',
+                                    check_exit_code=[0]),
+                          mock.call('udevadm', 'trigger',
+                                    '--subsystem-match=block',
+                                    check_exit_code=[0])],
+                         mock_execute.call_args_list)
+
+    def test_unblacklist_udev_rules_rename(self, mock_udev, mock_execute,
+                                           mock_os, mock_open):
+        mock_os.path.join.side_effect = self._fake_join
+        mock_os.listdir.return_value = ['fake.renamedrule',
+                                        'fake_err.renamedrule']
+        mock_os.rename.side_effect = [None, OSError]
+        mock_os.path.isdir.side_effect = 2 * [False]
+        utils.unblacklist_udev_rules('/etc/udev/rules.d', '.renamedrule')
+        self.assertFalse(mock_os.path.islink.called)
+        self.assertFalse(mock_os.remove.called)
+        mock_os.listdir.assert_called_once_with('/etc/udev/rules.d')
+        self.assertEqual([mock.call('/etc/udev/rules.d/fake.renamedrule'),
+                          mock.call('/etc/udev/rules.d/fake_err.renamedrule')],
+                         mock_os.path.exists.call_args_list)
+        self.assertEqual([mock.call('/etc/udev/rules.d/fake.renamedrule',
+                                    '/etc/udev/rules.d/fake.rules'),
+                          mock.call('/etc/udev/rules.d/fake_err.renamedrule',
+                                    '/etc/udev/rules.d/fake_err.rules')],
+                         mock_os.rename.call_args_list)
+        self.assertEqual(2 * [mock.call()], mock_udev.call_args_list)
+
+    def test_unblacklist_udev_rules_not_a_rule(self, mock_udev, mock_execute,
+                                               mock_os, mock_open):
+        mock_os.path.join.side_effect = self._fake_join
+        mock_os.listdir.return_value = ['not_a_rule', 'dir']
+        mock_os.path.isdir.side_effect = [False, True]
+        utils.unblacklist_udev_rules('/etc/udev/rules.d', '.renamedrule')
+        mock_os.listdir.assert_called_once_with('/etc/udev/rules.d')
+        self.assertEqual([mock.call('/etc/udev/rules.d', 'not_a_rule'),
+                          mock.call('/etc/udev/rules.d', 'dir')],
+                         mock_os.path.join.call_args_list)
+        self.assertEqual([mock.call('/etc/udev/rules.d/not_a_rule'),
+                          mock.call('/etc/udev/rules.d/dir')],
+                         mock_os.path.isdir.call_args_list)
+        self.assertFalse(mock_os.path.exists.called)
+        self.assertFalse(mock_os.remove.called)
+        self.assertFalse(mock_os.rename.called)
+        mock_udev.assert_called_once_with()

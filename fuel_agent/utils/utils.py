@@ -265,3 +265,72 @@ def guess_filename(path, regexp, sort=True, reverse=True):
         if re.search(regexp, filename):
             return filename
     return None
+
+
+def blacklist_udev_rules(udev_rules_dir, udev_rules_lib_dir,
+                         udev_rename_substr, udev_empty_rule):
+    """Blacklist udev rules
+
+    Here is udev's rules blacklisting to be done:
+    by adding symlinks to /dev/null in /etc/udev/rules.d for already
+    existent rules in /lib/.
+    'parted' generates too many udev events in short period of time
+    so we should increase processing speed for those events,
+    otherwise partitioning is doomed.
+    """
+    empty_rule_path = os.path.join(udev_rules_dir,
+                                   os.path.basename(udev_empty_rule))
+    with open(empty_rule_path, 'w') as f:
+        f.write('#\n')
+    for rule in os.listdir(udev_rules_lib_dir):
+        dst = os.path.join(udev_rules_dir, rule)
+        if os.path.isdir(dst):
+            continue
+        if dst.endswith('.rules'):
+            # for successful blacklisting already existent file with name
+            # from /etc which overlaps with /lib should be renamed prior
+            # symlink creation.
+            try:
+                if os.path.exists(dst):
+                    os.rename(dst, dst[:-len('.rules')] + udev_rename_substr)
+                    udevadm_settle()
+            except OSError:
+                LOG.debug("Skipping udev rule %s blacklising" % dst)
+            else:
+                os.symlink(empty_rule_path, dst)
+                udevadm_settle()
+    execute('udevadm', 'control', '--reload-rules', check_exit_code=[0])
+
+
+def unblacklist_udev_rules(udev_rules_dir, udev_rename_substr):
+    """disable udev's rules blacklisting"""
+    for rule in os.listdir(udev_rules_dir):
+        src = os.path.join(udev_rules_dir, rule)
+        if os.path.isdir(src):
+            continue
+        if src.endswith('.rules'):
+            if os.path.islink(src):
+                try:
+                    os.remove(src)
+                    udevadm_settle()
+                except OSError:
+                    LOG.debug(
+                        "Skipping udev rule %s de-blacklisting" % src)
+        elif src.endswith(udev_rename_substr):
+            try:
+                if os.path.exists(src):
+                    os.rename(src, src[:-len(udev_rename_substr)] + '.rules')
+                    udevadm_settle()
+            except OSError:
+                LOG.debug("Skipping udev rule %s de-blacklisting" % src)
+    execute('udevadm', 'control', '--reload-rules', check_exit_code=[0])
+    # NOTE(agordeev): re-create all the links which were skipped by udev
+    # while blacklisted
+    # NOTE(agordeev): do subsystem match, otherwise it will stuck
+    execute('udevadm', 'trigger', '--subsystem-match=block',
+            check_exit_code=[0])
+    udevadm_settle()
+
+
+def udevadm_settle():
+    execute('udevadm', 'settle', '--quiet', check_exit_code=[0])

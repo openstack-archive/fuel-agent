@@ -127,37 +127,11 @@ class Manager(object):
         lu.vgremove_all()
         lu.pvremove_all()
 
-        # Here is udev's rules blacklisting to be done:
-        # by adding symlinks to /dev/null in /etc/udev/rules.d for already
-        # existent rules in /lib/.
-        # 'parted' generates too many udev events in short period of time
-        # so we should increase processing speed for those events,
-        # otherwise partitioning is doomed.
-        empty_rule_path = os.path.join(CONF.udev_rules_dir,
-                                       os.path.basename(CONF.udev_empty_rule))
-        with open(empty_rule_path, 'w') as f:
-            f.write('#\n')
         LOG.debug("Enabling udev's rules blacklisting")
-        for rule in os.listdir(CONF.udev_rules_lib_dir):
-            dst = os.path.join(CONF.udev_rules_dir, rule)
-            if os.path.isdir(dst):
-                continue
-            if dst.endswith('.rules'):
-                # for successful blacklisting already existent file with name
-                # from /etc which overlaps with /lib should be renamed prior
-                # symlink creation.
-                try:
-                    if os.path.exists(dst):
-                        os.rename(dst, dst[:-len('.rules')] +
-                                  CONF.udev_rename_substr)
-                        utils.execute('udevadm', 'settle', '--quiet')
-                except OSError:
-                    LOG.debug("Skipping udev rule %s blacklising" % dst)
-                else:
-                    os.symlink(empty_rule_path, dst)
-                    utils.execute('udevadm', 'settle', '--quiet')
-        utils.execute('udevadm', 'control', '--reload-rules',
-                      check_exit_code=[0])
+        utils.blacklist_udev_rules(udev_rules_dir=CONF.udev_rules_dir,
+                                   udev_rules_lib_dir=CONF.udev_rules_lib_dir,
+                                   udev_rename_substr=CONF.udev_rename_substr,
+                                   udev_empty_rule=CONF.udev_empty_rule)
 
         for parted in self.driver.partition_scheme.parteds:
             for prt in parted.partitions:
@@ -191,36 +165,10 @@ class Manager(object):
                     raise errors.PartitionNotFoundError(
                         'Partition %s not found after creation' % prt.name)
 
-        # disable udev's rules blacklisting
         LOG.debug("Disabling udev's rules blacklisting")
-        for rule in os.listdir(CONF.udev_rules_dir):
-            src = os.path.join(CONF.udev_rules_dir, rule)
-            if os.path.isdir(src):
-                continue
-            if src.endswith('.rules'):
-                if os.path.islink(src):
-                    try:
-                        os.remove(src)
-                        utils.execute('udevadm', 'settle', '--quiet')
-                    except OSError:
-                        LOG.debug(
-                            "Skipping udev rule %s de-blacklisting" % src)
-            elif src.endswith(CONF.udev_rename_substr):
-                try:
-                    if os.path.exists(src):
-                        os.rename(src, src[:-len(CONF.udev_rename_substr)] +
-                                  '.rules')
-                        utils.execute('udevadm', 'settle', '--quiet')
-                except OSError:
-                    LOG.debug("Skipping udev rule %s de-blacklisting" % src)
-        utils.execute('udevadm', 'control', '--reload-rules',
-                      check_exit_code=[0])
-        # NOTE(agordeev): re-create all the links which were skipped by udev
-        # while blacklisted
-        # NOTE(agordeev): do subsystem match, otherwise it will stuck
-        utils.execute('udevadm', 'trigger', '--subsystem-match=block',
-                      check_exit_code=[0])
-        utils.execute('udevadm', 'settle', '--quiet', check_exit_code=[0])
+        utils.unblacklist_udev_rules(
+            udev_rules_dir=CONF.udev_rules_dir,
+            udev_rename_substr=CONF.udev_rename_substr)
 
         # If one creates partitions with the same boundaries as last time,
         # there might be md and lvm metadata on those partitions. To prevent

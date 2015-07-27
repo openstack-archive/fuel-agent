@@ -247,19 +247,20 @@ localhost.localdomain)
         mock_mddisplay.return_value = [{'name': '/dev/md11'}]
         self.assertRaises(errors.MDRemovingError, mu.mdclean_all)
 
+    @mock.patch.object(utils, 'udevadm_settle')
     @mock.patch.object(utils, 'execute')
     @mock.patch.object(mu, 'get_mdnames')
-    def test_mdremove_ok(self, mock_get_mdn, mock_exec):
+    def test_mdremove_ok(self, mock_get_mdn, mock_exec, mock_udev):
         # should check if md exists
         # should run mdadm command to remove md device
         mock_get_mdn.return_value = ['/dev/md0']
         expected_calls = [
-            mock.call('udevadm', 'settle', '--quiet', check_exit_code=[0]),
             mock.call('mdadm', '--stop', '/dev/md0', check_exit_code=[0]),
             mock.call('mdadm', '--remove', '/dev/md0', check_exit_code=[0, 1])
         ]
         mu.mdremove('/dev/md0')
         self.assertEqual(mock_exec.call_args_list, expected_calls)
+        mock_udev.assert_called_once_with()
 
     @mock.patch.object(mu, 'get_mdnames')
     def test_mdremove_notfound(self, mock_get_mdn):

@@ -31,9 +31,10 @@ class TestPartitionUtils(unittest2.TestCase):
         pu.wipe('/dev/fake')
         mock_label.assert_called_once_with('/dev/fake')
 
+    @mock.patch.object(utils, 'udevadm_settle')
     @mock.patch.object(pu, 'reread_partitions')
     @mock.patch.object(utils, 'execute')
-    def test_make_label(self, mock_exec, mock_rerd):
+    def test_make_label(self, mock_exec, mock_rerd, mock_udev):
         # should run parted OS command
         # in order to create label on a device
         mock_exec.return_value = ('out', '')
@@ -41,21 +42,22 @@ class TestPartitionUtils(unittest2.TestCase):
         # gpt by default
         pu.make_label('/dev/fake')
         mock_exec_expected_calls = [
-            mock.call('udevadm', 'settle', '--quiet', check_exit_code=[0]),
             mock.call('parted', '-s', '/dev/fake', 'mklabel', 'gpt',
                       check_exit_code=[0, 1])]
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
         mock_rerd.assert_called_once_with('/dev/fake', out='out')
+        mock_udev.assert_called_once_with()
         mock_exec.reset_mock()
         mock_rerd.reset_mock()
+        mock_udev.reset_mock()
 
         # label is set explicitly
         pu.make_label('/dev/fake', label='msdos')
         mock_exec_expected_calls = [
-            mock.call('udevadm', 'settle', '--quiet', check_exit_code=[0]),
             mock.call('parted', '-s', '/dev/fake', 'mklabel', 'msdos',
                       check_exit_code=[0, 1])]
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
+        mock_udev.assert_called_once_with()
         mock_rerd.assert_called_once_with('/dev/fake', out='out')
 
     def test_make_label_wrong_label(self):
@@ -64,9 +66,10 @@ class TestPartitionUtils(unittest2.TestCase):
         self.assertRaises(errors.WrongPartitionLabelError,
                           pu.make_label, '/dev/fake', 'wrong')
 
+    @mock.patch.object(utils, 'udevadm_settle')
     @mock.patch.object(pu, 'reread_partitions')
     @mock.patch.object(utils, 'execute')
-    def test_set_partition_flag(self, mock_exec, mock_rerd):
+    def test_set_partition_flag(self, mock_exec, mock_rerd, mock_udev):
         # should run parted OS command
         # in order to set flag on a partition
         mock_exec.return_value = ('out', '')
@@ -74,20 +77,21 @@ class TestPartitionUtils(unittest2.TestCase):
         # default state is 'on'
         pu.set_partition_flag('/dev/fake', 1, 'boot')
         mock_exec_expected_calls = [
-            mock.call('udevadm', 'settle', '--quiet', check_exit_code=[0]),
             mock.call('parted', '-s', '/dev/fake', 'set', '1', 'boot', 'on',
                       check_exit_code=[0, 1])]
+        mock_udev.assert_called_once_with()
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
         mock_rerd.assert_called_once_with('/dev/fake', out='out')
         mock_exec.reset_mock()
         mock_rerd.reset_mock()
+        mock_udev.reset_mock()
 
         # if state argument is given use it
         pu.set_partition_flag('/dev/fake', 1, 'boot', state='off')
         mock_exec_expected_calls = [
-            mock.call('udevadm', 'settle', '--quiet', check_exit_code=[0]),
             mock.call('parted', '-s', '/dev/fake', 'set', '1', 'boot', 'off',
                       check_exit_code=[0, 1])]
+        mock_udev.assert_called_once_with()
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
         mock_rerd.assert_called_once_with('/dev/fake', out='out')
 
@@ -107,10 +111,11 @@ class TestPartitionUtils(unittest2.TestCase):
                           pu.set_partition_flag,
                           '/dev/fake', 1, 'boot', state='wrong')
 
+    @mock.patch.object(utils, 'udevadm_settle')
     @mock.patch.object(pu, 'reread_partitions')
     @mock.patch.object(pu, 'info')
     @mock.patch.object(utils, 'execute')
-    def test_make_partition(self, mock_exec, mock_info, mock_rerd):
+    def test_make_partition(self, mock_exec, mock_info, mock_rerd, mock_udev):
         # should run parted OS command
         # in order to create new partition
         mock_exec.return_value = ('out', '')
@@ -122,10 +127,10 @@ class TestPartitionUtils(unittest2.TestCase):
         }
         pu.make_partition('/dev/fake', 100, 200, 'primary')
         mock_exec_expected_calls = [
-            mock.call('udevadm', 'settle', '--quiet', check_exit_code=[0]),
             mock.call('parted', '-a', 'optimal', '-s', '/dev/fake', 'unit',
                       'MiB', 'mkpart', 'primary', '100', '200',
                       check_exit_code=[0, 1])]
+        mock_udev.assert_called_once_with()
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
         mock_rerd.assert_called_once_with('/dev/fake', out='out')
 
@@ -165,10 +170,12 @@ class TestPartitionUtils(unittest2.TestCase):
         self.assertEqual(mock_info.call_args_list,
                          [mock.call('/dev/fake')] * 3)
 
+    @mock.patch.object(utils, 'udevadm_settle')
     @mock.patch.object(pu, 'reread_partitions')
     @mock.patch.object(pu, 'info')
     @mock.patch.object(utils, 'execute')
-    def test_remove_partition(self, mock_exec, mock_info, mock_rerd):
+    def test_remove_partition(self, mock_exec, mock_info, mock_rerd,
+                              mock_udev):
         # should run parted OS command
         # in order to remove partition
         mock_exec.return_value = ('out', '')
@@ -192,9 +199,9 @@ class TestPartitionUtils(unittest2.TestCase):
         }
         pu.remove_partition('/dev/fake', 1)
         mock_exec_expected_calls = [
-            mock.call('udevadm', 'settle', '--quiet', check_exit_code=[0]),
             mock.call('parted', '-s', '/dev/fake', 'rm', '1',
                       check_exit_code=[0, 1])]
+        mock_udev.assert_called_once_with()
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
         mock_rerd.assert_called_once_with('/dev/fake', out='out')
 
@@ -224,17 +231,19 @@ class TestPartitionUtils(unittest2.TestCase):
         self.assertRaises(errors.PartitionNotFoundError, pu.remove_partition,
                           '/dev/fake', 3)
 
+    @mock.patch.object(utils, 'udevadm_settle')
     @mock.patch.object(utils, 'execute')
-    def test_set_gpt_type(self, mock_exec):
+    def test_set_gpt_type(self, mock_exec, mock_udev):
         pu.set_gpt_type('dev', 'num', 'type')
         mock_exec_expected_calls = [
-            mock.call('udevadm', 'settle', '--quiet', check_exit_code=[0]),
             mock.call('sgdisk', '--typecode=%s:%s' % ('num', 'type'), 'dev',
                       check_exit_code=[0])]
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
+        mock_udev.assert_called_once_with()
 
+    @mock.patch.object(utils, 'udevadm_settle')
     @mock.patch.object(utils, 'execute')
-    def test_info(self, mock_exec):
+    def test_info(self, mock_exec, mock_udev):
         mock_exec.return_value = [
             'BYT;\n'
             '/dev/fake:476940MiB:scsi:512:4096:msdos:ATA 1BD14;\n'
@@ -261,27 +270,29 @@ class TestPartitionUtils(unittest2.TestCase):
         actual = pu.info('/dev/fake')
         self.assertEqual(expected, actual)
         mock_exec_expected_calls = [
-            mock.call('udevadm', 'settle', '--quiet', check_exit_code=[0]),
             mock.call('parted', '-s', '/dev/fake', '-m', 'unit', 'MiB',
                       'print', 'free', check_exit_code=[0])]
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
+        mock_udev.assert_called_once_with()
 
     @mock.patch.object(utils, 'execute')
     def test_reread_partitions_ok(self, mock_exec):
         pu.reread_partitions('/dev/fake', out='')
         self.assertEqual(mock_exec.call_args_list, [])
 
+    @mock.patch.object(utils, 'udevadm_settle')
     @mock.patch.object(time, 'sleep')
     @mock.patch.object(utils, 'execute')
-    def test_reread_partitions_device_busy(self, mock_exec, mock_sleep):
+    def test_reread_partitions_device_busy(self, mock_exec, mock_sleep,
+                                           mock_udev):
         mock_exec.return_value = ('', '')
         pu.reread_partitions('/dev/fake', out='_Device or resource busy_')
         mock_exec_expected = [
             mock.call('partprobe', '/dev/fake', check_exit_code=[0, 1]),
-            mock.call('udevadm', 'settle', '--quiet', check_exit_code=[0]),
         ]
         self.assertEqual(mock_exec.call_args_list, mock_exec_expected)
         mock_sleep.assert_called_once_with(2)
+        mock_udev.assert_called_once_with()
 
     @mock.patch.object(utils, 'execute')
     def test_reread_partitions_timeout(self, mock_exec):
