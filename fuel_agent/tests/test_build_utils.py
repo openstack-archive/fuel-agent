@@ -17,16 +17,12 @@ import shutil
 import signal
 
 import mock
-from oslo.config import cfg
 import unittest2
 
 from fuel_agent import errors
 from fuel_agent.utils import build as bu
 from fuel_agent.utils import hardware as hu
 from fuel_agent.utils import utils
-
-
-CONF = cfg.CONF
 
 
 class BuildUtilsTestCase(unittest2.TestCase):
@@ -169,7 +165,8 @@ class BuildUtilsTestCase(unittest2.TestCase):
     def test_do_post_inst(self, mock_exec, mock_files, mock_clean, mock_path,
                           mock_open):
         mock_path.join.return_value = 'fake_path'
-        bu.do_post_inst('chroot')
+        bu.do_post_inst('chroot', allow_unsigned_file='fake_unsigned',
+                        force_ipv4_file='fake_force_ipv4')
         file_handle_mock = mock_open.return_value.__enter__.return_value
         file_handle_mock.write.assert_called_once_with('manual\n')
         mock_exec_expected_calls = [
@@ -179,7 +176,9 @@ class BuildUtilsTestCase(unittest2.TestCase):
             mock.call('chroot', 'chroot', 'update-rc.d', 'puppet', 'disable')]
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
         mock_files.assert_called_once_with('chroot', ['usr/sbin/policy-rc.d'])
-        mock_clean.assert_called_once_with('chroot')
+        mock_clean.assert_called_once_with('chroot',
+                                           allow_unsigned_file='fake_unsigned',
+                                           force_ipv4_file='fake_force_ipv4')
         mock_path_join_expected_calls = [
             mock.call('chroot', 'etc/shadow'),
             mock.call('chroot', 'etc/init/mcollective.override')]
@@ -455,18 +454,21 @@ class BuildUtilsTestCase(unittest2.TestCase):
     def test_pre_apt_get(self, mock_path, mock_clean):
         with mock.patch('six.moves.builtins.open', create=True) as mock_open:
             file_handle_mock = mock_open.return_value.__enter__.return_value
-            bu.pre_apt_get('chroot')
+            bu.pre_apt_get('chroot', allow_unsigned_file='fake_unsigned',
+                           force_ipv4_file='fake_force_ipv4')
             expected_calls = [
                 mock.call('APT::Get::AllowUnauthenticated 1;\n'),
                 mock.call('Acquire::ForceIPv4 "true";\n')]
             self.assertEqual(expected_calls,
                              file_handle_mock.write.call_args_list)
-        mock_clean.assert_called_once_with('chroot')
+        mock_clean.assert_called_once_with('chroot',
+                                           allow_unsigned_file='fake_unsigned',
+                                           force_ipv4_file='fake_force_ipv4')
         expected_join_calls = [
             mock.call('chroot', 'etc/apt/apt.conf.d',
-                      CONF.allow_unsigned_file),
+                      'fake_unsigned'),
             mock.call('chroot', 'etc/apt/apt.conf.d',
-                      CONF.force_ipv4_file)]
+                      'fake_force_ipv4')]
         self.assertEqual(expected_join_calls, mock_path.join.call_args_list)
 
     @mock.patch('gzip.open')

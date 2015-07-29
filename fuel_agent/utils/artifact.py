@@ -173,8 +173,10 @@ class ForwardFileStream(Target):
                 self.chunk = None
                 self.position = position
 
-    def read(self, length=CONF.data_chunk_size):
-        # NOTE(kozhukalov): default lenght = 1048576 is not usual behaviour,
+    def read(self, length=None):
+        if length is None:
+            length = CONF.data_chunk_size
+        # NOTE(kozhukalov): default length = 1048576 is not usual behaviour,
         # but that is ok for our use case.
         if self.closed:
             raise ValueError('I/O operation on closed file')

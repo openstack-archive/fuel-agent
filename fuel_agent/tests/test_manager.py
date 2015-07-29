@@ -71,7 +71,7 @@ class TestManager(unittest2.TestCase):
         mock_gu.grub1_cfg.assert_called_once_with(
             kernel_params='fake_kernel_params root=UUID= ',
             initrd='guessed_initrd', kernel='guessed_kernel',
-            chroot='/tmp/target')
+            chroot='/tmp/target', grub_timeout=5)
         mock_gu.grub1_install.assert_called_once_with(
             ['/dev/sda', '/dev/sdb', '/dev/sdc'],
             '/dev/sda3', chroot='/tmp/target')
@@ -100,7 +100,8 @@ class TestManager(unittest2.TestCase):
         self.assertFalse(mock_gu.grub2_install.called)
         mock_gu.grub1_cfg.assert_called_once_with(
             kernel_params='fake_kernel_params root=UUID= ',
-            initrd='initrd_name', kernel='kernel_name', chroot='/tmp/target')
+            initrd='initrd_name', kernel='kernel_name', chroot='/tmp/target',
+            grub_timeout=5)
         mock_gu.grub1_install.assert_called_once_with(
             ['/dev/sda', '/dev/sdb', '/dev/sdc'],
             '/dev/sda3', chroot='/tmp/target')
@@ -166,7 +167,8 @@ class TestManager(unittest2.TestCase):
                           'nomodeset root=UUID=fake_UUID ',
             initrd='guessed_initrd',
             chroot='/tmp/target',
-            kernel='guessed_kernel')
+            kernel='guessed_kernel',
+            grub_timeout=5)
         mock_gu.grub1_install.assert_called_once_with(
             ['/dev/sda', '/dev/sdb', '/dev/sdc'],
             '/dev/sda3', chroot='/tmp/target')
@@ -190,7 +192,7 @@ class TestManager(unittest2.TestCase):
         mock_gu.grub2_cfg.assert_called_once_with(
             kernel_params=' console=ttyS0,9600 console=tty0 rootdelay=90 '
                           'nomodeset root=UUID=fake_UUID ',
-            chroot='/tmp/target')
+            chroot='/tmp/target', grub_timeout=5)
         mock_gu.grub2_install.assert_called_once_with(
             ['/dev/sda', '/dev/sdb', '/dev/sdc'],
             chroot='/tmp/target')
@@ -778,10 +780,14 @@ class TestImageBuild(unittest2.TestCase):
              mock.call('/fake/img-boot.img.gz')],
             mock_os.path.exists.call_args_list)
         self.assertEqual([mock.call(dir=CONF.image_build_dir,
-                                    suffix=CONF.image_build_suffix)] * 2,
+                                    suffix=CONF.image_build_suffix,
+                                    size=CONF.sparse_file_size)] * 2,
                          mock_bu.create_sparse_tmp_file.call_args_list)
-        self.assertEqual([mock.call()] * 2,
-                         mock_bu.get_free_loop_device.call_args_list)
+        self.assertEqual(
+            [mock.call(loop_device_major_number=CONF.loop_device_major_number,
+                       max_loop_devices_count=CONF.max_loop_devices_count),
+             ] * 2,
+            mock_bu.get_free_loop_device.call_args_list)
         self.assertEqual([mock.call('/tmp/img', '/dev/loop0'),
                           mock.call('/tmp/img-boot', '/dev/loop1')],
                          mock_bu.attach_file_to_loop.call_args_list)
@@ -797,9 +803,12 @@ class TestImageBuild(unittest2.TestCase):
         self.assertEqual([mock.call('/tmp/imgdir')] * 2,
                          mock_bu.suppress_services_start.call_args_list)
         mock_bu.run_debootstrap.assert_called_once_with(
-            uri='http://fakeubuntu', suite='trusty', chroot='/tmp/imgdir')
+            uri='http://fakeubuntu', suite='trusty', chroot='/tmp/imgdir',
+            attempts=CONF.fetch_packages_attempts)
         mock_bu.set_apt_get_env.assert_called_once_with()
-        mock_bu.pre_apt_get.assert_called_once_with('/tmp/imgdir')
+        mock_bu.pre_apt_get.assert_called_once_with(
+            '/tmp/imgdir', allow_unsigned_file=CONF.allow_unsigned_file,
+            force_ipv4_file=CONF.force_ipv4_file)
         self.assertEqual([
             mock.call(name='ubuntu',
                       uri='http://fakeubuntu',
@@ -844,8 +853,12 @@ class TestImageBuild(unittest2.TestCase):
             mock_utils.execute.call_args_list)
         mock_fu.mount_bind.assert_called_once_with('/tmp/imgdir', '/proc')
         mock_bu.run_apt_get.assert_called_once_with(
-            '/tmp/imgdir', packages=['fakepackage1', 'fakepackage2'])
-        mock_bu.do_post_inst.assert_called_once_with('/tmp/imgdir')
+            '/tmp/imgdir', packages=['fakepackage1', 'fakepackage2'],
+            attempts=CONF.fetch_packages_attempts)
+        mock_bu.do_post_inst.assert_called_once_with(
+            '/tmp/imgdir', allow_unsigned_file=CONF.allow_unsigned_file,
+            force_ipv4_file=CONF.force_ipv4_file)
+
         signal_calls = mock_bu.stop_chrooted_processes.call_args_list
         self.assertEqual(2 * [mock.call('/tmp/imgdir', signal=signal.SIGTERM),
                               mock.call('/tmp/imgdir', signal=signal.SIGKILL)],
@@ -872,8 +885,10 @@ class TestImageBuild(unittest2.TestCase):
                           mock.call('/tmp/img-boot', 10),
                           mock.call('/fake/img-boot.img.gz', 1)],
                          mock_utils.calculate_md5.call_args_list)
-        self.assertEqual([mock.call('/tmp/img', 'gzip'),
-                          mock.call('/tmp/img-boot', 'gzip')],
+        self.assertEqual([mock.call('/tmp/img', 'gzip',
+                                    chunk_size=CONF.data_chunk_size),
+                          mock.call('/tmp/img-boot', 'gzip',
+                                    chunk_size=CONF.data_chunk_size)],
                          mock_bu.containerize.call_args_list)
         mock_open.assert_called_once_with('/fake/img.yaml', 'w')
         self.assertEqual(
