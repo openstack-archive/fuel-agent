@@ -67,6 +67,7 @@ class PartitionScheme(object):
         mdkwargs = {}
         mdkwargs['name'] = kwargs.get('name') or self.md_next_name()
         mdkwargs['level'] = kwargs.get('level') or 'mirror'
+        mdkwargs['metadata'] = kwargs.get('metadata') or 'default'
         md = MultipleDevice(**mdkwargs)
         self.mds.append(md)
         return md

@@ -159,7 +159,7 @@ localhost.localdomain)
         self.assertEqual(mock_mdclean_expected_calls,
                          mock_mdclean.call_args_list)
         mock_exec.assert_called_once_with(
-            'mdadm', '--create', '--force', '/dev/md0', '-e0.90',
+            'mdadm', '--create', '--force', '/dev/md0', '-e', 'default',
             '--level=mirror',
             '--raid-devices=2', '/dev/fake1', '/dev/fake2',
             check_exit_code=[0])

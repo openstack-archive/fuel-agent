@@ -80,9 +80,13 @@ class Nailgun(BaseDataDriver):
         # has already been added. we need this to
         # get rid of md over all disks for /boot partition.
         self._boot_done = False
+        self._image_meta = self.parse_image_meta()
 
-        self._partition_scheme = self.parse_partition_scheme()
+        self._operating_system = self.parse_operating_system()
         self._grub = self.parse_grub()
+        # parsing partition scheme needs grub and operating system have
+        # been parsed
+        self._partition_scheme = self.parse_partition_scheme()
         self._configdrive_scheme = self.parse_configdrive_scheme()
         # parsing image scheme needs partition scheme has been parsed
         self._image_scheme = self.parse_image_scheme()
@@ -100,8 +104,13 @@ class Nailgun(BaseDataDriver):
         return self._grub
 
     @property
+    def have_grub1_by_default(self):
+        return (isinstance(self.operating_system, objects.Centos) and
+                self.operating_system.major == 6)
+
+    @property
     def operating_system(self):
-        return None
+        return self._operating_system
 
     @property
     def configdrive_scheme(self):
@@ -173,6 +182,49 @@ class Nailgun(BaseDataDriver):
 
     def _num_ceph_osds(self):
         return self._get_partition_count('ceph')
+
+    def get_os_by_image_meta(self, os_release):
+        LOG.debug('--- Getting operating system data by image metadata ---')
+        if os_release:
+            LOG.debug('Looks like %{0} is going to be provisioned'.
+                      format(os_release))
+            try:
+                OS = getattr(objects, os_release['name'])
+                os = OS(repos=None, packages=None, major=os_release['major'],
+                        minor=os_release['minor'])
+                return os
+            except (AttributeError, KeyError):
+                LOG.warning('Cannot guess operating system release '
+                            'from image metadata')
+
+    def get_os_by_profile(self, profile):
+        LOG.debug('--- Getting operating system data by profile ---')
+        if 'centos' in profile:
+            os = objects.Centos(repos=None, packages=None, major=6, minor=5)
+            if '7' in profile:
+                LOG.debug('Looks like CentOS7.0 is going to be provisioned.')
+                os = objects.Centos(repos=None, packages=None, major=7,
+                                    minor=0)
+            else:
+                LOG.debug('Looks like CentOS6.5 is going to be provisioned.')
+            return os
+        elif 'ubuntu' in profile:
+            os = objects.Ubuntu(repos=None, packages=None, major=12, minor=4)
+            if '1404' in profile:
+                LOG.debug('Looks like Ubuntu1404 is going to be provisioned.')
+                os = objects.Ubuntu(repos=None, packages=None, major=14,
+                                    minor=4)
+            else:
+                LOG.debug('Looks like Ubuntu1204 is going to be provisioned.')
+            return os
+        os = objects.OperatingSystem(repos=None, packages=None)
+        return os
+
+    def parse_operating_system(self):
+        LOG.debug('--- Preparing operating system data ---')
+        os_release = self._image_meta.get('os', None)
+        return self.get_os_by_image_meta(os_release) or \
+            self.get_os_by_profile(self.data['profile'].lower())
 
     def parse_partition_scheme(self):
         LOG.debug('--- Preparing partition scheme ---')
@@ -344,10 +396,18 @@ class Nailgun(BaseDataDriver):
                             volume['mount'] not in ('none', '/boot'):
                         LOG.debug('Attaching partition to RAID '
                                   'by its mount point %s' % volume['mount'])
+                        metadata = 'default'
+                        if self.have_grub1_by_default:
+                            metadata = '0.90'
+                        LOG.debug('Going to use MD metadata version {0}. '
+                                  'The version was guessed at the data has '
+                                  'been given about the operating system.'
+                                  .format(metadata))
                         partition_scheme.md_attach_by_mount(
                             device=prt.name, mount=volume['mount'],
                             fs_type=volume.get('file_system', 'xfs'),
-                            fs_label=self._getlabel(volume.get('disk_label')))
+                            fs_label=self._getlabel(volume.get('disk_label')),
+                            metadata=metadata)
 
                     if 'mount' in volume and volume['mount'] == '/boot' and \
                             not self._boot_done:
@@ -469,12 +529,13 @@ class Nailgun(BaseDataDriver):
             LOG.debug('Prefered kernel version is 2.6')
             grub.kernel_regexp = r'^vmlinuz-2\.6.*'
             grub.initrd_regexp = r'^initramfs-2\.6.*'
+        grub.version = 1 if self.have_grub1_by_default else 2
+        LOG.debug('Grub version is %{0}'.format(grub.version))
         return grub
 
-    def parse_image_scheme(self):
-        LOG.debug('--- Preparing image scheme ---')
+    def parse_image_meta(self):
+        LOG.debug('--- Preparing image metadata ---')
         data = self.data
-        image_scheme = objects.ImageScheme()
         # FIXME(agordeev): this piece of code for fetching additional image
         # meta data should be factored out of this particular nailgun driver
         # into more common and absract data getter which should be able to deal
@@ -496,6 +557,13 @@ class Nailgun(BaseDataDriver):
             LOG.exception(e)
             LOG.debug('Failed to fetch/decode image meta data')
             image_meta = {}
+        return image_meta
+
+    def parse_image_scheme(self):
+        LOG.debug('--- Preparing image scheme ---')
+        data = self.data
+        image_meta = self._image_meta
+        image_scheme = objects.ImageScheme()
         # We assume for every file system user may provide a separate
         # file system image. For example if partitioning scheme has
         # /, /boot, /var/lib file systems then we will try to get images
@@ -619,8 +687,8 @@ class NailgunBuildImage(BaseDataDriver):
                 suite=repo['suite'],
                 section=repo['section'],
                 priority=repo['priority']))
-
-        return objects.Ubuntu(repos=repos, packages=packages)
+        os = objects.Ubuntu(repos=repos, packages=packages, major=14, minor=4)
+        return os
 
     def parse_schemes(self):
 

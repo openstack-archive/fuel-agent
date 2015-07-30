@@ -67,6 +67,7 @@ class TestMultipleDevice(unittest2.TestCase):
             'level': 'level',
             'devices': ['device_a', ],
             'spares': ['device_b', ],
+            'metadata': 'default',
             'keep_data': False,
         }
         new_md = objects.MultipleDevice.from_dict(serialized)
