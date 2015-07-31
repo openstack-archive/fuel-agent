@@ -16,24 +16,11 @@ import os
 import re
 import shutil
 
-from oslo.config import cfg
-
 from fuel_agent import errors
 from fuel_agent.openstack.common import log as logging
 from fuel_agent.utils import utils
 
 LOG = logging.getLogger(__name__)
-
-gu_opts = [
-    cfg.IntOpt(
-        'grub_timeout',
-        default=5,
-        help='Timeout in secs for GRUB'
-    ),
-]
-
-CONF = cfg.CONF
-CONF.register_opts(gu_opts)
 
 
 def guess_grub2_conf(chroot=''):
@@ -208,7 +195,7 @@ def grub1_stage1(chroot=''):
 
 
 def grub1_cfg(kernel=None, initrd=None,
-              kernel_params='', chroot='', grub_timeout=CONF.grub_timeout):
+              kernel_params='', chroot='', grub_timeout=5):
 
     if not kernel:
         kernel = guess_kernel(chroot=chroot)
@@ -237,7 +224,7 @@ def grub2_install(install_devices, chroot=''):
         utils.execute(*cmd, run_as_root=True, check_exit_code=[0])
 
 
-def grub2_cfg(kernel_params='', chroot='', grub_timeout=CONF.grub_timeout):
+def grub2_cfg(kernel_params='', chroot='', grub_timeout=5):
     grub_defaults = chroot + guess_grub2_default(chroot=chroot)
     rekerparams = re.compile(r'^.*GRUB_CMDLINE_LINUX=.*')
     retimeout = re.compile(r'^.*GRUB_HIDDEN_TIMEOUT=.*')

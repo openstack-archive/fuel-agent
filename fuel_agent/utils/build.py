@@ -24,8 +24,6 @@ import time
 import six
 import yaml
 
-from oslo.config import cfg
-
 from fuel_agent import errors
 from fuel_agent.openstack.common import log as logging
 from fuel_agent.utils import hardware as hu
@@ -33,51 +31,6 @@ from fuel_agent.utils import utils
 
 LOG = logging.getLogger(__name__)
 
-bu_opts = [
-    cfg.IntOpt(
-        'max_loop_devices_count',
-        default=255,
-        # NOTE(agordeev): up to 256 loop devices could be allocated up to
-        # kernel version 2.6.23, and the limit (from version 2.6.24 onwards)
-        # isn't theoretically present anymore.
-        help='Maximum allowed loop devices count to use'
-    ),
-    cfg.IntOpt(
-        'sparse_file_size',
-        # XXX: Apparently Fuel configures the node root filesystem to span
-        # the whole hard drive. However 2 GB filesystem created with default
-        # options can grow at most to 2 TB (1024x its initial size). This
-        # maximal size can be configured by mke2fs -E resize=NNN option,
-        # however the version of e2fsprogs shipped with CentOS 6.[65] seems
-        # to silently ignore the `resize' option. Therefore make the initial
-        # filesystem a bit bigger so it can grow to 8 TB.
-        default=8192,
-        help='Size of sparse file in MiBs'
-    ),
-    cfg.IntOpt(
-        'loop_device_major_number',
-        default=7,
-        help='System-wide major number for loop device'
-    ),
-    cfg.IntOpt(
-        'fetch_packages_attempts',
-        default=10,
-        help='Maximum allowed debootstrap/apt-get attempts to execute'
-    ),
-    cfg.StrOpt(
-        'allow_unsigned_file',
-        default='allow_unsigned_packages',
-        help='File where to store apt setting for unsigned packages'
-    ),
-    cfg.StrOpt(
-        'force_ipv4_file',
-        default='force_ipv4',
-        help='File where to store apt setting for forcing IPv4 usage'
-    ),
-]
-
-CONF = cfg.CONF
-CONF.register_opts(bu_opts)
 DEFAULT_APT_PATH = {
     'sources_file': 'etc/apt/sources.list',
     'sources_dir': 'etc/apt/sources.list.d',
@@ -91,7 +44,7 @@ ROOT_PASSWORD = '$6$IInX3Cqo$5xytL1VZbZTusOewFnG6couuF0Ia61yS3rbC6P5YbZP2TYcl'\
 
 
 def run_debootstrap(uri, suite, chroot, arch='amd64', eatmydata=False,
-                    attempts=CONF.fetch_packages_attempts):
+                    attempts=10):
     """Builds initial base system.
 
     debootstrap builds initial base system which is capable to run apt-get.
@@ -114,8 +67,7 @@ def set_apt_get_env():
     os.environ['LC_ALL'] = os.environ['LANG'] = os.environ['LANGUAGE'] = 'C'
 
 
-def run_apt_get(chroot, packages, eatmydata=False,
-                attempts=CONF.fetch_packages_attempts):
+def run_apt_get(chroot, packages, eatmydata=False, attempts=10):
     """Runs apt-get install <packages>.
 
     Unlike debootstrap, apt-get has a perfect package dependecies resolver
@@ -178,8 +130,8 @@ def remove_files(chroot, files):
             LOG.debug('Removed file: %s', path)
 
 
-def clean_apt_settings(chroot, allow_unsigned_file=CONF.allow_unsigned_file,
-                       force_ipv4_file=CONF.force_ipv4_file):
+def clean_apt_settings(chroot, allow_unsigned_file='allow_unsigned_packages',
+                       force_ipv4_file='force_ipv4'):
     """Cleans apt settings such as package sources and repo pinning."""
     files = [DEFAULT_APT_PATH['sources_file'],
              DEFAULT_APT_PATH['preferences_file'],
@@ -191,7 +143,8 @@ def clean_apt_settings(chroot, allow_unsigned_file=CONF.allow_unsigned_file,
     clean_dirs(chroot, dirs)
 
 
-def do_post_inst(chroot):
+def do_post_inst(chroot, allow_unsigned_file='allow_unsigned_packages',
+                 force_ipv4_file='force_ipv4'):
     # NOTE(agordeev): set up password for root
     utils.execute('sed', '-i',
                   's%root:[\*,\!]%root:' + ROOT_PASSWORD + '%',
@@ -211,7 +164,8 @@ def do_post_inst(chroot):
     # NOTE(agordeev): remove custom policy-rc.d which is needed to disable
     # execution of post/pre-install package hooks and start of services
     remove_files(chroot, ['usr/sbin/policy-rc.d'])
-    clean_apt_settings(chroot)
+    clean_apt_settings(chroot, allow_unsigned_file=allow_unsigned_file,
+                       force_ipv4_file=force_ipv4_file)
 
 
 def stop_chrooted_processes(chroot, signal=sig.SIGTERM,
@@ -282,9 +236,8 @@ def stop_chrooted_processes(chroot, signal=sig.SIGTERM,
     return True
 
 
-def get_free_loop_device(
-        loop_device_major_number=CONF.loop_device_major_number,
-        max_loop_devices_count=CONF.max_loop_devices_count):
+def get_free_loop_device(loop_device_major_number=7,
+                         max_loop_devices_count=255):
     """Returns the name of free loop device.
 
     It should return the name of free loop device or raise an exception.
@@ -305,7 +258,7 @@ def get_free_loop_device(
     raise errors.NoFreeLoopDevices('Free loop device not found')
 
 
-def create_sparse_tmp_file(dir, suffix, size=CONF.sparse_file_size):
+def create_sparse_tmp_file(dir, suffix, size=8192):
     """Creates sparse file.
 
     Creates file which consumes disk space more efficiently when the file
@@ -472,10 +425,11 @@ def add_apt_preference(name, priority, suite, section, chroot, uri):
             f.write('Pin-Priority: {priority}\n'.format(priority=priority))
 
 
-def pre_apt_get(chroot, allow_unsigned_file=CONF.allow_unsigned_file,
-                force_ipv4_file=CONF.force_ipv4_file):
+def pre_apt_get(chroot, allow_unsigned_file='allow_unsigned_packages',
+                force_ipv4_file='force_ipv4'):
     """It must be called prior run_apt_get."""
-    clean_apt_settings(chroot)
+    clean_apt_settings(chroot, allow_unsigned_file=allow_unsigned_file,
+                       force_ipv4_file=force_ipv4_file)
     # NOTE(agordeev): allow to install packages without gpg digest
     with open(os.path.join(chroot, DEFAULT_APT_PATH['conf_dir'],
                            allow_unsigned_file), 'w') as f:
@@ -485,7 +439,7 @@ def pre_apt_get(chroot, allow_unsigned_file=CONF.allow_unsigned_file,
         f.write('Acquire::ForceIPv4 "true";\n')
 
 
-def containerize(filename, container, chunk_size=CONF.data_chunk_size):
+def containerize(filename, container, chunk_size=1048576):
     if container == 'gzip':
         output_file = filename + '.gz'
         with open(filename, 'rb') as f:

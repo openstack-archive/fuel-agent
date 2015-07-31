@@ -72,6 +72,51 @@ opts = [
         default='.fuel-agent-image',
         help='Suffix which is used while creating temporary files',
     ),
+    cfg.IntOpt(
+        'grub_timeout',
+        default=5,
+        help='Timeout in secs for GRUB'
+    ),
+    cfg.IntOpt(
+        'max_loop_devices_count',
+        default=255,
+        # NOTE(agordeev): up to 256 loop devices could be allocated up to
+        # kernel version 2.6.23, and the limit (from version 2.6.24 onwards)
+        # isn't theoretically present anymore.
+        help='Maximum allowed loop devices count to use'
+    ),
+    cfg.IntOpt(
+        'sparse_file_size',
+        # XXX: Apparently Fuel configures the node root filesystem to span
+        # the whole hard drive. However 2 GB filesystem created with default
+        # options can grow at most to 2 TB (1024x its initial size). This
+        # maximal size can be configured by mke2fs -E resize=NNN option,
+        # however the version of e2fsprogs shipped with CentOS 6.[65] seems
+        # to silently ignore the `resize' option. Therefore make the initial
+        # filesystem a bit bigger so it can grow to 8 TB.
+        default=8192,
+        help='Size of sparse file in MiBs'
+    ),
+    cfg.IntOpt(
+        'loop_device_major_number',
+        default=7,
+        help='System-wide major number for loop device'
+    ),
+    cfg.IntOpt(
+        'fetch_packages_attempts',
+        default=10,
+        help='Maximum allowed debootstrap/apt-get attempts to execute'
+    ),
+    cfg.StrOpt(
+        'allow_unsigned_file',
+        default='allow_unsigned_packages',
+        help='File where to store apt setting for unsigned packages'
+    ),
+    cfg.StrOpt(
+        'force_ipv4_file',
+        default='force_ipv4',
+        help='File where to store apt setting for forcing IPv4 usage'
+    ),
 ]
 
 cli_opts = [
@@ -381,12 +426,14 @@ class Manager(object):
 
         if grub.version == 1:
             gu.grub1_cfg(kernel=kernel, initrd=initrd,
-                         kernel_params=grub.kernel_params, chroot=chroot)
+                         kernel_params=grub.kernel_params, chroot=chroot,
+                         grub_timeout=CONF.grub_timeout)
             gu.grub1_install(install_devices, boot_device, chroot=chroot)
         else:
             # TODO(kozhukalov): implement which kernel to use by default
             # Currently only grub1_cfg accepts kernel and initrd parameters.
-            gu.grub2_cfg(kernel_params=grub.kernel_params, chroot=chroot)
+            gu.grub2_cfg(kernel_params=grub.kernel_params, chroot=chroot,
+                         grub_timeout=CONF.grub_timeout)
             gu.grub2_install(install_devices, chroot=chroot)
 
         # FIXME(agordeev) There's no convenient way to perfrom NIC remapping in
@@ -502,7 +549,8 @@ class Manager(object):
                 LOG.debug('Creating temporary sparsed file for the '
                           'image: %s', image.uri)
                 img_tmp_file = bu.create_sparse_tmp_file(
-                    dir=CONF.image_build_dir, suffix=CONF.image_build_suffix)
+                    dir=CONF.image_build_dir, suffix=CONF.image_build_suffix,
+                    size=CONF.sparse_file_size)
                 LOG.debug('Temporary file: %s', img_tmp_file)
 
                 # we need to remember those files
@@ -510,7 +558,9 @@ class Manager(object):
                 image.img_tmp_file = img_tmp_file
 
                 LOG.debug('Looking for a free loop device')
-                image.target_device.name = bu.get_free_loop_device()
+                image.target_device.name = bu.get_free_loop_device(
+                    loop_device_major_number=CONF.loop_device_major_number,
+                    max_loop_devices_count=CONF.max_loop_devices_count)
 
                 LOG.debug('Attaching temporary image file to free loop device')
                 bu.attach_file_to_loop(img_tmp_file, str(image.target_device))
@@ -547,14 +597,17 @@ class Manager(object):
             LOG.debug('Preventing services from being get started')
             bu.suppress_services_start(chroot)
             LOG.debug('Installing base operating system using debootstrap')
-            bu.run_debootstrap(uri=uri, suite=suite, chroot=chroot)
+            bu.run_debootstrap(uri=uri, suite=suite, chroot=chroot,
+                               attempts=CONF.fetch_packages_attempts)
 
             # APT-GET
             LOG.debug('Configuring apt inside chroot')
             LOG.debug('Setting environment variables')
             bu.set_apt_get_env()
             LOG.debug('Allowing unauthenticated repos')
-            bu.pre_apt_get(chroot)
+            bu.pre_apt_get(chroot,
+                           allow_unsigned_file=CONF.allow_unsigned_file,
+                           force_ipv4_file=CONF.force_ipv4_file)
 
             for repo in self.driver.operating_system.repos:
                 LOG.debug('Adding repository source: name={name}, uri={uri},'
@@ -600,10 +653,13 @@ class Manager(object):
 
             LOG.debug('Installing packages using apt-get: %s',
                       ' '.join(packages))
-            bu.run_apt_get(chroot, packages=packages)
+            bu.run_apt_get(chroot, packages=packages,
+                           attempts=CONF.fetch_packages_attempts)
 
             LOG.debug('Post-install OS configuration')
-            bu.do_post_inst(chroot)
+            bu.do_post_inst(chroot,
+                            allow_unsigned_file=CONF.allow_unsigned_file,
+                            force_ipv4_file=CONF.force_ipv4_file)
 
             LOG.debug('Making sure there are no running processes '
                       'inside chroot before trying to umount chroot')
@@ -644,7 +700,8 @@ class Manager(object):
                 LOG.debug('Containerizing temporary image file: %s',
                           image.img_tmp_file)
                 img_tmp_containerized = bu.containerize(
-                    image.img_tmp_file, image.container)
+                    image.img_tmp_file, image.container,
+                    chunk_size=CONF.data_chunk_size)
                 img_containerized = image.uri.split('file://', 1)[1]
 
                 # NOTE(kozhukalov): implement abstract publisher
