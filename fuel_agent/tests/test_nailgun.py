@@ -942,6 +942,15 @@ class TestNailgunMockedMeta(unittest2.TestCase):
             ],
             cd_scheme.common.ks_repos)
 
+    def test_configdrive_scheme_set_cloud_init_templates(self, mock_lbd,
+                                                         mock_image_meta):
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        expected_templates = 'fake_templates'
+        data['ks_meta']['cloud_init_templates'] = expected_templates
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
+        cd_scheme = nailgun.Nailgun(data).configdrive_scheme
+        self.assertEqual(expected_templates, cd_scheme.templates)
+
     def test_partition_scheme(self, mock_lbd, mock_image_meta):
         mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
         drv = nailgun.Nailgun(PROVISION_SAMPLE_DATA)

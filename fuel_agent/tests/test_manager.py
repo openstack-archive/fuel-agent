@@ -444,10 +444,10 @@ class TestManager(unittest2.TestCase):
                        'boothook.jinja2'],
                       mock.ANY, '%s/%s' % (CONF.tmp_path, 'boothook.txt')),
             mock.call(CONF.nc_template_path,
-                      ['meta-data_pro_fi-le.jinja2',
-                       'meta-data_pro.jinja2',
-                       'meta-data_pro_fi.jinja2',
-                       'meta-data.jinja2'],
+                      ['meta_data_pro_fi-le.jinja2',
+                       'meta_data_pro.jinja2',
+                       'meta_data_pro_fi.jinja2',
+                       'meta_data.jinja2'],
                       mock.ANY, '%s/%s' % (CONF.tmp_path, 'meta-data'))]
         self.assertEqual(mock_u_ras_expected_calls, mock_u_ras.call_args_list)
 

@@ -273,7 +273,7 @@ class Manager(object):
         )
         utils.render_and_save(
             tmpl_dir,
-            self.driver.configdrive_scheme.template_names('meta-data'),
+            self.driver.configdrive_scheme.template_names('meta_data'),
             self.driver.configdrive_scheme.template_data(),
             md_output_path
         )

@@ -25,10 +25,25 @@ class TestConfigDriveScheme(unittest2.TestCase):
         super(TestConfigDriveScheme, self).setUp()
         self.cd_scheme = configdrive.ConfigDriveScheme()
 
+    def test_templates_default(self):
+        self.assertEqual({}, self.cd_scheme.templates)
+
+    def test_set_cloud_init_templates(self):
+        cloud_init_templates = {
+            'boothook': 'boothook.jinja2',
+            'cloud_config': 'cloud_config.jinja2',
+            'meta-data': 'meta-data.jinja2',
+        }
+        self.cd_scheme.set_cloud_init_templates(cloud_init_templates)
+        self.assertEqual(cloud_init_templates, self.cd_scheme.templates)
+
     def test_template_names(self):
+        self.cd_scheme.set_cloud_init_templates(
+            {'what': 'what_fuel_1.2.3_os.jinja2'})
         self.cd_scheme._profile = 'pro_fi-le'
         actual = self.cd_scheme.template_names('what')
         expected = [
+            'what_fuel_1.2.3_os.jinja2',
             'what_pro_fi-le.jinja2',
             'what_pro.jinja2',
             'what_pro_fi.jinja2',
