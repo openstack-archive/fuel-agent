@@ -26,6 +26,10 @@ def make_fs(fs_type, fs_options, fs_label, dev):
     cmd_name = 'mkswap'
     if fs_type != 'swap':
         cmd_name = 'mkfs.%s' % fs_type
+    if fs_type == 'xfs':
+        # NOTE(agordeev): force xfs creation.
+        # Othwerwise, it will fail to proceed if filesystem exists.
+        fs_options += ' -f '
     cmd_line.append(cmd_name)
     for opt in (fs_options, fs_label):
         cmd_line.extend([s for s in opt.split(' ') if s])

@@ -144,8 +144,9 @@ class Manager(object):
         self.driver = utils.get_driver(CONF.data_driver)(data)
 
     def do_clean_filesystems(self):
-        # All fs without keep_data flag and without image should be cleaned,
-        # mkfs will clean file table and such flags as --force are not needed
+        # NOTE(agordeev): it turns out that only mkfs.xfs needs '-f' flag in
+        # order to force recreation of filesystem.
+        # This option will be added to mkfs.xfs call explicitly in fs utils.
         # TODO(asvechnikov): need to refactor processing keep_flag logic when
         # data model will become flat
         for fs in self.driver.partition_scheme.fss:
