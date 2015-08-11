@@ -612,6 +612,7 @@ class NailgunBuildImage(BaseDataDriver):
         "debconf-utils",
         "gdisk",
         "grub-pc",
+        "i40e-dkms",
         "linux-firmware",
         "linux-firmware-nonfree",
         "linux-headers-generic-lts-trusty",
