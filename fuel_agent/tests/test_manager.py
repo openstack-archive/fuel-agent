@@ -872,6 +872,7 @@ class TestImageBuild(unittest2.TestCase):
             mock.call('tune2fs', '-O', 'has_journal', '/dev/loop0')],
             mock_utils.execute.call_args_list)
         mock_fu.mount_bind.assert_called_once_with('/tmp/imgdir', '/proc')
+        mock_bu.populate_basic_dev.assert_called_once_with('/tmp/imgdir')
         mock_bu.run_apt_get.assert_called_once_with(
             '/tmp/imgdir', packages=['fakepackage1', 'fakepackage2'],
             attempts=CONF.fetch_packages_attempts)

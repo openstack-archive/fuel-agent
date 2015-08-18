@@ -258,6 +258,14 @@ def get_free_loop_device(loop_device_major_number=7,
     raise errors.NoFreeLoopDevices('Free loop device not found')
 
 
+def populate_basic_dev(chroot):
+    """Populates /dev with basic files, links, device nodes."""
+    # prevent failures related with /dev/fd/62
+    utils.execute('chroot', chroot, 'rm', '-fr', '/dev/fd')
+    utils.execute('chroot', chroot,
+                  'ln', '-s', '/proc/self/fd', '/dev/fd')
+
+
 def create_sparse_tmp_file(dir, suffix, size=8192):
     """Creates sparse file.
 

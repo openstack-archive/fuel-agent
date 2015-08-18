@@ -471,6 +471,16 @@ class BuildUtilsTestCase(unittest2.TestCase):
                       'fake_force_ipv4')]
         self.assertEqual(expected_join_calls, mock_path.join.call_args_list)
 
+    @mock.patch.object(bu.utils, 'execute')
+    def test_populate_basic_dev(self, mock_execute):
+        bu.populate_basic_dev('fake_chroot')
+        expected_execute_calls = [
+            mock.call('chroot', 'fake_chroot', 'rm', '-fr', '/dev/fd'),
+            mock.call('chroot', 'fake_chroot', 'ln', '-s', '/proc/self/fd',
+                      '/dev/fd'),
+        ]
+        self.assertEqual(expected_execute_calls, mock_execute.call_args_list)
+
     @mock.patch('gzip.open')
     @mock.patch.object(os, 'remove')
     def test_containerize_gzip(self, mock_remove, mock_gzip):

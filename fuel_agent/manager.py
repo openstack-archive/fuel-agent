@@ -652,6 +652,8 @@ class Manager(object):
             utils.makedirs_if_not_exists(proc_path)
             fu.mount_bind(chroot, '/proc')
 
+            bu.populate_basic_dev(chroot)
+
             LOG.debug('Installing packages using apt-get: %s',
                       ' '.join(packages))
             bu.run_apt_get(chroot, packages=packages,
