@@ -199,10 +199,13 @@ supports-register-dump: yes
                 mock_file.read.return_value = 'running\n'
             elif arg == '/sys/block/fake/device/timeout':
                 mock_file.read.return_value = '30\n'
+            elif arg == '/sys/block/fake/device/vendor':
+                mock_file.read.return_value = 'VENDORNAME  \n'
             mock_with.__enter__.return_value = mock_file
             return mock_with
         mock_open.side_effect = with_side_effect
-        expected = {'removable': '0', 'state': 'running', 'timeout': '30'}
+        expected = {'removable': '0', 'state': 'running', 'timeout': '30',
+                    'vendor': 'VENDORNAME'}
         self.assertEqual(expected, hu.extrareport('/dev/fake'))
 
     @mock.patch('six.moves.builtins.open')
@@ -391,18 +394,18 @@ E: UDEV_LOG=3""", '')
                                       '/dev/wrong_vendor_id',
                                       '/dev/right_vendor_id']
         mock_isdisk.return_value = True
-        mock_ureport.side_effect = [
-            {},
-            {'ID_VENDOR': 'Cisco'},
-            {'ID_VENDOR': 'IBM'},
+        mock_ureport.return_value = {}
+        mock_ereport.side_effect = [
+            {'removable': '1'},
+            {'removable': '1', 'vendor': 'Cisco'},
+            {'removable': '1', 'vendor': 'IBM'},
         ]
-        mock_ereport.return_value = {'removable': '1'}
         mock_breport.return_value = {'key1': 'value1'}
         expected = [{
             'device': '/dev/right_vendor_id',
-            'uspec': {'ID_VENDOR': 'IBM'},
+            'uspec': {},
             'bspec': {'key1': 'value1'},
-            'espec': {'removable': '1'}
+            'espec': {'removable': '1', 'vendor': 'IBM'},
         }]
         self.assertEqual(hu.list_block_devices(), expected)
         self.assertEqual(

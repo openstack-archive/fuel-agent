@@ -234,7 +234,7 @@ def extrareport(dev):
     except Exception:
         pass
 
-    for key in ('state', 'timeout'):
+    for key in ('state', 'timeout', 'vendor'):
         try:
             with open('/sys/block/{0}/device/{1}'.format(name, key)) as file:
                 spec[key] = file.read().strip()
@@ -295,7 +295,7 @@ def list_block_devices(disks=True):
         # inserted into removable device.
         # Accept only devices from REMOVABLE_VENDORS list
         if (espec.get('removable') == '1' and
-                uspec.get('ID_VENDOR') not in REMOVABLE_VENDORS):
+                espec.get('vendor') not in REMOVABLE_VENDORS):
             continue
         bspec = blockdevreport(device)
 
