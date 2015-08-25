@@ -15,6 +15,7 @@
 import mock
 import unittest2
 
+from fuel_agent import errors
 from fuel_agent.utils import hardware as hu
 from fuel_agent.utils import utils
 
@@ -387,38 +388,33 @@ E: UDEV_LOG=3""", '')
     @mock.patch.object(hu, 'extrareport')
     @mock.patch.object(hu, 'blockdevreport')
     @mock.patch.object(hu, 'udevreport')
-    def test_list_block_devices_removable_vendors(self, mock_ureport,
+    def test_list_block_devices_skip_block_device(self, mock_ureport,
                                                   mock_breport, mock_ereport,
                                                   mock_isdisk, mock_get_devs):
-        mock_get_devs.return_value = ['/dev/no_vendor_id',
-                                      '/dev/wrong_vendor_id',
-                                      '/dev/right_vendor_id']
+        mock_get_devs.return_value = ['/dev/disk',
+                                      '/dev/wrong_disk_skipped',
+                                      '/dev/wrong_disk_skipped_too']
         mock_isdisk.return_value = True
         mock_ureport.return_value = {}
         mock_ereport.side_effect = [
             {'removable': '1'},
-            {'removable': '1', 'vendor': 'Cisco'},
-            {'removable': '1', 'vendor': 'IBM'},
+            errors.ProcessExecutionError,
+            KeyError,
         ]
         mock_breport.return_value = {'key1': 'value1'}
         expected = [{
-            'device': '/dev/right_vendor_id',
+            'device': '/dev/disk',
             'uspec': {},
             'bspec': {'key1': 'value1'},
-            'espec': {'removable': '1', 'vendor': 'IBM'},
+            'espec': {'removable': '1'},
         }]
         self.assertEqual(hu.list_block_devices(), expected)
-        self.assertEqual(
-            mock_ureport.call_args_list,
-            [mock.call('/dev/no_vendor_id'),
-             mock.call('/dev/wrong_vendor_id'),
-             mock.call('/dev/right_vendor_id')])
-        mock_breport.assert_called_once_with('/dev/right_vendor_id')
-        self.assertEqual(
-            mock_ereport.call_args_list,
-            [mock.call('/dev/no_vendor_id'),
-             mock.call('/dev/wrong_vendor_id'),
-             mock.call('/dev/right_vendor_id')])
+        expected_calls = [mock.call('/dev/disk'),
+                          mock.call('/dev/wrong_disk_skipped'),
+                          mock.call('/dev/wrong_disk_skipped_too')]
+        self.assertEqual(expected_calls, mock_ureport.call_args_list)
+        mock_breport.assert_called_once_with('/dev/disk')
+        self.assertEqual(expected_calls, mock_ereport.call_args_list)
 
     def test_match_device_devlinks(self):
         # should return true if at least one by-id link from first uspec

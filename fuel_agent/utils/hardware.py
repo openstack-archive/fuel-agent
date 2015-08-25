@@ -14,8 +14,12 @@
 
 import os
 
+from fuel_agent import errors
+from fuel_agent.openstack.common import log as logging
 from fuel_agent.utils import utils
 
+
+LOG = logging.getLogger(__name__)
 
 # Please take a look at the linux kernel documentation
 # https://github.com/torvalds/linux/blob/master/Documentation/devices.txt.
@@ -40,9 +44,6 @@ VALID_MAJORS = (3, 8, 65, 66, 67, 68, 69, 70, 71, 104, 105, 106, 107, 108, 109,
 UDEV_PROPERTIES = set(['MAJOR', 'MINOR', 'DEVNAME', 'DEVTYPE', 'DEVPATH',
                        'ID_BUS', 'ID_MODEL', 'ID_SERIAL_SHORT', 'ID_WWN',
                        'ID_CDROM', 'ID_VENDOR'])
-REMOVABLE_VENDORS = [
-    "Adaptec", "IBM", "ServeRA",
-]
 
 # more details about types you can find in dmidecode's manual
 SMBIOS_TYPES = {'bios': '0',
@@ -289,17 +290,17 @@ def list_block_devices(disks=True):
     # find all block devices recognized by kernel.
     devs = get_block_devices_from_udev_db()
     for device in devs:
-        uspec = udevreport(device)
-        espec = extrareport(device)
-        # NOTE(agordeev): blockdevreport will fail if there's no medium
-        # inserted into removable device.
-        # Accept only devices from REMOVABLE_VENDORS list
-        if (espec.get('removable') == '1' and
-                espec.get('vendor') not in REMOVABLE_VENDORS):
+        try:
+            uspec = udevreport(device)
+            espec = extrareport(device)
+            bspec = blockdevreport(device)
+        except (KeyError, ValueError, TypeError,
+                errors.ProcessExecutionError) as e:
+            LOG.warning('Skipping block device %s. '
+                        'Failed to get all information about the device: %s',
+                        device, e)
             continue
-        bspec = blockdevreport(device)
-
-        # if device is not disk,skip it
+        # if device is not disk, skip it
         if disks and not is_disk(device, bspec=bspec, uspec=uspec):
             continue
 
