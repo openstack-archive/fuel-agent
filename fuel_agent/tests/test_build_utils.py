@@ -59,6 +59,8 @@ class BuildUtilsTestCase(unittest2.TestCase):
         mock_exec_expected_calls = [
             mock.call('chroot', 'chroot', 'apt-get', '-y', 'update',
                       attempts=2),
+            mock.call('chroot', 'chroot', 'apt-get', '-y', 'dist-upgrade',
+                      attempts=2),
             mock.call('chroot', 'chroot', 'apt-get', '-y', 'install',
                       'package1 package2', attempts=2)]
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
@@ -69,6 +71,8 @@ class BuildUtilsTestCase(unittest2.TestCase):
                        attempts=2)
         mock_exec_expected_calls = [
             mock.call('chroot', 'chroot', 'apt-get', '-y', 'update',
+                      attempts=2),
+            mock.call('chroot', 'chroot', 'apt-get', '-y', 'dist-upgrade',
                       attempts=2),
             mock.call('chroot', 'chroot', 'eatmydata', 'apt-get', '-y',
                       'install', 'package1 package2', attempts=2)]
