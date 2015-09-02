@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import hashlib
 import locale
 import math
@@ -76,7 +77,7 @@ def execute(*cmd, **kwargs):
     command = ' '.join(cmd)
     LOG.debug('Trying to execute command: %s', command)
     commands = [c.strip() for c in re.split(ur'\|', command)]
-    env = os.environ
+    env = kwargs.pop('env_variables', copy.deepcopy(os.environ))
     env['PATH'] = '/bin:/usr/bin:/sbin:/usr/sbin'
     env['LC_ALL'] = env['LANG'] = env['LANGUAGE'] = kwargs.pop('language', 'C')
     attempts = kwargs.pop('attempts', 1)
