@@ -119,7 +119,7 @@ class TestManager(unittest2.TestCase):
                                        mock_utils, mock_gu, mock_open,
                                        mock_grub):
         def _fake_uuid(*args, **kwargs):
-            if args[5] == '/dev/mapper/os-root':
+            if len(args) >= 6 and args[5] == '/dev/mapper/os-root':
                 return ('FAKE_ROOTFS_UUID', None)
             else:
                 return ('FAKE_UUID', None)
