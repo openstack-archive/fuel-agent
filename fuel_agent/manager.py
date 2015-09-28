@@ -26,6 +26,7 @@ from fuel_agent.utils import artifact as au
 from fuel_agent.utils import build as bu
 from fuel_agent.utils import fs as fu
 from fuel_agent.utils import grub as gu
+from fuel_agent.utils import hardware as hw
 from fuel_agent.utils import lvm as lu
 from fuel_agent.utils import md as mu
 from fuel_agent.utils import partition as pu
@@ -322,6 +323,17 @@ class Manager(object):
                 processing.append(au.GunzipStream)
 
             LOG.debug('Appending TARGET processor: %s' % image.target_device)
+
+            error = None
+            if not os.path.exists(image.target_device):
+                error = "TARGET processor '{0}' does not exist."
+            elif not hw.is_block_device(image.target_device):
+                error = "TARGET processor '{0}' is not a block device."
+            if error:
+                error = error.format(image.target_device)
+                LOG.error(error)
+                raise errors.WrongDeviceError(error)
+
             processing.append(image.target_device)
 
             LOG.debug('Launching image processing chain')
