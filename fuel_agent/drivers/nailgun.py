@@ -186,7 +186,7 @@ class Nailgun(BaseDataDriver):
     def get_os_by_image_meta(self, os_release):
         LOG.debug('--- Getting operating system data by image metadata ---')
         if os_release:
-            LOG.debug('Looks like %{0} is going to be provisioned'.
+            LOG.debug('Looks like {0} is going to be provisioned'.
                       format(os_release))
             try:
                 OS = getattr(objects, os_release['name'])
@@ -530,7 +530,7 @@ class Nailgun(BaseDataDriver):
             grub.kernel_regexp = r'^vmlinuz-2\.6.*'
             grub.initrd_regexp = r'^initramfs-2\.6.*'
         grub.version = 1 if self.have_grub1_by_default else 2
-        LOG.debug('Grub version is %{0}'.format(grub.version))
+        LOG.debug('Grub version is {0}'.format(grub.version))
         return grub
 
     def parse_image_meta(self):
