@@ -1,3 +1,9 @@
+fuel-agent (7.0+git20150905-1) unstable; urgency=low
+
+  * Add bootstrap ironic config files
+
+ -- Vasyl Saienko <vsaienko@mirantis.com>  Mon, 05 Oct 2015 10:21:41 +0200
+
 fuel-agent (7.0+git20150720-1) unstable; urgency=low
 
   * Catch up the upstream.

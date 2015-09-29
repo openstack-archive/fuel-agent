@@ -18,6 +18,13 @@ override_dh_clean:
 
 #       set -e && for i in $(PYTHONS) $(PYTHON3S) ; do \
 
+override_dh_install:
+	set -e ; for pyvers in $(PYTHONS); do \
+		python$$pyvers setup.py install --install-layout=deb \
+			--root $(CURDIR)/debian/fuel-agent; \
+	done
+	dh_install --remaining-packages
+
 override_dh_auto_test:
 ifeq (,$(findstring nocheck, $(DEB_BUILD_OPTIONS)))
 	echo "===> Running tests"

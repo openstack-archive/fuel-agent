@@ -65,3 +65,8 @@ Depends: bzip2,
 Description: fuel image based provisioning agent
  Fuel agent executes provisioning tasks on the discovery nodes
  .
+
+Package: ironic-fa-bootstrap-configs
+Architecture: all
+Section: python
+Description: Ironic bootstrap config files
