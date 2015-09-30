@@ -1,3 +1,9 @@
+fuel-agent (7.0+git20150905-2) unstable; urgency=low
+
+  * Add fuel agent ironic driver
+
+ -- Vasyl Saienko <vsaienko@mirantis.com>  Mon, 05 Oct 2015 11:21:41 +0200
+
 fuel-agent (7.0+git20150905-1) unstable; urgency=low
 
   * Add bootstrap ironic config files
