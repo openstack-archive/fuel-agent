@@ -515,6 +515,8 @@ class Nailgun(BaseDataDriver):
 
         LOG.debug('Setting configdrive profile %s' % data['profile'])
         configdrive_scheme.set_profile(profile=data['profile'])
+        configdrive_scheme.set_cloud_init_templates(
+            templates=data['ks_meta'].get('cloud_init_templates', {}))
         return configdrive_scheme
 
     def parse_grub(self):
