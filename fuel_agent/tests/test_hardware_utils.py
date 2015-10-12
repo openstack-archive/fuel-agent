@@ -471,3 +471,11 @@ E: UDEV_LOG=3""", '')
         uspec1 = {'ID_WWN': 'fakewwn1', 'DEVTYPE': 'disk'}
         uspec2 = {'ID_WWN': 'fakewwn1', 'DEVTYPE': 'partition'}
         self.assertFalse(hu.match_device(uspec1, uspec2))
+
+    @mock.patch.object(hu.os, 'stat', autospec=True)
+    @mock.patch.object(hu.stat, 'S_ISBLK')
+    def test_is_block_device(self, mock_isblk, mock_os_stat):
+        filepath = mock.sentinel
+        hu.is_block_device(filepath)
+        mock_os_stat.assert_called_once_with(filepath)
+        self.assertTrue(mock_isblk.called)
