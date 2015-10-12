@@ -24,7 +24,7 @@ import subprocess
 import time
 
 import jinja2
-from oslo.config import cfg
+from oslo_config import cfg
 import requests
 import stevedore.driver
 import urllib3

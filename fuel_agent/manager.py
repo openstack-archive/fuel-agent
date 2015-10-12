@@ -18,7 +18,7 @@ import signal
 import tempfile
 import yaml
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 from fuel_agent import errors
 from fuel_agent.openstack.common import log as logging
