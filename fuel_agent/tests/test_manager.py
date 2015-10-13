@@ -17,7 +17,7 @@ import os
 import signal
 
 import mock
-from oslo.config import cfg
+from oslo_config import cfg
 import unittest2
 
 from fuel_agent.drivers import nailgun

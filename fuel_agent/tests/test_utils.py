@@ -16,7 +16,7 @@
 import socket
 
 import mock
-from oslo.config import cfg
+from oslo_config import cfg
 import requests
 import stevedore
 import unittest2
