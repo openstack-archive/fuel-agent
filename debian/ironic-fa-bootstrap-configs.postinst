@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+    chmod 755 /usr/share/ironic-fa-bootstrap-configs/usr/bin/configure-remote-logging.sh
+exit 0
