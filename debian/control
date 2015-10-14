@@ -70,3 +70,8 @@ Package: ironic-fa-bootstrap-configs
 Architecture: all
 Section: python
 Description: Ironic bootstrap config files
+
+Package: ironic-fa-deploy
+Architecture: all
+Section: python
+Description: Ironic-fa-deploy package

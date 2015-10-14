@@ -63,11 +63,22 @@ Group:        Development/Libraries
 %description -n  ironic-fa-bootstrap-configs
 Ironic bootstrap config files with Fuel Agent
 
+%package -n      ironic-fa-deploy
+Summary:         Ironic Fuel Agent driver
+Group:           Development/Libraries
+
+%description -n  ironic-fa-deploy
+Ironic-fa-deploy package
+
 %prep
 %setup -cq -n %{name}-%{version}
 
 %build
 cd %{_builddir}/%{name}-%{version} && python setup.py build
+
+#building ironic-fa-deploy
+cd %{_builddir}/%{name}-%{version}/contrib/ironic/ironic-fa-deploy/  && PBR_VERSION=%{version} python setup.py build
+
 
 %install
 cd %{_builddir}/%{name}-%{version} && python setup.py install --single-version-externally-managed -O1 --root=$RPM_BUILD_ROOT --record=%{_builddir}/%{name}-%{version}/INSTALLED_FILES
@@ -81,6 +92,10 @@ install -p -D -m 644 %{_builddir}/%{name}-%{version}/cloud-init-templates/* %{bu
 install -d -m 755 %{buildroot}%{_datadir}/ironic-fa-bootstrap-configs/
 cp -a %{_builddir}/%{name}-%{version}/contrib/ironic/bootstrap-files/* %{buildroot}%{_datadir}/ironic-fa-bootstrap-configs/
 
+#Install ironic-fa-deploy files
+cd %{_builddir}/%{name}-%{version}/contrib/ironic/ironic-fa-deploy/ && PBR_VERSION=%{version} python setup.py install --single-version-externally-managed -O1 --root=$RPM_BUILD_ROOT --record=%{_builddir}/%{name}-%{version}/contrib/ironic/ironic-fa-deploy/INSTALLED_FILES
+install -d -m 755 %{buildroot}%{_sysconfdir}/ironic-fa-deploy
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -92,3 +107,6 @@ rm -rf $RPM_BUILD_ROOT
 %files -n ironic-fa-bootstrap-configs
 %attr(0644,root,root) %config(noreplace) %{_datadir}/ironic-fa-bootstrap-configs/*
 %attr(0755,root,root) %config(noreplace) %{_datadir}/ironic-fa-bootstrap-configs/usr/bin/configure-remote-logging.sh
+
+%files -n ironic-fa-deploy -f %{_builddir}/%{name}-%{version}/contrib/ironic/ironic-fa-deploy/INSTALLED_FILES
+%defattr(-,root,root)
