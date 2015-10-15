@@ -1,3 +1,9 @@
+fuel-agent (8.0-1) unstable; urgency=low
+
+  * Bump version to 8.0
+
+ -- Sergey Kulanov <skulanov@mirantis.com>  Tue, 06 Oct 2015 15:04:11 +0300
+
 fuel-agent (7.0+git20150905-2) unstable; urgency=low
 
   * Add fuel agent ironic driver
