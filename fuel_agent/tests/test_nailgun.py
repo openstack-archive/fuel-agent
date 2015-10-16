@@ -15,6 +15,7 @@
 import copy
 
 import mock
+import six
 import unittest2
 import yaml
 
@@ -867,7 +868,7 @@ class TestNailgunGetOSMethods(unittest2.TestCase):
              'generic_os': {'obj': objects.OperatingSystem,
                             'minor': 'unknown', 'major': 'unknown'}}
         drv = nailgun.Nailgun('fake_data')
-        for profile, obj in d.iteritems():
+        for profile, obj in six.iteritems(d):
             os = drv.get_os_by_profile(profile)
             self.assertIsInstance(os, obj['obj'])
             self.assertEqual(obj['minor'], os.minor)
@@ -878,7 +879,7 @@ class TestNailgunGetOSMethods(unittest2.TestCase):
              'Ubuntu': objects.Ubuntu,
              'unknown': None}
         drv = nailgun.Nailgun('fake_data')
-        for os_name, obj in d.iteritems():
+        for os_name, obj in six.iteritems(d):
             os = drv.get_os_by_image_meta(
                 {'name': os_name, 'minor': 1, 'major': 2})
             if os:

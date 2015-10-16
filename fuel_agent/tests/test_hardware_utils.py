@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
+import six
 import unittest2
 
 from fuel_agent import errors
 from fuel_agent.utils import hardware as hu
 from fuel_agent.utils import utils
+
+if six.PY2:
+    import mock
+elif six.PY3:
+    from unittest import mock
 
 
 class TestHardwareUtils(unittest2.TestCase):

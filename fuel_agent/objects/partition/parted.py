@@ -55,17 +55,15 @@ class Parted(base.Serializable):
 
     @property
     def logical(self):
-        return filter(lambda x: x.type == 'logical', self.partitions)
+        return [x for x in self.partitions if x.type == 'logical']
 
     @property
     def primary(self):
-        return filter(lambda x: x.type == 'primary', self.partitions)
+        return [x for x in self.partitions if x.type == 'primary']
 
     @property
     def extended(self):
-        found = filter(lambda x: x.type == 'extended', self.partitions)
-        if found:
-            return found[0]
+        return next((x for x in self.partitions if x.type == 'extended'), None)
 
     def next_type(self):
         if self.label == 'gpt':
@@ -104,9 +102,7 @@ class Parted(base.Serializable):
         return '%s%s%s' % (self.name, separator, self.next_count())
 
     def partition_by_name(self, name):
-        found = filter(lambda x: (x.name == name), self.partitions)
-        if found:
-            return found[0]
+        return next((x for x in self.partitions if x.name == name), None)
 
     def to_dict(self):
         partitions = [partition.to_dict() for partition in self.partitions]

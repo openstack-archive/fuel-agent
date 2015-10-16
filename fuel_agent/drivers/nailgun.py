@@ -475,11 +475,18 @@ class Nailgun(BaseDataDriver):
         configdrive_scheme = objects.ConfigDriveScheme()
 
         LOG.debug('Adding common parameters')
-        admin_interface = filter(
-            lambda x: (x['mac_address'] ==
-                       data['kernel_options']['netcfg/choose_interface']),
-            [dict(name=name, **spec) for name, spec
-             in data['interfaces'].iteritems()])[0]
+
+        interface_dicts = [
+            dict(name=name, **spec)
+            for name, spec
+            in six.iteritems(data['interfaces'])
+        ]
+
+        admin_interface = next(
+            x for x in interface_dicts
+            if (x['mac_address'] ==
+                data['kernel_options']['netcfg/choose_interface'])
+        )
 
         ssh_auth_keys = data['ks_meta']['authorized_keys']
         if data['ks_meta']['auth_key']:
