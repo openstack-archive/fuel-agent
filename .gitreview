@@ -1,5 +1,5 @@
 [gerrit]
 host=review.openstack.org
 port=29418
-project=stackforge/fuel-agent.git
+project=openstack/fuel-agent.git
 
