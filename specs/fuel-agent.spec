@@ -67,6 +67,8 @@ Ironic bootstrap config files with Fuel Agent
 Summary:         Ironic Fuel Agent driver
 Group:           Development/Libraries
 
+Requires:    ironic-conductor >= 4.2.0
+
 %description -n  ironic-fa-deploy
 Ironic-fa-deploy package
 

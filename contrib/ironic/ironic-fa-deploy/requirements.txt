@@ -1,0 +1,3 @@
+# The driver uses Ironic code base and it's requirements, no additional
+# requirements needed
+ironic>=4.2.0

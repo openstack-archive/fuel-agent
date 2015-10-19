@@ -74,4 +74,5 @@ Description: Ironic bootstrap config files
 Package: ironic-fa-deploy
 Architecture: all
 Section: python
+Depends: ironic-conductor (>= 4.2.0),
 Description: Ironic-fa-deploy package
