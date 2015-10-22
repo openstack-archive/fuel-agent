@@ -15,8 +15,8 @@
 import sys
 
 from oslo_config import cfg
-from oslo_serialization import jsonutils as json
 import six
+import yaml
 
 from fuel_agent import manager as manager
 from fuel_agent.openstack.common import log as logging
@@ -85,10 +85,10 @@ def main(actions=None):
 
     try:
         if CONF.input_data:
-            data = json.loads(CONF.input_data)
+            data = yaml.safe_load(CONF.input_data)
         else:
             with open(CONF.input_data_file) as f:
-                data = json.load(f)
+                data = yaml.safe_load(f)
         LOG.debug('Input data: %s', data)
 
         mgr = manager.Manager(data)
