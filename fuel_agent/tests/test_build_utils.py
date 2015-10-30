@@ -502,3 +502,47 @@ class BuildUtilsTestCase(unittest2.TestCase):
     def test_containerize_bad_container(self):
         self.assertRaises(errors.WrongImageDataError, bu.containerize, 'file',
                           'fake')
+
+    @mock.patch('fuel_agent.utils.build.get_free_loop_device')
+    @mock.patch('fuel_agent.utils.build.attach_file_to_loop')
+    def test_do_build_image_retries_attach_image_max_attempts_exceeded(
+            self, mock_attach_file, mock_get_free_loop_device):
+
+        mock_attach_file.side_effect = errors.ProcessExecutionError()
+
+        with self.assertRaises(errors.NoFreeLoopDevices):
+            bu.attach_file_to_free_loop_device(
+                mock.sentinel, max_loop_devices_count=255,
+                loop_device_major_number=7, max_attempts=3)
+
+        self.assertEqual(mock_attach_file.call_count, 3)
+
+    @mock.patch('fuel_agent.utils.build.get_free_loop_device')
+    @mock.patch('fuel_agent.utils.build.attach_file_to_loop')
+    def test_do_build_image_retries_attach_image(
+            self, mock_attach_file, mock_get_free_loop_device):
+
+        mock_attach_file.side_effect = \
+            [errors.ProcessExecutionError(),
+             errors.ProcessExecutionError(),
+             True]
+        free_loop_device = '/dev/loop0'
+        mock_get_free_loop_device.return_value = free_loop_device
+        loop_device_major_number = 7
+        max_loop_devices_count = 255
+        max_attempts = 3
+        filename = mock.sentinel
+
+        loop_device = bu.attach_file_to_free_loop_device(
+            filename, max_loop_devices_count=max_loop_devices_count,
+            loop_device_major_number=loop_device_major_number,
+            max_attempts=max_attempts)
+
+        self.assertEqual(free_loop_device, loop_device)
+        self.assertEqual(
+            [mock.call(loop_device_major_number=loop_device_major_number,
+                       max_loop_devices_count=max_loop_devices_count)] * 3,
+            mock_get_free_loop_device.call_args_list)
+        self.assertEqual(
+            [mock.call(filename, '/dev/loop0')] * 3,
+            mock_attach_file.call_args_list)

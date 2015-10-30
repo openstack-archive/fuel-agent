@@ -89,6 +89,11 @@ opts = [
         help='Maximum allowed loop devices count to use'
     ),
     cfg.IntOpt(
+        'max_allowed_attempts_attach_image',
+        default=10,
+        help='Maximum allowed attempts to attach image file to loop device'
+    ),
+    cfg.IntOpt(
         'sparse_file_size',
         # XXX: Apparently Fuel configures the node root filesystem to span
         # the whole hard drive. However 2 GB filesystem created with default
@@ -608,13 +613,12 @@ class Manager(object):
                 # to be able to shrink them and move in the end
                 image.img_tmp_file = img_tmp_file
 
-                LOG.debug('Looking for a free loop device')
-                image.target_device.name = bu.get_free_loop_device(
-                    loop_device_major_number=CONF.loop_device_major_number,
-                    max_loop_devices_count=CONF.max_loop_devices_count)
-
-                LOG.debug('Attaching temporary image file to free loop device')
-                bu.attach_file_to_loop(img_tmp_file, str(image.target_device))
+                image.target_device.name = \
+                    bu.attach_file_to_free_loop_device(
+                        img_tmp_file,
+                        max_loop_devices_count=CONF.max_loop_devices_count,
+                        loop_device_major_number=CONF.loop_device_major_number,
+                        max_attempts=CONF.max_allowed_attempts_attach_image)
 
                 # find fs with the same loop device object
                 # as image.target_device
@@ -794,22 +798,24 @@ class Manager(object):
             LOG.debug('Finally: umounting chroot tree %s', chroot)
             self.umount_target(chroot, pseudo=False)
             for image in self.driver.image_scheme.images:
-                LOG.debug('Finally: detaching loop device: %s',
-                          str(image.target_device))
-                try:
-                    bu.deattach_loop(str(image.target_device))
-                except errors.ProcessExecutionError as e:
-                    LOG.warning('Error occured while trying to detach '
-                                'loop device %s. Error message: %s',
-                                str(image.target_device), e)
+                if image.target_device.name:
+                    LOG.debug('Finally: detaching loop device: %s',
+                              image.target_device.name)
+                    try:
+                        bu.deattach_loop(image.target_device.name)
+                    except errors.ProcessExecutionError as e:
+                        LOG.warning('Error occured while trying to detach '
+                                    'loop device %s. Error message: %s',
+                                    image.target_device.name, e)
 
-                LOG.debug('Finally: removing temporary file: %s',
-                          image.img_tmp_file)
-                try:
-                    os.unlink(image.img_tmp_file)
-                except OSError:
-                    LOG.debug('Finally: file %s seems does not exist '
-                              'or can not be removed', image.img_tmp_file)
+                if image.img_tmp_file:
+                    LOG.debug('Finally: removing temporary file: %s',
+                              image.img_tmp_file)
+                    try:
+                        os.unlink(image.img_tmp_file)
+                    except OSError:
+                        LOG.debug('Finally: file %s seems does not exist '
+                                  'or can not be removed', image.img_tmp_file)
             LOG.debug('Finally: removing chroot directory: %s', chroot)
             try:
                 os.rmdir(chroot)

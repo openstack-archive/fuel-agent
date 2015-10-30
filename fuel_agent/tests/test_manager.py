@@ -846,7 +846,8 @@ class TestImageBuild(unittest2.TestCase):
         mock_os.path.basename.side_effect = ['img.img.gz', 'img-boot.img.gz']
         mock_bu.create_sparse_tmp_file.side_effect = \
             ['/tmp/img', '/tmp/img-boot']
-        mock_bu.get_free_loop_device.side_effect = ['/dev/loop0', '/dev/loop1']
+        mock_bu.attach_file_to_free_loop_device.side_effect = [
+            '/dev/loop0', '/dev/loop1']
         mock_mkdtemp.return_value = '/tmp/imgdir'
         getsize_side = [20, 2, 10, 1]
         mock_os.path.getsize.side_effect = getsize_side
@@ -867,13 +868,18 @@ class TestImageBuild(unittest2.TestCase):
                                     size=CONF.sparse_file_size)] * 2,
                          mock_bu.create_sparse_tmp_file.call_args_list)
         self.assertEqual(
-            [mock.call(loop_device_major_number=CONF.loop_device_major_number,
-                       max_loop_devices_count=CONF.max_loop_devices_count),
-             ] * 2,
-            mock_bu.get_free_loop_device.call_args_list)
-        self.assertEqual([mock.call('/tmp/img', '/dev/loop0'),
-                          mock.call('/tmp/img-boot', '/dev/loop1')],
-                         mock_bu.attach_file_to_loop.call_args_list)
+            [mock.call(
+                '/tmp/img',
+                loop_device_major_number=CONF.loop_device_major_number,
+                max_loop_devices_count=CONF.max_loop_devices_count,
+                max_attempts=CONF.max_allowed_attempts_attach_image),
+             mock.call(
+                '/tmp/img-boot',
+                loop_device_major_number=CONF.loop_device_major_number,
+                max_loop_devices_count=CONF.max_loop_devices_count,
+                max_attempts=CONF.max_allowed_attempts_attach_image)
+             ],
+            mock_bu.attach_file_to_free_loop_device.call_args_list)
         self.assertEqual([mock.call(fs_type='ext4', fs_options='',
                                     fs_label='', dev='/dev/loop0'),
                           mock.call(fs_type='ext2', fs_options='',
