@@ -46,7 +46,7 @@ DEFAULT_TRUSTY_PACKAGES = [
     "mdadm",
     "nailgun-agent",
     "nailgun-mcagents",
-    "nailgun-net-check",
+    "network-checker",
     "ntp",
     "openssh-client",
     "openssh-server",

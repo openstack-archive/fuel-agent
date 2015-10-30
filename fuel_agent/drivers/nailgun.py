@@ -654,7 +654,7 @@ class NailgunBuildImage(BaseDataDriver):
         "mdadm",
         "nailgun-agent",
         "nailgun-mcagents",
-        "nailgun-net-check",
+        "network-checker",
         "ntp",
         "openssh-client",
         "openssh-server",
