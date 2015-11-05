@@ -114,10 +114,11 @@ class TestNailgunBuildImage(unittest2.TestCase):
             data = {'codename': 'not-trusty'}
             NailgunBuildImage(data)
 
+    @mock.patch('fuel_agent.objects.RepoProxies')
     @mock.patch('fuel_agent.objects.Ubuntu')
     @mock.patch.object(NailgunBuildImage, 'parse_schemes')
     def test_parse_operating_system_packages_given(self, mock_parse_schemes,
-                                                   mock_ub):
+                                                   mock_ub, mock_proxies):
         data = {
             'repos': [],
             'codename': 'trusty',
@@ -127,13 +128,15 @@ class TestNailgunBuildImage(unittest2.TestCase):
         mock_ub_instance.packages = data['packages']
         driver = NailgunBuildImage(data)
         mock_ub.assert_called_once_with(repos=[], packages=data['packages'],
-                                        major=14, minor=4)
+                                        major=14, minor=4,
+                                        proxies=mock_proxies.return_value)
         self.assertEqual(driver.operating_system.packages, data['packages'])
 
+    @mock.patch('fuel_agent.objects.RepoProxies')
     @mock.patch('fuel_agent.objects.Ubuntu')
     @mock.patch.object(NailgunBuildImage, 'parse_schemes')
     def test_parse_operating_system_packages_not_given(
-            self, mock_parse_schemes, mock_ub):
+            self, mock_parse_schemes, mock_ub, mock_proxies):
         data = {
             'repos': [],
             'codename': 'trusty'
@@ -143,15 +146,16 @@ class TestNailgunBuildImage(unittest2.TestCase):
         driver = NailgunBuildImage(data)
         mock_ub.assert_called_once_with(
             repos=[], packages=NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
-            major=14, minor=4)
+            major=14, minor=4, proxies=mock_proxies.return_value)
         self.assertEqual(driver.operating_system.packages,
                          NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES)
 
+    @mock.patch('fuel_agent.objects.RepoProxies')
     @mock.patch('fuel_agent.objects.DEBRepo')
     @mock.patch('fuel_agent.objects.Ubuntu')
     @mock.patch.object(NailgunBuildImage, 'parse_schemes')
     def test_parse_operating_system_repos(self, mock_parse_schemes, mock_ub,
-                                          mock_deb):
+                                          mock_deb, mock_proxies):
         data = {
             'repos': REPOS_SAMPLE,
             'codename': 'trusty'
@@ -174,7 +178,7 @@ class TestNailgunBuildImage(unittest2.TestCase):
         mock_ub_instance.repos = repos
         mock_ub.assert_called_once_with(
             repos=repos, packages=NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
-            major=14, minor=4)
+            major=14, minor=4, proxies=mock_proxies.return_value)
         self.assertEqual(mock_deb_expected_calls,
                          mock_deb.call_args_list[:len(REPOS_SAMPLE)])
         self.assertEqual(driver.operating_system.repos, repos)

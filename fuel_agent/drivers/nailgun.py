@@ -720,7 +720,17 @@ class NailgunBuildImage(BaseDataDriver):
                 suite=repo['suite'],
                 section=repo['section'],
                 priority=repo['priority']))
-        os = objects.Ubuntu(repos=repos, packages=packages, major=14, minor=4)
+
+        proxies = objects.RepoProxies()
+
+        proxy_dict = self.data.get('proxies', {})
+        for protocol, uri in six.iteritems(proxy_dict.get('protocols', {})):
+            proxies.add_proxy(protocol, uri)
+        proxies.add_direct_repo_addrs(proxy_dict.get(
+            'direct_repo_addr_list', []))
+
+        os = objects.Ubuntu(repos=repos, packages=packages, major=14, minor=4,
+                            proxies=proxies)
         return os
 
     def parse_schemes(self):

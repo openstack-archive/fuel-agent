@@ -652,17 +652,23 @@ class Manager(object):
             LOG.debug('Preventing services from being get started')
             bu.suppress_services_start(chroot)
             LOG.debug('Installing base operating system using debootstrap')
-            bu.run_debootstrap(uri=uri, suite=suite, chroot=chroot,
-                               attempts=CONF.fetch_packages_attempts)
+            proxies = self.driver.operating_system.proxies
+            bu.run_debootstrap(
+                uri=uri, suite=suite, chroot=chroot,
+                attempts=CONF.fetch_packages_attempts,
+                proxies=proxies.proxies,
+                direct_repo_addr=proxies.direct_repo_addr_list)
 
             # APT-GET
             LOG.debug('Configuring apt inside chroot')
             LOG.debug('Setting environment variables')
             bu.set_apt_get_env()
             LOG.debug('Allowing unauthenticated repos')
-            bu.pre_apt_get(chroot,
-                           allow_unsigned_file=CONF.allow_unsigned_file,
-                           force_ipv4_file=CONF.force_ipv4_file)
+            bu.pre_apt_get(
+                chroot, allow_unsigned_file=CONF.allow_unsigned_file,
+                force_ipv4_file=CONF.force_ipv4_file,
+                proxies=proxies.proxies,
+                direct_repo_addr=proxies.direct_repo_addr_list)
 
             for repo in self.driver.operating_system.repos:
                 LOG.debug('Adding repository source: name={name}, uri={uri},'

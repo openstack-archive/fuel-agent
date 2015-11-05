@@ -839,6 +839,9 @@ class TestImageBuild(unittest2.TestCase):
                 objects.DEBRepo('mos', 'http://fakemos',
                                 'mosX.Y', 'fakesection', priority=1000)],
             packages=['fakepackage1', 'fakepackage2'])
+        self.mgr.driver.operating_system.proxies = objects.RepoProxies(
+            proxies={'fake': 'fake'},
+            direct_repo_addr_list='fake_addr')
         self.mgr.driver.operating_system.minor = 4
         self.mgr.driver.operating_system.major = 14
         mock_os.path.exists.return_value = False
@@ -893,11 +896,13 @@ class TestImageBuild(unittest2.TestCase):
                          mock_bu.suppress_services_start.call_args_list)
         mock_bu.run_debootstrap.assert_called_once_with(
             uri='http://fakeubuntu', suite='trusty', chroot='/tmp/imgdir',
-            attempts=CONF.fetch_packages_attempts)
+            attempts=CONF.fetch_packages_attempts,
+            proxies={'fake': 'fake'}, direct_repo_addr='fake_addr')
         mock_bu.set_apt_get_env.assert_called_once_with()
         mock_bu.pre_apt_get.assert_called_once_with(
             '/tmp/imgdir', allow_unsigned_file=CONF.allow_unsigned_file,
-            force_ipv4_file=CONF.force_ipv4_file)
+            force_ipv4_file=CONF.force_ipv4_file, proxies={'fake': 'fake'},
+            direct_repo_addr='fake_addr')
         self.assertEqual([
             mock.call(name='ubuntu',
                       uri='http://fakeubuntu',

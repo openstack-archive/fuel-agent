@@ -37,21 +37,25 @@ class BuildUtilsTestCase(unittest2.TestCase):
     def setUp(self):
         super(BuildUtilsTestCase, self).setUp()
 
+    @mock.patch('fuel_agent.utils.build.os', environ={})
     @mock.patch.object(utils, 'execute', return_value=(None, None))
-    def test_run_debootstrap(self, mock_exec):
+    def test_run_debootstrap(self, mock_exec, mock_environ):
         bu.run_debootstrap('uri', 'suite', 'chroot', 'arch', attempts=2)
         mock_exec.assert_called_once_with('debootstrap', '--verbose',
                                           '--no-check-gpg', '--arch=arch',
-                                          'suite', 'chroot', 'uri', attempts=2)
+                                          'suite', 'chroot', 'uri', attempts=2,
+                                          env_variables={})
 
+    @mock.patch('fuel_agent.utils.build.os', environ={})
     @mock.patch.object(utils, 'execute', return_value=(None, None))
-    def test_run_debootstrap_eatmydata(self, mock_exec):
+    def test_run_debootstrap_eatmydata(self, mock_exec, mock_environ):
         bu.run_debootstrap('uri', 'suite', 'chroot', 'arch', eatmydata=True,
                            attempts=2)
         mock_exec.assert_called_once_with('debootstrap', '--verbose',
                                           '--no-check-gpg', '--arch=arch',
                                           '--include=eatmydata', 'suite',
-                                          'chroot', 'uri', attempts=2)
+                                          'chroot', 'uri', attempts=2,
+                                          env_variables={})
 
     @mock.patch.object(utils, 'execute', return_value=(None, None))
     def test_run_apt_get(self, mock_exec):
@@ -155,10 +159,14 @@ class BuildUtilsTestCase(unittest2.TestCase):
         bu.clean_apt_settings('chroot', 'unsigned', 'force_ipv4')
         mock_dirs.assert_called_once_with(
             'chroot', ['etc/apt/preferences.d', 'etc/apt/sources.list.d'])
-        mock_files.assert_called_once_with(
-            'chroot', ['etc/apt/sources.list', 'etc/apt/preferences',
-                       'etc/apt/apt.conf.d/%s' % 'force_ipv4',
-                       'etc/apt/apt.conf.d/%s' % 'unsigned'])
+        files = set(['etc/apt/sources.list', 'etc/apt/preferences',
+                     'etc/apt/apt.conf.d/%s' % 'force_ipv4',
+                     'etc/apt/apt.conf.d/%s' % 'unsigned',
+                     'etc/apt/apt.conf.d/01fuel_agent-use-proxy-ftp',
+                     'etc/apt/apt.conf.d/01fuel_agent-use-proxy-http',
+                     'etc/apt/apt.conf.d/01fuel_agent-use-proxy-https'])
+        self.assertEqual('chroot', mock_files.call_args[0][0])
+        self.assertEqual(files, set(mock_files.call_args[0][1]))
 
     @mock.patch('fuel_agent.utils.build.open',
                 create=True, new_callable=mock.mock_open)

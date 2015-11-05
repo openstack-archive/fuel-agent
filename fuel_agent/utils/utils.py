@@ -77,6 +77,9 @@ def execute(*cmd, **kwargs):
     command = ' '.join(cmd)
     LOG.debug('Trying to execute command: %s', command)
     commands = [c.strip() for c in re.split(r'\|', command)]
+    if kwargs.get('env_variables'):
+        LOG.debug('Env variables: {0}'.
+                  format(kwargs.get('env_variables')))
     env = kwargs.pop('env_variables', copy.deepcopy(os.environ))
     env['PATH'] = '/bin:/usr/bin:/sbin:/usr/sbin'
     env['LC_ALL'] = env['LANG'] = env['LANGUAGE'] = kwargs.pop('language', 'C')

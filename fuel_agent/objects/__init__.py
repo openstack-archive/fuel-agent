@@ -32,6 +32,7 @@ from fuel_agent.objects.partition.scheme import PartitionScheme
 from fuel_agent.objects.partition.vg import VolumeGroup
 from fuel_agent.objects.repo import DEBRepo
 from fuel_agent.objects.repo import Repo
+from fuel_agent.objects.repo import RepoProxies
 
 
 PV = PhysicalVolume
@@ -68,4 +69,5 @@ __all__ = [
     'Repo',
     'DEBRepo',
     'Loop',
+    'RepoProxies'
 ]

@@ -14,11 +14,13 @@
 
 
 class OperatingSystem(object):
-    def __init__(self, repos, packages, major='unknown', minor='unknown'):
+    def __init__(self, repos, packages, major='unknown', minor='unknown',
+                 proxies=None):
         self.repos = repos
         self.packages = packages
         self.major = major
         self.minor = minor
+        self.proxies = proxies
 
     def to_dict(self):
         return {'major': self.major,
