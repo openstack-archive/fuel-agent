@@ -301,7 +301,7 @@ class BuildUtilsTestCase(unittest2.TestCase):
             mock_open.assert_called_once_with('file', 'rwb+')
             file_handle_mock.truncate.assert_called_once_with(1 * 2)
         expected_mock_exec_calls = [mock.call('e2fsck', '-y', '-f', 'file'),
-                                    mock.call('resize2fs', '-F', '-M', 'file')]
+                                    mock.call('resize2fs', '-M', 'file')]
         mock_parse.assert_called_once_with('dumpe2fs', 'file')
         self.assertEqual(expected_mock_exec_calls, mock_exec.call_args_list)
 
