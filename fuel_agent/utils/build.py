@@ -585,3 +585,18 @@ def restore_resolv_conf(chroot):
             LOG.info('Restoring default {0} inside chroot'.
                      format(conf_name))
             shutil.move(dst_conf_name + '.bak', dst_conf_name)
+
+
+def mkdtemp_smart(root_dir, suffix):
+    """Create a unique temporary directory in root_dir
+
+     Automatically creates root_dir if it does not exist.
+    Otherwise same as tempfile.mkdtemp
+    """
+
+    LOG.debug('Creating temporary chroot directory')
+    utils.makedirs_if_not_exists(root_dir)
+    chroot = tempfile.mkdtemp(
+        dir=root_dir, suffix=suffix)
+    LOG.debug('Temporary chroot dir: %s', chroot)
+    return chroot
