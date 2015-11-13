@@ -21,7 +21,10 @@ import os
 import tempfile
 
 from oslo_config import cfg
+from oslo_log import log
+from oslo_service import loopingcall
 from oslo_utils import excutils
+from oslo_utils import fileutils
 import six
 
 from ironic.common import boot_devices
@@ -41,9 +44,6 @@ from ironic.conductor import utils as manager_utils
 from ironic.drivers import base
 from ironic.drivers.modules import deploy_utils
 from ironic.drivers.modules import image_cache
-from ironic.openstack.common import fileutils
-from ironic.openstack.common import log
-from ironic.openstack.common import loopingcall
 
 agent_opts = [
     cfg.StrOpt('pxe_config_template',
@@ -149,14 +149,13 @@ def _get_deploy_data(context, image_source):
 
 @image_cache.cleanup(priority=25)
 class AgentTFTPImageCache(image_cache.ImageCache):
-    def __init__(self, image_service=None):
+    def __init__(self):
         super(AgentTFTPImageCache, self).__init__(
             CONF.pxe.tftp_master_path,
             # MiB -> B
             CONF.pxe.image_cache_size * 1024 * 1024,
             # min -> sec
-            CONF.pxe.image_cache_ttl * 60,
-            image_service=image_service)
+            CONF.pxe.image_cache_ttl * 60)
 
 
 def _cache_tftp_images(ctx, node, pxe_info):
