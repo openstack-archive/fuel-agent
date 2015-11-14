@@ -763,6 +763,7 @@ none /run/shm tmpfs rw,nosuid,nodev 0 0"""
         self.mgr.umount_target('fake_chroot')
         self.assertEqual([mock.call('fake_chroot/proc'),
                           mock.call('fake_chroot/dev'),
+                          mock.call('fake_chroot/sys/fs/fuse/connections'),
                           mock.call('fake_chroot/sys'),
                           mock.call('fake_chroot/var/lib'),
                           mock.call('fake_chroot/boot'),

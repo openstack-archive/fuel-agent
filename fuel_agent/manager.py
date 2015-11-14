@@ -418,7 +418,8 @@ class Manager(object):
     def umount_target(self, chroot, pseudo=True):
         LOG.debug('Umounting target file systems: %s', chroot)
         if pseudo:
-            for path in ('/proc', '/dev', '/sys'):
+            # umount fusectl (typically mounted at /sys/fs/fuse/connections)
+            for path in ('/proc', '/dev', '/sys/fs/fuse/connections', '/sys'):
                 fu.umount_fs(chroot + path)
         for fs in self.driver.partition_scheme.fs_sorted_by_depth(
                 reverse=True):
