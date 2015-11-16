@@ -266,7 +266,7 @@ class Manager(object):
 
         mount_point = tempfile.mkdtemp(dir=CONF.tmp_path)
         try:
-            fu.mount_fs('ext2', CONF.config_drive_path, mount_point)
+            fu.mount_fs('ext2', CONF.config_drive_path, mount_point, 'loop')
             for file_path in src_files:
                 name = os.path.basename(file_path)
                 if os.path.isdir(file_path):

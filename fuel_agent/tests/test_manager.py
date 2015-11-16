@@ -506,7 +506,7 @@ class TestManager(unittest2.TestCase):
                                            dev=CONF.config_drive_path)
         mock_fu.mount_fs.assert_called_with('ext2',
                                             CONF.config_drive_path,
-                                            '/tmp/mount_point')
+                                            '/tmp/mount_point', 'loop')
         mock_fu.umount_fs.assert_called_with('/tmp/mount_point')
         mock_rmdir.assert_called_with('/tmp/mount_point')
         mock_copy2.assert_called_with('/tmp/somefile', '/tmp/mount_point')
