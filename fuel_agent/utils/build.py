@@ -13,6 +13,7 @@
 #    under the License.
 
 import copy
+import glob
 import gzip
 import os
 import re
@@ -21,12 +22,15 @@ import signal as sig
 import stat
 import tempfile
 import time
+import uuid
 
+import signal
 import six
 import yaml
 
 from fuel_agent import errors
 from fuel_agent.openstack.common import log as logging
+from fuel_agent.utils import fs as fu
 from fuel_agent.utils import hardware as hu
 from fuel_agent.utils import utils
 
@@ -216,10 +220,8 @@ def stop_chrooted_processes(chroot, signal=sig.SIGTERM,
         raise ValueError('Signal must be either SIGTERM or SIGKILL')
 
     def get_running_processes():
-        # fuser shows *some* (mount point, swap file) accesses by
-        # the kernel using the string 'kernel' as a pid, ignore these
-        out, _ = utils.execute('fuser', '-v', chroot, check_exit_code=False)
-        return [pid for pid in out.split() if pid != 'kernel']
+        return utils.execute(
+            'fuser', '-v', chroot, check_exit_code=False)[0].split()
 
     for i in six.moves.range(attempts):
         running_processes = get_running_processes()
@@ -556,6 +558,73 @@ def attach_file_to_free_loop_device(filename, max_loop_devices_count=255,
     return loop_device
 
 
+def make_targz(source_dir, output_name=None):
+    """Archive the given directory
+
+    :param source_dir: directory to archive
+    :param output_name: output file name, might be a relative
+    or an absolute path
+     """
+    if not output_name:
+        output_name = six.text_type(uuid.uuid4()) + '.tar.gz'
+    utils.makedirs_if_not_exists(os.path.dirname(output_name))
+
+    LOG.info('Creating archive: %s', output_name)
+    utils.execute('tar', '-czf', output_name, '--directory',
+                  os.path.normcase(source_dir), '.', logged=True)
+    return output_name
+
+
+def run_script_in_chroot(chroot, script):
+    """Run script inside chroot
+
+    1)Copy script file inside chroot
+    2)Make it executable
+    3)Run it with bash
+    """
+    LOG.info('Copy user-script {0} into chroot:{1}'.format(script, chroot))
+    if not os.path.isdir(chroot):
+        raise errors.IncorrectChroot(
+            "Can't run script in incorrect chroot %s", chroot)
+    chrooted_file = os.path.join(chroot, os.path.basename(script))
+    shutil.copy(script, chrooted_file)
+    LOG.info('Make user-script {0} executable:'.format(chrooted_file))
+    os.chmod(chrooted_file, 0o755)
+    utils.execute(
+        'chroot', chroot, '/bin/bash', '-c', os.path.join(
+            '/', os.path.basename(script)), logged=True)
+    LOG.debug('User-script completed')
+
+
+def recompress_initramfs(chroot, compress='xz', initrd_mask='initrd*'):
+    """Remove old and rebuild initrd
+
+    :param chroot:
+    :param compress: compression type for initrd
+    :return:
+    :initrd_mask: search kernel file by Unix style pathname
+    """
+    env_vars = copy.deepcopy(os.environ)
+    add_env_vars = {'TMPDIR': '/tmp',
+                    'TMP': '/tmp'}
+
+    LOG.info('Changing initramfs compression type to: %s', compress)
+    utils.execute(
+        'sed', '-i', 's/^COMPRESS=.*/COMPRESS={0}/'.format(compress),
+        os.path.join(chroot, 'etc/initramfs-tools/initramfs.conf'))
+
+    boot_dir = os.path.join(chroot, 'boot')
+    initrds = glob.glob(os.path.join(boot_dir, initrd_mask))
+    LOG.debug('Removing initrd images: %s', initrds)
+    remove_files('/', initrds)
+
+    env_vars.update(add_env_vars)
+    cmds = ['chroot', chroot, 'update-initramfs -v -c -k all']
+    utils.execute(*cmds,
+                  env_variables=env_vars, logged=True)
+    LOG.debug('Running "update-initramfs" completed')
+
+
 def propagate_host_resolv_conf(chroot):
     """Copy DNS settings from host system to chroot.
 
@@ -604,3 +673,100 @@ def mkdtemp_smart(root_dir, suffix):
         dir=root_dir, suffix=suffix)
     LOG.debug('Temporary chroot dir: %s', chroot)
     return chroot
+
+
+def copy_kernel_initramfs(chroot, dstdir, clean=False):
+    """Copy latest or newest vmlinuz and initrd from chroot
+
+    :param chroot:
+    :param dstdir: copy to folder
+    :param clean: remove all vmlinuz\initrd after done
+    :return:
+    """
+    # TODO(azvyagintsev) fetch from uri driver
+    # module* : result filename
+    files = {'vmlinuz': 'vmlinuz',
+             'initrd': 'initrd.img'
+             }
+    utils.makedirs_if_not_exists(dstdir)
+    boot_dir = os.path.join(chroot, 'boot')
+    for module in six.iterkeys(files):
+        mask = os.path.join(boot_dir, module + '*')
+        all_files = glob.glob(mask)
+        if len(all_files) > 1:
+            raise errors.TooManyKernels(
+                "Too many %s detected :%s", module, all_files)
+        file_to_copy = all_files[0]
+        copy_to = os.path.join(dstdir, files[module])
+        LOG.debug('Copying file: %s to: %s', file_to_copy, copy_to)
+        shutil.copy(file_to_copy, copy_to)
+        if clean:
+            files_to_remove = glob.glob(mask)
+            remove_files('/', files_to_remove)
+
+
+def run_mksquashfs(chroot, output_name=None, compression_algorithm='xz'):
+    """Pack the target system as squashfs using mksquashfs
+
+    :param chroot: chroot system, to be squashfs'd
+    :param output_name: output file name, might be a relative
+     or an absolute path
+
+    The kernel squashfs driver has to match with the user space squasfs tools.
+    Use the mksquashfs provided by the target distro to achieve this.
+    (typically the distro maintainers are smart enough to ship the correct
+    version of mksquashfs)
+    Use mksquashfs installed in the target system
+
+    1)Mount tmpfs under chroot/mnt
+    2)run mksquashfs inside a chroot
+    3)move result files to dstdir
+    """
+    if not output_name:
+        output_name = 'root.squashfs' + six.text_type(uuid.uuid4())
+    utils.makedirs_if_not_exists(os.path.dirname(output_name))
+    dstdir = os.path.dirname(output_name)
+    temp = '.mksquashfs.tmp.' + six.text_type(uuid.uuid4())
+    s_dst = os.path.join(chroot, 'mnt/dst')
+    s_src = os.path.join(chroot, 'mnt/src')
+    try:
+        fu.mount_fs(
+            'tmpfs', 'mnt_{0}'.format(temp),
+            (os.path.join(chroot, 'mnt')),
+            'rw,nodev,nosuid,noatime,mode=0755,size=4M')
+        utils.makedirs_if_not_exists(s_src)
+        utils.makedirs_if_not_exists(s_dst)
+        # Bind mount the chroot to avoid including various temporary/virtual
+        # files (/proc, /sys, /dev, and so on) into the image
+        fu.mount_fs(None, chroot, s_src, opts='bind')
+        fu.mount_fs(None, None, s_src, 'remount,bind,ro')
+        fu.mount_fs(None, dstdir, s_dst, opts='bind')
+        # run mksquashfs
+        chroot_squash = os.path.join('/mnt/dst/' + temp)
+        long_squash = os.path.join(chroot, 'mnt/dst/{0}'.format(temp))
+        utils.execute(
+            'chroot', chroot, 'mksquashfs', '/mnt/src',
+            chroot_squash,
+            '-comp', compression_algorithm,
+            '-no-progress', '-noappend', logged=True)
+        # move to result name
+        LOG.debug('Moving file: %s to: %s', long_squash, output_name)
+        shutil.move(long_squash, output_name)
+    except Exception as exc:
+        LOG.error('squashfs_image build failed: %s', exc)
+        raise
+    finally:
+        LOG.info('squashfs_image clean-up')
+        stop_chrooted_processes(chroot, signal=signal.SIGTERM)
+        fu.umount_fs(os.path.join(chroot, 'mnt/dst'))
+        fu.umount_fs(os.path.join(chroot, 'mnt/src'))
+        fu.umount_fs(os.path.join(chroot, 'mnt'))
+
+
+def get_installed_packages(chroot):
+    """The packages installed in chroot along with their versions"""
+
+    out, err = utils.execute('chroot', chroot, 'dpkg-query', '-W',
+                             '-f="${Package} ${Version};;"')
+    pkglist = filter(None, out.split(';;'))
+    return dict([pkgver.split() for pkgver in pkglist])

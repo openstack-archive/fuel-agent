@@ -162,3 +162,11 @@ class WrongDeviceError(BaseError):
 
 class UnexpectedProcessError(BaseError):
     pass
+
+
+class IncorrectChroot(BaseError):
+    pass
+
+
+class TooManyKernels(BaseError):
+    pass
