@@ -157,7 +157,15 @@ class Nailgun(BaseDataDriver):
         # we try to find a device by its name
         fallback = [hu_disk['device'] for hu_disk in self.hu_disks
                     if '/dev/%s' % ks_disk['name'] == hu_disk['device']]
-        found = matched or fallback
+
+        # Due to udevadm bugs it can return the same ids for different disks.
+        # For instance for NVMe disks. In this case matched will contains
+        # more than 1 disk and we should use info from fallback
+        if len(matched) > 1 and len(fallback) == 1:
+            found = fallback
+        else:
+            found = matched or fallback
+
         if not found or len(found) > 1:
             raise errors.DiskNotFoundError(
                 'Disk not found: %s' % ks_disk['name'])
