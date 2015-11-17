@@ -109,7 +109,6 @@ def execute(*cmd, **kwargs):
                     # unicode. We have to convert to ascii before shlex'ing
                     # the command. http://bugs.python.org/issue6988
                     encoded_command = c.encode('ascii') if six.PY2 else c
-
                     process.append(subprocess.Popen(
                         shlex.split(encoded_command),
                         env=env,

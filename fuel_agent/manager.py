@@ -16,7 +16,6 @@ from io import open
 import os
 import shutil
 import signal
-import tempfile
 
 from oslo_config import cfg
 import six
@@ -384,6 +383,61 @@ class Manager(object):
                           (image.format, image.target_device))
                 fu.extend_fs(image.format, image.target_device)
 
+    @staticmethod
+    def _update_metadata_with_repos(metadata, repos):
+        """Update action metadata with information about repositories
+
+        :param metadata: dict contains action metadata
+        :param repos:  list of Repo objects
+        :return:
+        """
+
+        for repo in repos:
+            metadata.setdefault('repos', []).append({
+                'type': 'deb',
+                'name': repo.name,
+                'uri': repo.uri,
+                'suite': repo.suite,
+                'section': repo.section,
+                'priority': repo.priority,
+                'meta': repo.meta})
+
+    @staticmethod
+    def _set_apt_repos(chroot, repos):
+        """Configure APT to use the specified repositories
+
+        Set apt-sources for chroot and update metadata in Manager.
+
+        :param chroot: path to OS to operate on
+        :param repos: APT repositories along with their priorities
+        """
+        for repo in repos:
+            LOG.debug(
+                'Adding repository source: name={name}, uri={uri}, '
+                'suite={suite}, section={section}'.format(
+                    name=repo.name,
+                    uri=repo.uri,
+                    suite=repo.suite,
+                    section=repo.section))
+            bu.add_apt_source(
+                name=repo.name,
+                uri=repo.uri,
+                suite=repo.suite,
+                section=repo.section,
+                chroot=chroot)
+            LOG.debug(
+                'Adding repository preference: name={name}, '
+                'priority={priority}'.format(name=repo.name,
+                                             priority=repo.priority))
+            if repo.priority is not None:
+                bu.add_apt_preference(
+                    name=repo.name,
+                    priority=repo.priority,
+                    suite=repo.suite,
+                    section=repo.section,
+                    chroot=chroot,
+                    uri=repo.uri)
+
     def mount_target(self, chroot, treat_mtab=True, pseudo=True):
         """Mount a set of file systems into a chroot
 
@@ -426,6 +480,129 @@ class Manager(object):
                 continue
             fu.umount_fs(chroot + fs.mount)
 
+    def install_base_os(self, chroot):
+        """Bootstrap a basic Linux system
+
+        :param chroot directory where the installed OS can be found
+        For now only Ubuntu is supported.
+        Note: the data gets written to a different location (a set of
+        ext4 images  located in the image_build_dir directory)
+        Includes the following steps
+        1) create temporary sparse files for all images (truncate)
+        2) attach temporary files to loop devices (losetup)
+        3) create file systems on these loop devices
+        4) create temporary chroot directory
+        5) mount loop devices into chroot directory
+        6) install operating system (debootstrap and apt-get)
+        """
+        LOG.info('*** Preparing image space ***')
+        for image in self.driver.image_scheme.images:
+            LOG.debug('Creating temporary sparsed file for the '
+                      'image: %s', image.uri)
+            img_tmp_file = bu.create_sparse_tmp_file(
+                dir=CONF.image_build_dir, suffix=CONF.image_build_suffix,
+                size=CONF.sparse_file_size)
+            LOG.debug('Temporary file: %s', img_tmp_file)
+
+            # we need to remember those files
+            # to be able to shrink them and move in the end
+            image.img_tmp_file = img_tmp_file
+
+            image.target_device.name = \
+                bu.attach_file_to_free_loop_device(
+                    img_tmp_file,
+                    max_loop_devices_count=CONF.max_loop_devices_count,
+                    loop_device_major_number=CONF.loop_device_major_number,
+                    max_attempts=CONF.max_allowed_attempts_attach_image)
+
+            # find fs with the same loop device object
+            # as image.target_device
+            fs = self.driver.partition_scheme.fs_by_device(
+                image.target_device)
+
+            LOG.debug('Creating file system on the image')
+            fu.make_fs(
+                fs_type=fs.type,
+                fs_options=fs.options,
+                fs_label=fs.label,
+                dev=six.text_type(fs.device))
+            if fs.type == 'ext4':
+                LOG.debug('Trying to disable journaling for ext4 '
+                          'in order to speed up the build')
+                utils.execute('tune2fs', '-O', '^has_journal',
+                              six.text_type(fs.device))
+
+        # mounting all images into chroot tree
+        self.mount_target(chroot, treat_mtab=False, pseudo=False)
+        LOG.info('Installing BASE operating system into image')
+        # FIXME(kozhukalov): !!! we need this part to be OS agnostic
+
+        # DEBOOTSTRAP
+        # we use first repo as the main mirror
+        uri = self.driver.operating_system.repos[0].uri
+        suite = self.driver.operating_system.repos[0].suite
+        proxies = self.driver.operating_system.proxies
+
+        LOG.debug('Preventing services from being get started')
+        bu.suppress_services_start(chroot)
+        LOG.debug('Installing base operating system using debootstrap')
+        bu.run_debootstrap(uri=uri, suite=suite, chroot=chroot,
+                           attempts=CONF.fetch_packages_attempts,
+                           proxies=proxies.proxies,
+                           direct_repo_addr=proxies.direct_repo_addr_list)
+
+        # APT-GET
+        LOG.debug('Configuring apt inside chroot')
+        LOG.debug('Setting environment variables')
+        bu.set_apt_get_env()
+        LOG.debug('Allowing unauthenticated repos')
+        bu.pre_apt_get(chroot,
+                       allow_unsigned_file=CONF.allow_unsigned_file,
+                       force_ipv4_file=CONF.force_ipv4_file,
+                       proxies=proxies.proxies,
+                       direct_repo_addr=proxies.direct_repo_addr_list)
+
+        # we need /proc to be mounted for apt-get success
+        LOG.debug('Preventing services from being get started')
+        bu.suppress_services_start(chroot)
+        utils.makedirs_if_not_exists(os.path.join(chroot, 'proc'))
+
+        # we need /proc to be mounted for apt-get success
+        fu.mount_bind(chroot, '/proc')
+        bu.populate_basic_dev(chroot)
+
+    def destroy_chroot(self, chroot):
+        # Umount chroot tree and remove images tmp files
+        if not bu.stop_chrooted_processes(chroot, signal=signal.SIGTERM):
+            bu.stop_chrooted_processes(chroot, signal=signal.SIGKILL)
+        LOG.debug('Finally: umounting procfs %s', os.path.join(chroot, 'proc'))
+        fu.umount_fs(os.path.join(chroot, 'proc'))
+        LOG.debug('Finally: umounting chroot tree %s', chroot)
+        self.umount_target(chroot, pseudo=False)
+        for image in self.driver.image_scheme.images:
+            if image.target_device.name:
+                LOG.debug('Finally: detaching loop device: %s',
+                          image.target_device.name)
+                try:
+                    bu.deattach_loop(image.target_device.name)
+                except errors.ProcessExecutionError as e:
+                    LOG.warning('Error occured while trying to detach '
+                                'loop device %s. Error message: %s',
+                                image.target_device.name, e)
+            if image.img_tmp_file:
+                LOG.debug('Finally: removing temporary file: %s',
+                          image.img_tmp_file)
+                try:
+                    os.unlink(image.img_tmp_file)
+                except OSError:
+                    LOG.debug('Finally: file %s seems does not exist '
+                              'or can not be removed', image.img_tmp_file)
+        try:
+            os.rmdir(chroot)
+        except OSError:
+            LOG.debug('Finally: directory %s seems does not exist '
+                      'or can not be removed', chroot)
+
     def do_bootloader(self):
         LOG.debug('--- Installing bootloader (do_bootloader) ---')
         chroot = '/tmp/target'
@@ -455,10 +632,11 @@ class Manager(object):
 
         grub.append_kernel_params('root=UUID=%s ' % mount2uuid['/'])
 
-        kernel = grub.kernel_name or \
-            gu.guess_kernel(chroot=chroot, regexp=grub.kernel_regexp)
-        initrd = grub.initrd_name or \
-            gu.guess_initrd(chroot=chroot, regexp=grub.initrd_regexp)
+        kernel = grub.kernel_name or gu.guess_kernel(chroot=chroot,
+                                                     regexp=grub.kernel_regexp)
+
+        initrd = grub.initrd_name or gu.guess_initrd(chroot=chroot,
+                                                     regexp=grub.initrd_regexp)
 
         if grub.version == 1:
             gu.grub1_cfg(kernel=kernel, initrd=initrd,
@@ -492,9 +670,9 @@ class Manager(object):
                     u'# Generated by fuel-agent during provisioning: END\n')
             # FIXME(agordeev): Disable net-generator that will add new etries
             # to 70-persistent-net.rules
-            with open(chroot +
-                      '/etc/udev/rules.d/75-persistent-net-generator.rules',
-                      'wt', encoding='utf-8') as f:
+            with open(chroot + '/etc/udev/rules.d/'
+                               '75-persistent-net-generator.rules', 'wt',
+                      encoding='utf-8') as f:
                 f.write(u'# Generated by fuel-agent during provisioning:\n'
                         u'# DO NOT DELETE. It is needed to disable '
                         u'net-generator\n')
@@ -565,8 +743,8 @@ class Manager(object):
         2) attach temporary files to loop devices (losetup)
         3) create file systems on these loop devices
         4) create temporary chroot directory
-        5) mount loop devices into chroot directory
-        6) install operating system (debootstrap and apt-get)
+        5) install operating system (install_base_os)
+        6) configure apt-get sources,and perform package install.
         7) configure OS (clean sources.list and preferences, etc.)
         8) umount loop devices
         9) resize file systems on loop devices
@@ -592,127 +770,15 @@ class Manager(object):
         LOG.debug('At least one of the necessary images is unavailable. '
                   'Starting build process.')
         try:
-            LOG.debug('Creating temporary chroot directory')
-            utils.makedirs_if_not_exists(CONF.image_build_dir)
-            chroot = tempfile.mkdtemp(
-                dir=CONF.image_build_dir, suffix=CONF.image_build_suffix)
-            LOG.debug('Temporary chroot: %s', chroot)
-
-            proc_path = os.path.join(chroot, 'proc')
-
-            LOG.info('*** Preparing image space ***')
-            for image in self.driver.image_scheme.images:
-                LOG.debug('Creating temporary sparsed file for the '
-                          'image: %s', image.uri)
-                img_tmp_file = bu.create_sparse_tmp_file(
-                    dir=CONF.image_build_dir, suffix=CONF.image_build_suffix,
-                    size=CONF.sparse_file_size)
-                LOG.debug('Temporary file: %s', img_tmp_file)
-
-                # we need to remember those files
-                # to be able to shrink them and move in the end
-                image.img_tmp_file = img_tmp_file
-
-                image.target_device.name = \
-                    bu.attach_file_to_free_loop_device(
-                        img_tmp_file,
-                        max_loop_devices_count=CONF.max_loop_devices_count,
-                        loop_device_major_number=CONF.loop_device_major_number,
-                        max_attempts=CONF.max_allowed_attempts_attach_image)
-
-                # find fs with the same loop device object
-                # as image.target_device
-                fs = self.driver.partition_scheme.fs_by_device(
-                    image.target_device)
-
-                LOG.debug('Creating file system on the image')
-                fu.make_fs(
-                    fs_type=fs.type,
-                    fs_options=fs.options,
-                    fs_label=fs.label,
-                    dev=str(fs.device))
-                if fs.type == 'ext4':
-                    LOG.debug('Trying to disable journaling for ext4 '
-                              'in order to speed up the build')
-                    utils.execute('tune2fs', '-O', '^has_journal',
-                                  str(fs.device))
-
-            # mounting all images into chroot tree
-            self.mount_target(chroot, treat_mtab=False, pseudo=False)
-
-            LOG.info('*** Shipping image content ***')
-            LOG.debug('Installing operating system into image')
-            # FIXME(kozhukalov): !!! we need this part to be OS agnostic
-
-            # DEBOOTSTRAP
-            # we use first repo as the main mirror
-            uri = self.driver.operating_system.repos[0].uri
-            suite = self.driver.operating_system.repos[0].suite
-
-            LOG.debug('Preventing services from being get started')
-            bu.suppress_services_start(chroot)
-            LOG.debug('Installing base operating system using debootstrap')
-            proxies = self.driver.operating_system.proxies
-            bu.run_debootstrap(
-                uri=uri, suite=suite, chroot=chroot,
-                attempts=CONF.fetch_packages_attempts,
-                proxies=proxies.proxies,
-                direct_repo_addr=proxies.direct_repo_addr_list)
-
-            # APT-GET
-            LOG.debug('Configuring apt inside chroot')
-            LOG.debug('Setting environment variables')
-            bu.set_apt_get_env()
-            LOG.debug('Allowing unauthenticated repos')
-            bu.pre_apt_get(
-                chroot, allow_unsigned_file=CONF.allow_unsigned_file,
-                force_ipv4_file=CONF.force_ipv4_file,
-                proxies=proxies.proxies,
-                direct_repo_addr=proxies.direct_repo_addr_list)
-
-            for repo in self.driver.operating_system.repos:
-                LOG.debug('Adding repository source: name={name}, uri={uri},'
-                          'suite={suite}, section={section}'.format(
-                              name=repo.name, uri=repo.uri,
-                              suite=repo.suite, section=repo.section))
-                bu.add_apt_source(
-                    name=repo.name,
-                    uri=repo.uri,
-                    suite=repo.suite,
-                    section=repo.section,
-                    chroot=chroot)
-                LOG.debug('Adding repository preference: '
-                          'name={name}, priority={priority}'.format(
-                              name=repo.name, priority=repo.priority))
-                if repo.priority is not None:
-                    bu.add_apt_preference(
-                        name=repo.name,
-                        priority=repo.priority,
-                        suite=repo.suite,
-                        section=repo.section,
-                        chroot=chroot,
-                        uri=repo.uri)
-
-                metadata.setdefault('repos', []).append({
-                    'type': 'deb',
-                    'name': repo.name,
-                    'uri': repo.uri,
-                    'suite': repo.suite,
-                    'section': repo.section,
-                    'priority': repo.priority,
-                    'meta': repo.meta})
-
-            LOG.debug('Preventing services from being get started')
-            bu.suppress_services_start(chroot)
-
+            chroot = bu.mkdtemp_smart(
+                CONF.image_build_dir, CONF.image_build_suffix)
+            self.install_base_os(chroot)
             packages = self.driver.operating_system.packages
             metadata['packages'] = packages
 
-            # we need /proc to be mounted for apt-get success
-            utils.makedirs_if_not_exists(proc_path)
-            fu.mount_bind(chroot, '/proc')
-
-            bu.populate_basic_dev(chroot)
+            self._set_apt_repos(chroot, self.driver.operating_system.repos)
+            self._update_metadata_with_repos(
+                metadata, self.driver.operating_system.repos)
 
             LOG.debug('Installing packages using apt-get: %s',
                       ' '.join(packages))
@@ -735,7 +801,7 @@ class Manager(object):
                         chroot)
 
             LOG.info('*** Finalizing image space ***')
-            fu.umount_fs(proc_path)
+            fu.umount_fs(os.path.join(chroot, 'proc'))
             # umounting all loop devices
             self.umount_target(chroot, pseudo=False)
 
@@ -750,9 +816,16 @@ class Manager(object):
                     utils.execute('tune2fs', '-O', 'has_journal',
                                   str(fs.device))
 
-                LOG.debug('Deattaching loop device from file: %s',
-                          image.img_tmp_file)
-                bu.deattach_loop(str(image.target_device))
+                if image.target_device.name:
+                    LOG.debug('Finally: detaching loop device: {0}'.format(
+                        image.target_device.name))
+                    try:
+                        bu.deattach_loop(image.target_device.name)
+                    except errors.ProcessExecutionError as e:
+                        LOG.warning('Error occured while trying to detach '
+                                    'loop device {0}. Error message: {1}'.
+                                    format(image.target_device.name, e))
+
                 LOG.debug('Shrinking temporary image file: %s',
                           image.img_tmp_file)
                 bu.shrink_sparse_file(image.img_tmp_file)
@@ -775,6 +848,7 @@ class Manager(object):
                 container_size = os.path.getsize(img_containerized)
                 container_md5 = utils.calculate_md5(
                     img_containerized, container_size)
+
                 metadata.setdefault('images', []).append({
                     'raw_md5': raw_md5,
                     'raw_size': raw_size,
@@ -795,36 +869,5 @@ class Manager(object):
             LOG.error('Failed to build image: %s', exc)
             raise
         finally:
-            LOG.debug('Finally: stopping processes inside chroot: %s', chroot)
-
-            if not bu.stop_chrooted_processes(chroot, signal=signal.SIGTERM):
-                bu.stop_chrooted_processes(chroot, signal=signal.SIGKILL)
-            LOG.debug('Finally: umounting procfs %s', proc_path)
-            fu.umount_fs(proc_path)
-            LOG.debug('Finally: umounting chroot tree %s', chroot)
-            self.umount_target(chroot, pseudo=False)
-            for image in self.driver.image_scheme.images:
-                if image.target_device.name:
-                    LOG.debug('Finally: detaching loop device: %s',
-                              image.target_device.name)
-                    try:
-                        bu.deattach_loop(image.target_device.name)
-                    except errors.ProcessExecutionError as e:
-                        LOG.warning('Error occured while trying to detach '
-                                    'loop device %s. Error message: %s',
-                                    image.target_device.name, e)
-
-                if image.img_tmp_file:
-                    LOG.debug('Finally: removing temporary file: %s',
-                              image.img_tmp_file)
-                    try:
-                        os.unlink(image.img_tmp_file)
-                    except OSError:
-                        LOG.debug('Finally: file %s seems does not exist '
-                                  'or can not be removed', image.img_tmp_file)
-            LOG.debug('Finally: removing chroot directory: %s', chroot)
-            try:
-                os.rmdir(chroot)
-            except OSError:
-                LOG.debug('Finally: directory %s seems does not exist '
-                          'or can not be removed', chroot)
+            LOG.info('Cleanup chroot')
+            self.destroy_chroot(chroot)

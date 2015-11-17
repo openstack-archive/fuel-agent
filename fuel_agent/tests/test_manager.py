@@ -802,6 +802,7 @@ class TestImageBuild(unittest2.TestCase):
         }
         self.mgr = manager.Manager(image_conf)
 
+    @mock.patch.object(manager.Manager, '_set_apt_repos')
     @mock.patch('fuel_agent.manager.bu', create=True)
     @mock.patch('fuel_agent.manager.fu', create=True)
     @mock.patch('fuel_agent.manager.utils', create=True)
@@ -809,14 +810,13 @@ class TestImageBuild(unittest2.TestCase):
     @mock.patch('fuel_agent.manager.shutil.move')
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
-    @mock.patch('fuel_agent.manager.tempfile.mkdtemp')
     @mock.patch('fuel_agent.manager.yaml.safe_dump')
     @mock.patch.object(manager.Manager, 'mount_target')
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_build_image(self, mock_umount_target, mock_mount_target,
-                            mock_yaml_dump, mock_mkdtemp,
-                            mock_open, mock_shutil_move, mock_os,
-                            mock_utils, mock_fu, mock_bu):
+                            mock_yaml_dump, mock_open, mock_shutil_move,
+                            mock_os, mock_utils,
+                            mock_fu, mock_bu, mock_set_apt_repos):
 
         loops = [objects.Loop(), objects.Loop()]
 
@@ -851,7 +851,7 @@ class TestImageBuild(unittest2.TestCase):
             ['/tmp/img', '/tmp/img-boot']
         mock_bu.attach_file_to_free_loop_device.side_effect = [
             '/dev/loop0', '/dev/loop1']
-        mock_mkdtemp.return_value = '/tmp/imgdir'
+        mock_bu.mkdtemp_smart.return_value = '/tmp/imgdir'
         getsize_side = [20, 2, 10, 1]
         mock_os.path.getsize.side_effect = getsize_side
         md5_side = ['fakemd5_raw', 'fakemd5_gzip',
@@ -860,8 +860,11 @@ class TestImageBuild(unittest2.TestCase):
         mock_bu.containerize.side_effect = ['/tmp/img.gz', '/tmp/img-boot.gz']
         mock_bu.stop_chrooted_processes.side_effect = [
             False, True, False, True]
+        metadata = {'os': {'name': 'Ubuntu', 'major': 14, 'minor': 4},
+                    'packages': self.mgr.driver.operating_system.packages}
 
         self.mgr.do_build_image()
+
         self.assertEqual(
             [mock.call('/fake/img.img.gz'),
              mock.call('/fake/img-boot.img.gz')],
@@ -888,8 +891,8 @@ class TestImageBuild(unittest2.TestCase):
                           mock.call(fs_type='ext2', fs_options='',
                                     fs_label='', dev='/dev/loop1')],
                          mock_fu.make_fs.call_args_list)
-        mock_mkdtemp.assert_called_once_with(dir=CONF.image_build_dir,
-                                             suffix=CONF.image_build_suffix)
+        mock_bu.mkdtemp_smart.assert_called_once_with(
+            CONF.image_build_dir, CONF.image_build_suffix)
         mock_mount_target.assert_called_once_with(
             '/tmp/imgdir', treat_mtab=False, pseudo=False)
         self.assertEqual([mock.call('/tmp/imgdir')] * 2,
@@ -903,44 +906,13 @@ class TestImageBuild(unittest2.TestCase):
             '/tmp/imgdir', allow_unsigned_file=CONF.allow_unsigned_file,
             force_ipv4_file=CONF.force_ipv4_file, proxies={'fake': 'fake'},
             direct_repo_addr='fake_addr')
-        self.assertEqual([
-            mock.call(name='ubuntu',
-                      uri='http://fakeubuntu',
-                      suite='trusty',
-                      section='fakesection',
-                      chroot='/tmp/imgdir'),
-            mock.call(name='ubuntu_zero',
-                      uri='http://fakeubuntu_zero',
-                      suite='trusty',
-                      section='fakesection',
-                      chroot='/tmp/imgdir'),
-            mock.call(name='mos',
-                      uri='http://fakemos',
-                      suite='mosX.Y',
-                      section='fakesection',
-                      chroot='/tmp/imgdir')],
-            mock_bu.add_apt_source.call_args_list)
+        mock_set_apt_repos.assert_called_with(
+            '/tmp/imgdir',
+            self.mgr.driver.operating_system.repos
+        )
 
-        # we don't call add_apt_preference for ubuntu_zero
-        # because it has priority == None
-        self.assertEqual([
-            mock.call(name='ubuntu',
-                      priority=900,
-                      suite='trusty',
-                      section='fakesection',
-                      chroot='/tmp/imgdir',
-                      uri='http://fakeubuntu'),
-            mock.call(name='mos',
-                      priority=1000,
-                      suite='mosX.Y',
-                      section='fakesection',
-                      chroot='/tmp/imgdir',
-                      uri='http://fakemos')],
-            mock_bu.add_apt_preference.call_args_list)
-        self.assertEqual([
-            mock.call('/tmp'),
-            mock.call('/tmp/imgdir/proc')],
-            mock_utils.makedirs_if_not_exists.call_args_list)
+        mock_utils.makedirs_if_not_exists.assert_called_once_with(
+            '/tmp/imgdir/proc')
         self.assertEqual([
             mock.call('tune2fs', '-O', '^has_journal', '/dev/loop0'),
             mock.call('tune2fs', '-O', 'has_journal', '/dev/loop0')],
@@ -992,7 +964,6 @@ class TestImageBuild(unittest2.TestCase):
              mock.call('/tmp/img-boot.gz', '/fake/img-boot.img.gz')],
             mock_shutil_move.call_args_list)
 
-        metadata = {'os': {'name': 'Ubuntu', 'major': 14, 'minor': 4}}
         for repo in self.mgr.driver.operating_system.repos:
             metadata.setdefault('repos', []).append({
                 'type': 'deb',
@@ -1002,7 +973,6 @@ class TestImageBuild(unittest2.TestCase):
                 'section': repo.section,
                 'priority': repo.priority,
                 'meta': repo.meta})
-        metadata['packages'] = self.mgr.driver.operating_system.packages
         metadata['images'] = [
             {
                 'raw_md5': md5_side[0],
