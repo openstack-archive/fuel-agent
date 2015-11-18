@@ -19,6 +19,18 @@ from fuel_agent.utils import utils
 LOG = logging.getLogger(__name__)
 
 
+def format_fs_label(label):
+    """Format filesystem label to match mkfs format
+
+    Labels longer than 12 will be truncated to 12 first characters because of
+    xfs limitations
+    """
+    if not label:
+        return ''
+    else:
+        return ' -L {0} '.format(label[:12])
+
+
 def make_fs(fs_type, fs_options, fs_label, dev):
     # NOTE(agordeev): notice the different flag to force the fs creating
     #                ext* uses -F flag, xfs/mkswap uses -f flag.
@@ -31,7 +43,7 @@ def make_fs(fs_type, fs_options, fs_label, dev):
         # Othwerwise, it will fail to proceed if filesystem exists.
         fs_options += ' -f '
     cmd_line.append(cmd_name)
-    for opt in (fs_options, fs_label):
+    for opt in (fs_options, format_fs_label(fs_label)):
         cmd_line.extend([s for s in opt.split(' ') if s])
     cmd_line.append(dev)
     utils.execute(*cmd_line)
