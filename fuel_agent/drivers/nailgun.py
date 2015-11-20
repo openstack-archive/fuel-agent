@@ -168,13 +168,6 @@ class Nailgun(BaseDataDriver):
                 'Disk not found: %s' % ks_disk['name'])
         return found[0]
 
-    def _getlabel(self, label):
-        if not label:
-            return ''
-        # XFS will refuse to format a partition if the
-        # disk label is > 12 characters.
-        return ' -L {0} '.format(label[:12])
-
     def _get_partition_count(self, name):
         count = 0
         for disk in self.ks_disks:
@@ -365,7 +358,7 @@ class Nailgun(BaseDataDriver):
                         partition_scheme.add_fs(
                             device=prt.name, mount=volume['mount'],
                             fs_type=volume.get('file_system', 'xfs'),
-                            fs_label=self._getlabel(volume.get('disk_label')))
+                            fs_label=volume.get('disk_label'))
                         if volume['mount'] == '/boot' and not self._boot_done:
                             self._boot_done = True
 
@@ -411,7 +404,7 @@ class Nailgun(BaseDataDriver):
                         partition_scheme.md_attach_by_mount(
                             device=prt.name, mount=volume['mount'],
                             fs_type=volume.get('file_system', 'xfs'),
-                            fs_label=self._getlabel(volume.get('disk_label')),
+                            fs_label=volume.get('disk_label'),
                             metadata=metadata)
 
                     if 'mount' in volume and volume['mount'] == '/boot' and \
@@ -423,7 +416,7 @@ class Nailgun(BaseDataDriver):
                         partition_scheme.add_fs(
                             device=prt.name, mount=volume['mount'],
                             fs_type=volume.get('file_system', 'ext2'),
-                            fs_label=self._getlabel(volume.get('disk_label')))
+                            fs_label=volume.get('disk_label'))
                         self._boot_done = True
 
             # this partition will be used to put there configdrive image
@@ -464,7 +457,7 @@ class Nailgun(BaseDataDriver):
                         partition_scheme.add_fs(
                             device=lv.device_name, mount=volume['mount'],
                             fs_type=volume.get('file_system', 'xfs'),
-                            fs_label=self._getlabel(volume.get('disk_label')))
+                            fs_label=volume.get('disk_label'))
 
         partition_scheme.elevate_keep_data()
         return partition_scheme

@@ -1024,14 +1024,6 @@ class TestNailgunMockedMeta(unittest2.TestCase):
                 img.size, fake_image_meta['images'][0]['raw_size'])
             self.assertEqual(img.md5, fake_image_meta['images'][0]['raw_md5'])
 
-    def test_getlabel(self, mock_lbd, mock_image_meta):
-        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
-        drv = nailgun.Nailgun(PROVISION_SAMPLE_DATA)
-        self.assertEqual('', drv._getlabel(None))
-        long_label = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        self.assertEqual(' -L %s ' % long_label[:12],
-                         drv._getlabel(long_label))
-
     def test_disk_dev_not_found(self, mock_lbd, mock_image_meta):
         mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
         drv = nailgun.Nailgun(PROVISION_SAMPLE_DATA)

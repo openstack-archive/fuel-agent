@@ -33,12 +33,12 @@ class TestFSUtils(unittest2.TestCase):
         mock_exec.assert_called_once_with('mkfs.xfs', '-f', '/dev/fake')
 
     def test_make_fs(self, mock_exec):
-        fu.make_fs('ext4', '-F', '-L fake_label', '/dev/fake')
+        fu.make_fs('ext4', '-F', 'fake_label', '/dev/fake')
         mock_exec.assert_called_once_with('mkfs.ext4', '-F', '-L',
                                           'fake_label', '/dev/fake')
 
     def test_make_fs_swap(self, mock_exec):
-        fu.make_fs('swap', '-f', '-L fake_label', '/dev/fake')
+        fu.make_fs('swap', '-f', 'fake_label', '/dev/fake')
         mock_exec.assert_called_once_with('mkswap', '-f', '-L', 'fake_label',
                                           '/dev/fake')
 
@@ -128,3 +128,17 @@ class TestFSUtils(unittest2.TestCase):
         self.assertRaises(errors.ProcessExecutionError,
                           fu.umount_fs, '/fake', try_lazy_umount=False)
         self.assertEqual(expected_calls, mock_exec.call_args_list)
+
+    def test_format_fs_label(self, _):
+        short_label = 'label'
+        long_label = '0123456789ABCD'
+        long_label_trimmed = long_label[:12]
+        template = ' -L {0} '
+
+        self.assertEqual(fu.format_fs_label(None), '')
+
+        self.assertEqual(fu.format_fs_label(short_label),
+                         template.format(short_label))
+
+        self.assertEqual(fu.format_fs_label(long_label),
+                         template.format(long_label_trimmed))
