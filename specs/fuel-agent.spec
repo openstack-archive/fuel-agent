@@ -63,6 +63,12 @@ Group:        Development/Libraries
 %description -n  ironic-fa-bootstrap-configs
 Ironic bootstrap config files with Fuel Agent
 
+%package -n fuel-bootstrap-cli
+Summary: Fuel-bootstrap wrapper tool
+Group: Development/Libraries
+
+%description -n fuel-bootstrap-cli
+User-friendly wrapper for user set of scripts from fuel-agent
 
 %prep
 %setup -cq -n %{name}-%{version}
@@ -70,6 +76,8 @@ Ironic bootstrap config files with Fuel Agent
 %build
 cd %{_builddir}/%{name}-%{version} && python setup.py build
 
+#building fuel-bootstrap-cli
+cd %{_builddir}/%{name}-%{version}/contrib/mk_bootstrap/fuel_bootstrap/ && PBR_VERSION=%{version} python setup.py build
 
 %install
 cd %{_builddir}/%{name}-%{version} && python setup.py install --single-version-externally-managed -O1 --root=$RPM_BUILD_ROOT --record=%{_builddir}/%{name}-%{version}/INSTALLED_FILES
@@ -83,6 +91,11 @@ install -p -D -m 644 %{_builddir}/%{name}-%{version}/cloud-init-templates/* %{bu
 install -d -m 755 %{buildroot}%{_datadir}/ironic-fa-bootstrap-configs/
 cp -a %{_builddir}/%{name}-%{version}/contrib/ironic/bootstrap-files/* %{buildroot}%{_datadir}/ironic-fa-bootstrap-configs/
 
+#Install fuel-bootstrap-cli files
+cd %{_builddir}/%{name}-%{version}/contrib/mk_bootstrap/fuel_bootstrap/ && PBR_VERSION=%{version} python setup.py install --single-version-externally-managed -O1 --root=$RPM_BUILD_ROOT --record=%{_builddir}/%{name}-%{version}/contrib/mk_bootstrap/fuel_bootstrap/INSTALLED_FILES
+install -d -m 755 %{buildroot}%{_datadir}/mk_bootstrap/files/
+cp -a %{_builddir}/%{name}-%{version}/contrib/mk_bootstrap/files/* %{buildroot}%{_datadir}/mk_bootstrap/files/
+
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -95,3 +108,7 @@ rm -rf $RPM_BUILD_ROOT
 %files -n ironic-fa-bootstrap-configs
 %attr(0644,root,root) %config(noreplace) %{_datadir}/ironic-fa-bootstrap-configs/*
 %attr(0755,root,root) %config(noreplace) %{_datadir}/ironic-fa-bootstrap-configs/usr/bin/configure-remote-logging.sh
+
+%files -n fuel-bootstrap-cli -f %{_builddir}/%{name}-%{version}/contrib/mk_bootstrap/fuel_bootstrap/INSTALLED_FILES
+%defattr(-,root,root)
+%attr(0644,root,root) %config(noreplace) %{_datadir}/mk_bootstrap/files/*
