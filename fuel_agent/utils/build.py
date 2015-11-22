@@ -220,8 +220,10 @@ def stop_chrooted_processes(chroot, signal=sig.SIGTERM,
         raise ValueError('Signal must be either SIGTERM or SIGKILL')
 
     def get_running_processes():
-        return utils.execute(
-            'fuser', '-v', chroot, check_exit_code=False)[0].split()
+        # fuser shows *some* (mount point, swap file) accesses by
+        # the kernel using the string 'kernel' as a pid, ignore these
+        out, _ = utils.execute('fuser', '-v', chroot, check_exit_code=False)
+        return [pid for pid in out.split() if pid != 'kernel']
 
     for i in six.moves.range(attempts):
         running_processes = get_running_processes()
