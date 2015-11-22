@@ -772,3 +772,43 @@ def get_installed_packages(chroot):
                              '-f="${Package} ${Version};;"')
     pkglist = filter(None, out.split(';;'))
     return dict([pkgver.split() for pkgver in pkglist])
+
+
+def rsync_inject(src, dst):
+    """Recursively copy the src to dst using full source paths
+
+    Example: suppose the source directory looks like
+    src/etc/myconfig
+    src/usr/bin/myscript
+
+    rsync_inject('src', '/tmp/chroot')
+
+    copies src/etc/myconfig to /tmp/chroot/etc/myconfig,
+    and src/usr/bin/myscript to /tmp/chroot/usr/bin/myscript,
+    respectively
+
+    """
+    utils.makedirs_if_not_exists(os.path.dirname(dst))
+    LOG.debug('Rsync files from %s to: %s', src, dst)
+    utils.execute('rsync', '-rlptDKv', src + '/',
+                  dst + '/', logged=True)
+
+
+def dump_runtime_uuid(uuid, config):
+    """Save  runtime_uuid into yaml file
+
+    Simple uuid variable to identify bootstrap.
+    Variable will be hard-coded into config yaml file, in build-time
+    :param uuid:
+    :param config: yaml file
+    :return:
+    """
+    data = {}
+    utils.makedirs_if_not_exists(os.path.dirname(config))
+    if os.path.isfile(config):
+        with open(config, 'r') as f:
+            data = yaml.load(f)
+    data['runtime_uuid'] = uuid
+    LOG.debug('Save runtime_uuid:%s to file: %s', uuid, config)
+    with open(config, 'wt') as f:
+        yaml.safe_dump(data, stream=f, encoding='utf-8')
