@@ -112,3 +112,6 @@ rm -rf $RPM_BUILD_ROOT
 %files -n fuel-bootstrap-cli -f %{_builddir}/%{name}-%{version}/contrib/mk_bootstrap/fuel_bootstrap/INSTALLED_FILES
 %defattr(-,root,root)
 %attr(0644,root,root) %config(noreplace) %{_datadir}/mk_bootstrap/files/*
+%attr(0755,root,root) %config(noreplace) %{_datadir}/mk_bootstrap/files/trusty/usr/bin/fix-configs-on-startup
+%attr(0755,root,root) %config(noreplace) %{_datadir}/mk_bootstrap/files/trusty/usr/bin/send2syslog.py
+%attr(0755,root,root) %config(noreplace) %{_datadir}/mk_bootstrap/files/trusty/etc/rc.local
