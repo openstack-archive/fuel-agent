@@ -16,7 +16,53 @@
 
 import os
 
-# FIXME: make the image directory configurable
-BOOTSTRAP_IMAGES_DIR = "/var/www/nailgun/bootstrap"
+# FIXME: Move configurable consts to settings.yaml
+
+BOOTSTRAP_IMAGES_DIR = "/var/www/nailgun/bootstraps/"
 METADATA_FILE = "metadata.yaml"
 SYMLINK = os.path.join(BOOTSTRAP_IMAGES_DIR, "active_bootstrap")
+ASTUTE_FILE = "/etc/fuel/astute.yaml"
+CONTAINER_FORMAT = "tar.gz"
+ROOTFS = {'name': 'rootfs',
+          'mask': 'rootfs',
+          'compress_format': 'xz',
+          'uri': 'http://127.0.0.1:8080/bootstraps/{uuid}/root.squashfs',
+          'format': 'ext4',
+          'container': 'raw'}
+BOOTSTRAP_MODULES = [
+    {'name': 'kernel',
+     'mask': 'kernel',
+     'uri': 'http://127.0.0.1:8080/bootstraps/{uuid}/vmlinuz'},
+    {'name': 'initrd',
+     'mask': 'initrd',
+     'compress_format': 'xz',
+     'uri': 'http://127.0.0.1:8080/bootstraps/{uuid}/initrd.img'},
+    ROOTFS
+]
+
+IMAGE_DATA = {'/': ROOTFS}
+
+UBUNTU_RELEASE = 'trusty'
+
+# Packages required for the master node to discover a bootstrap node
+# Hardcoded list used for disable user-factor : when user can accidentally
+# remove fuel-required packages, and create totally non-working bootstrap
+DEFAULT_PACKAGES = [
+    "openssh-client",
+    "openssh-server",
+    "ntp",
+    "mcollective",
+    "nailgun-agent",
+    "nailgun-mcagents",
+    "network-checker",
+    "fuel-agent"
+    "ubuntu-minimal",
+    "live-boot",
+    "live-boot-initramfs-tools",
+    "wget",
+    "linux-firmware",
+    "linux-firmware-nonfree",
+    "xz-utils",
+    "squashfs-tools",
+    "msmtp-mta"
+]

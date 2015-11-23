@@ -4,3 +4,4 @@ stevedore
 pbr>=0.6
 cliff>=1.7.0
 six>=1.7.0
+python-fuelclient
