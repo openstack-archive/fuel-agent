@@ -96,7 +96,7 @@ class Parted(base.Serializable):
         if self.next_type() == 'extended':
             return None
         separator = ''
-        special_devices = ('cciss', 'nvme', 'loop')
+        special_devices = ('cciss', 'nvme', 'loop', 'md')
         if any(n in self.name for n in special_devices):
             separator = 'p'
         return '%s%s%s' % (self.name, separator, self.next_count())
