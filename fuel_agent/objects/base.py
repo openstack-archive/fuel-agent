@@ -28,3 +28,14 @@ class Serializable(object):
     @classmethod
     def from_dict(cls, data):
         return cls(**data)
+
+
+class DictWrapperObject(object):
+    def __init__(self, data):
+        for k, v in six.iteritems(data):
+            if isinstance(v, (list, tuple)):
+                setattr(self, k, [DictWrapperObject(i) if isinstance(i, dict)
+                                  else i for i in v])
+            else:
+                setattr(self, k, DictWrapperObject(v) if isinstance(v, dict)
+                        else v)
