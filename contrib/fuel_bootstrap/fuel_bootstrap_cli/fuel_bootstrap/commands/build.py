@@ -47,7 +47,7 @@ class BuildCommand(command.Command):
         )
         parser.add_argument(
             '--repo',
-            dest='repos',
+            dest='extra_repos',
             type=str,
             metavar='REPOSITORY',
             help="Add one more repository. format 'type uri"
@@ -169,4 +169,6 @@ class BuildCommand(command.Command):
         return parser
 
     def take_action(self, parsed_args):
-        bs_image.make_bootstrap(parsed_args)
+        image_uuid, path = bs_image.make_bootstrap(parsed_args)
+        self.app.stdout.write("Bootstrap image {0} has been built: {1}\n"
+                              .format(image_uuid, path))

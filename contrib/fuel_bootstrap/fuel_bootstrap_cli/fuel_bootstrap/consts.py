@@ -14,14 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
 
-# FIXME: Move configurable consts to settings.yaml
+# These consts shouldn't be configured
 
-BOOTSTRAP_IMAGES_DIR = "/var/www/nailgun/bootstraps/"
+# TODO(asvechnikov): add possibility to specify custom config file
+CONFIG_FILE = "/etc/fuel-agent/fuel_bootstrap_cli.yaml"
 METADATA_FILE = "metadata.yaml"
-SYMLINK = os.path.join(BOOTSTRAP_IMAGES_DIR, "active_bootstrap")
-ASTUTE_FILE = "/etc/fuel/astute.yaml"
 CONTAINER_FORMAT = "tar.gz"
 ROOTFS = {'name': 'rootfs',
           'mask': 'rootfs',
@@ -43,26 +41,3 @@ BOOTSTRAP_MODULES = [
 IMAGE_DATA = {'/': ROOTFS}
 
 UBUNTU_RELEASE = 'trusty'
-
-# Packages required for the master node to discover a bootstrap node
-# Hardcoded list used for disable user-factor : when user can accidentally
-# remove fuel-required packages, and create totally non-working bootstrap
-DEFAULT_PACKAGES = [
-    "openssh-client",
-    "openssh-server",
-    "ntp",
-    "mcollective",
-    "nailgun-agent",
-    "nailgun-mcagents",
-    "network-checker",
-    "fuel-agent"
-    "ubuntu-minimal",
-    "live-boot",
-    "live-boot-initramfs-tools",
-    "wget",
-    "linux-firmware",
-    "linux-firmware-nonfree",
-    "xz-utils",
-    "squashfs-tools",
-    "msmtp-mta"
-]

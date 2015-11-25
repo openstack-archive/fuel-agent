@@ -43,3 +43,7 @@ class IncorrectRepository(FuelBootstrapException):
 
 class IncorrectImage(FuelBootstrapException):
     """Should be raised when image has incorrect format"""
+
+
+class ConfigFileNotExists(FuelBootstrapException):
+    """Should be raised when default config file is not found"""

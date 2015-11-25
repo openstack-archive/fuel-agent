@@ -19,54 +19,53 @@ import os
 import re
 import six
 import uuid
-import yaml
 
 from fuel_bootstrap import consts
 from fuel_bootstrap import errors
+from fuel_bootstrap import settings
+
+CONF = settings.Configuration()
 
 
 class BootstrapDataBuilder(object):
 
     def __init__(self, data):
-        self.astute = self._parse_astute()
-
         self.uuid = six.text_type(uuid.uuid4())
 
         self.container_format = consts.CONTAINER_FORMAT
 
-        self.ubuntu_release = data.ubuntu_release or consts.UBUNTU_RELEASE
-        self.ubuntu_repo = data.ubuntu_repo
-        self.mos_repo = data.mos_repo
-        self.repos = data.repos or []
+        self.ubuntu_release = \
+            data.get('ubuntu_release') or \
+            consts.UBUNTU_RELEASE
 
-        self.http_proxy = data.http_proxy or \
-            self.astute['BOOTSTRAP']['HTTP_PROXY']
-        self.https_proxy = data.https_proxy or \
-            self.astute['BOOTSTRAP']['HTTPS_PROXY']
-        self.direct_repo_addr = data.direct_repo_addr
+        self.ubuntu_repo = data.get('ubuntu_repo')
+        self.mos_repo = data.get('mos_repo')
+        self.extra_repos = data.get('extra_repos') or []
 
-        self.post_script_file = data.post_script_file
-        self.root_ssh_authorized_file = data.root_ssh_authorized_file
-        self.extra_files = data.extra_files
+        self.http_proxy = data.get('http_proxy') or CONF.http_proxy
+        self.https_proxy = data.get('https_proxy') or CONF.https_proxy
+        self.direct_repo_addr = data.get('direct_repo_addr')
 
-        self.include_kernel_module = data.include_kernel_module
-        self.blacklist_kernel_module = data.blacklist_kernel_module
+        self.post_script_file = \
+            data.get('post_script_file') or \
+            CONF.post_script_file
+        self.root_ssh_authorized_file = \
+            data.get('root_ssh_authorized_file') or \
+            CONF.root_ssh_authorized_file
+        self.extra_files = data.get('extra_files') or CONF.extra_files
 
-        self.packages = data.packages
+        self.include_kernel_module = data.get('include_kernel_module')
+        self.blacklist_kernel_module = data.get('blacklist_kernel_module')
 
-        self.label = data.label
-        self.extend_kopts = data.extend_kopts
-        self.kernel_flavor = data.kernel_flavor
-        self.output = os.path.join(
-            data.output_dir,
-            "{uuid}.{format}".format(
-                uuid=self.uuid,
-                format=self.container_format))
+        self.packages = data.get('packages')
 
-    def _parse_astute(self):
-        with open(consts.ASTUTE_FILE) as f:
-            data = yaml.safe_load(f)
-        return data
+        self.label = data.get('label') or self.uuid
+        self.extend_kopts = data.get('extend_kopts')
+        self.kernel_flavor = data.get('kernel_flavor')
+
+        file_name = "{0}.{1}".format(self.uuid, self.container_format)
+        output_dir = data.get('output_dir', CONF.output_dir)
+        self.output = os.path.join(output_dir, file_name)
 
     def build(self):
         return {
@@ -113,7 +112,7 @@ class BootstrapDataBuilder(object):
         if self.direct_repo_addr:
             addrs |= set(self.direct_repo_addr)
 
-        addrs.add(self.astute['ADMIN_NETWORK']['ipaddress'])
+        addrs |= set(CONF.direct_repo_adresses)
 
         return list(addrs)
 
@@ -122,27 +121,27 @@ class BootstrapDataBuilder(object):
         if self.ubuntu_repo:
             repos.extend(self._parse_ubuntu_repos(self.ubuntu_repo))
         else:
-            repos.extend(self.astute['BOOTSTRAP']['MIRROR_DISTRO'])
+            repos.extend(CONF.ubuntu_repos)
 
         if self.mos_repo:
             repos.extend(self._parse_mos_repos(self.mos_repo))
         else:
-            repos.extend(self.astute['BOOTSTRAP']['MIRROR_MOS'])
+            repos.extend(CONF.mos_repos)
 
         repo_count = 0
-        for repo in self.repos:
+        for repo in self.extra_repos:
             repo_count += 1
             repos.append(self._parse_repo(
                 repo,
                 name="extra_repo{0}".format(repo_count)))
 
-        if not self.repos:
-            repos.extend(self.astute['BOOTSTRAP']['EXTRA_DEB_REPOS'])
+        if not self.extra_repos:
+            repos.extend(CONF.extra_repos)
 
         return sorted(repos, key=lambda repo: repo['priority'] or 500)
 
     def _get_packages(self):
-        result = set(consts.DEFAULT_PACKAGES)
+        result = set(CONF.packages)
         result.add(self.kernel_flavor)
         if self.packages:
             result |= set(self.packages)
