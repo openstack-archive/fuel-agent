@@ -66,6 +66,7 @@ Ironic bootstrap config files with Fuel Agent
 %package -n fuel-bootstrap-cli
 Summary: Fuel-bootstrap wrapper tool
 Group: Development/Libraries
+Requires:    fuel-agent
 
 %description -n fuel-bootstrap-cli
 User-friendly wrapper for user set of scripts from fuel-agent
