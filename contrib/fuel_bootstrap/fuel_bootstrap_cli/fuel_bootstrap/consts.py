@@ -18,7 +18,7 @@
 # These consts shouldn't be configured
 
 # TODO(asvechnikov): add possibility to specify custom config file
-CONFIG_FILE = "/etc/fuel-agent/fuel_bootstrap_cli.yaml"
+CONFIG_FILE = "/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml"
 METADATA_FILE = "metadata.yaml"
 CONTAINER_FORMAT = "tar.gz"
 ROOTFS = {'name': 'rootfs',

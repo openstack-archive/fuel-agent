@@ -138,4 +138,4 @@ def make_bootstrap(params):
                       '--image_build_dir', params.image_build_dir,
                       '--input_data_file', f.name)
 
-    return bootdata['uuid'], bootdata['output']
+    return bootdata['bootstrap']['uuid'], bootdata['output']

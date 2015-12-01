@@ -10,7 +10,7 @@ extend_kopts: "biosdevname=0 debug ignore_loglevel log_buf_len=10M print_fatal_s
 # generating system initramfs - thus it's possible to
 # adjust initramfs
 extra_files:
-  - /usr/share/fuel_bootstrap/files/trusty
+  - /usr/share/fuel_bootstrap_cli/files/trusty
 # Save generated bootstrap container to
 output_dir: /tmp/
 # Defines kernel version
@@ -47,21 +47,21 @@ packages:
 ubuntu_repos:
   -
     name: ubuntu
-    priority: None
+    priority: null
     section: "main universe multiverse"
     suite: trusty
     type: deb
     uri: "http://archive.ubuntu.com/ubuntu"
   -
     name: ubuntu-updates
-    priority: None
+    priority: null
     section: "main universe multiverse"
     suite: trusty-updates
     type: deb
     uri: "http://archive.ubuntu.com/ubuntu"
   -
     name: ubuntu-security
-    priority: None
+    priority: null
     section: "main universe multiverse"
     suite: trusty-security
     type: deb
@@ -100,7 +100,7 @@ mos_repos:
 extra_repos:
   -
     name: Extra_repo
-    priority: None
+    priority: null
     section: main
     suite: trusty
     type: deb
