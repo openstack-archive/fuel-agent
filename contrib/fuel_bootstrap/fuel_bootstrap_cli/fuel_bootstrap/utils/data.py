@@ -135,10 +135,10 @@ class BootstrapDataBuilder(object):
                 repo,
                 name="extra_repo{0}".format(repo_count)))
 
-        if not self.extra_repos:
+        if not self.extra_repos and CONF.extra_repos:
             repos.extend(CONF.extra_repos)
 
-        return sorted(repos, key=lambda repo: repo['priority'] or 500)
+        return repos
 
     def _get_packages(self):
         result = set(CONF.packages)
@@ -146,6 +146,17 @@ class BootstrapDataBuilder(object):
         if self.packages:
             result |= set(self.packages)
         return list(result)
+
+    def _parse_ubuntu_repos(self, repo):
+        uri, suite = self._parse_not_extra_repo(repo)
+
+        return self._generate_repos_from_uri(
+            uri=uri,
+            codename=self.ubuntu_release,
+            name='ubuntu',
+            components=['', '-updates', '-security'],
+            section='main universe multiverse'
+        )
 
     @classmethod
     def _parse_not_extra_repo(cls, repo):
@@ -182,18 +193,6 @@ class BootstrapDataBuilder(object):
             priority='1100'
         )
         return result
-
-    @classmethod
-    def _parse_ubuntu_repos(cls, repo):
-        uri, suite = cls._parse_not_extra_repo(repo)
-
-        return cls._generate_repos_from_uri(
-            uri=uri,
-            codename=cls.ubuntu_release,
-            name='ubuntu',
-            components=['', '-updates', '-security'],
-            section='main universe multiverse'
-        )
 
     @classmethod
     def _generate_repos_from_uri(cls, uri, codename, name, components=None,
