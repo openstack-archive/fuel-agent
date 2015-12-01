@@ -431,7 +431,10 @@ LIST_BLOCK_DEVICES_SAMPLE_NVME = [
          },
      'size': 500107862016},
     {'uspec':
-        {'DEVLINKS': [],
+        {'DEVLINKS': [
+            '/dev/block/253:0',
+            '/dev/disk/by-path/pci-0000:04:00.0',
+            '/dev/disk/by-id/wwn-0x65cd2e4080864356494e000000010000'],
          'DEVPATH': '/devices/pci:00/:00:04.0/block/nvme0n1',
          'DEVNAME': '/dev/nvme0n1',
          'MAJOR': '259',
@@ -439,6 +442,24 @@ LIST_BLOCK_DEVICES_SAMPLE_NVME = [
          },
      'startsec': '0',
      'device': '/dev/nvme0n1',
+     'espec': {'state': 'running', 'timeout': '30', 'removable': '0'},
+     'bspec': {
+         'sz': '976773168', 'iomin': '4096', 'size64': '500107862016',
+         'ss': '512', 'ioopt': '0', 'alignoff': '0', 'pbsz': '4096',
+         'ra': '256', 'ro': '0', 'maxsect': '1024'},
+     'size': 500107862016},
+    {'uspec':
+        {'DEVLINKS': [
+            '/dev/block/253:64',
+            '/dev/disk/by-path/pci-0000:05:00.0',
+            '/dev/disk/by-id/wwn-0x65cd2e4080864356494e000000010000'],
+         'DEVPATH': '/devices/pci:00/:00:04.0/block/nvme1n1',
+         'DEVNAME': '/dev/nvme1n1',
+         'MAJOR': '259',
+         'DEVTYPE': 'disk', 'MINOR': '0',
+         },
+     'startsec': '0',
+     'device': '/dev/nvme1n1',
      'espec': {'state': 'running', 'timeout': '30', 'removable': '0'},
      'bspec': {
          'sz': '976773168', 'iomin': '4096', 'size64': '500107862016',
@@ -742,6 +763,25 @@ MANY_HUGE_DISKS_KS_SPACES = [
     }
 ]
 
+SINGLE_NVME_DISK_KS_SPACES = [
+    {
+        'extra': ['disk/by-id/wwn-0x65cd2e4080864356494e000000010000'],
+        'free_space': 762469,
+        'id': 'disk/by-path/pci-0000:05:00.0',
+        'name': 'nvme0n1',
+        'size': 763097,
+        'type': 'disk',
+        'volumes': [
+            {'size': 300, 'type': 'boot'},
+            {'file_system': 'ext2', 'mount': '/boot', 'name': 'Boot',
+             'size': 200, 'type': 'raid'},
+            {'size': 0, 'type': 'lvm_meta_pool'},
+            {'lvm_meta_size': 64, 'size': 55360, 'type': 'pv', 'vg': 'os'},
+            {'lvm_meta_size': 64, 'size': 707237, 'type': 'pv', 'vg': 'vm'}
+        ]
+    }
+]
+
 
 class TestNailgunMatch(unittest2.TestCase):
     def test_match_device_by_id_matches(self):
@@ -961,6 +1001,16 @@ class TestNailgunMockedMeta(unittest2.TestCase):
         self.assertEqual(3, len(p_scheme.lvs))
         self.assertEqual(2, len(p_scheme.vgs))
         self.assertEqual(3, len(p_scheme.parteds))
+
+    def test_parse_partition_scheme_for_nvme_disks(
+            self, mock_lbd, mock_image_meta):
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        data['ks_meta']['pm_data']['ks_spaces'] = (SINGLE_NVME_DISK_KS_SPACES +
+                                                   SINGLE_DISK_KS_SPACES)
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE_NVME
+        drv = nailgun.Nailgun(data)
+        p_scheme = drv.partition_scheme
+        self.assertEqual(2, len(p_scheme.parteds))
 
     def test_image_scheme(self, mock_lbd, mock_image_meta):
         mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
