@@ -136,7 +136,7 @@ opts = [
     ),
     cfg.BoolOpt(
         'skip_md_containers',
-        default=False,
+        default=True,
         help='Allow to skip MD containers (fake raid leftovers) while '
              'cleaning the rest of MDs',
     ),
