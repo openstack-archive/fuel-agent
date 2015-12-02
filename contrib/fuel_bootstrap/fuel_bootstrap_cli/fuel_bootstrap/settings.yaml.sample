@@ -9,7 +9,7 @@ extend_kopts: "biosdevname=0 debug ignore_loglevel log_buf_len=10M print_fatal_s
 # injected after installing all packages, but before
 # generating system initramfs - thus it's possible to
 # adjust initramfs
-extra_files:
+extra_dirs:
   - /usr/share/fuel_bootstrap_cli/files/trusty
 # Save generated bootstrap container to
 output_dir: /tmp/

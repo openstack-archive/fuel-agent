@@ -19,21 +19,31 @@ from cliff import command
 from fuel_bootstrap.utils import bootstrap_image as bs_image
 
 
-class DeleteCommand(command.Command):
-    """Delete specified bootstrap image from the system."""
+class ActivateCommand(command.Command):
+    """Activate specified bootstrap image."""
 
     def get_parser(self, prog_name):
-        parser = super(DeleteCommand, self).get_parser(prog_name)
+        parser = super(ActivateCommand, self).get_parser(prog_name)
         parser.add_argument(
             'id',
             type=str,
             metavar='ID',
-            help="ID of bootstrap image to be deleted"
+            help="ID of bootstrap image to be activated."
+                 " 'centos' can be used instead of ID, then Centos"
+                 " bootstrap image will be used by default."
+        )
+        parser.add_argument(
+            '--notify-webui',
+            help="Notify WebUI with result of command",
+            action='store_true'
         )
         return parser
 
     def take_action(self, parsed_args):
         # cliff handles errors by itself
-        image_uuid = bs_image.delete(parsed_args.id)
-        self.app.stdout.write("Bootstrap image {0} has been deleted.\n"
+        image_uuid = bs_image.call_wrapped_method(
+            'activate',
+            parsed_args.notify_webui,
+            image_uuid=parsed_args.id)
+        self.app.stdout.write("Bootstrap image {0} has been activated.\n"
                               .format(image_uuid))

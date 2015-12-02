@@ -118,12 +118,13 @@ class BuildCommand(command.Command):
                  " listing."
         )
         parser.add_argument(
-            '--extra-file',
-            dest='extra_files',
+            '--extra-dir',
+            dest='extra_dirs',
             type=str,
             metavar='PATH',
             help="Directory that will be injected to the image"
-                 " root filesystem. **NOTE** Files/packages will be"
+                 " root filesystem. The option can be given multiple times."
+                 " **NOTE** Files/packages will be"
                  " injected after installing all packages, but before"
                  " generating system initramfs - thus it's possible to"
                  " adjust initramfs.",
@@ -163,12 +164,32 @@ class BuildCommand(command.Command):
             type=str,
             metavar='DIR',
             help="Which directory should be used for building image."
-                 " /tmp/ will be used by default.",
-            default="/tmp/"
+                 " /tmp/ will be used by default."
+        )
+        parser.add_argument(
+            '--activate',
+            help="Activate bootstrap image after build",
+            action='store_true'
+        )
+        parser.add_argument(
+            '--notify-webui',
+            help="Notify WebUI with result of command",
+            action='store_true'
         )
         return parser
 
     def take_action(self, parsed_args):
-        image_uuid, path = bs_image.make_bootstrap(parsed_args)
+        image_uuid, path = bs_image.call_wrapped_method(
+            'build',
+            parsed_args.notify_webui,
+            data=vars(parsed_args))
         self.app.stdout.write("Bootstrap image {0} has been built: {1}\n"
                               .format(image_uuid, path))
+        if parsed_args.activate:
+            bs_image.import_image(path)
+            bs_image.call_wrapped_method(
+                'activate',
+                parsed_args.notify_webui,
+                image_uuid=image_uuid)
+            self.app.stdout.write("Bootstrap image {0} has been activated.\n"
+                                  .format(image_uuid))

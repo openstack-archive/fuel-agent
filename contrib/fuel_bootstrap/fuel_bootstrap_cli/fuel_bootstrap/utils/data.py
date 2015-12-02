@@ -52,7 +52,7 @@ class BootstrapDataBuilder(object):
         self.root_ssh_authorized_file = \
             data.get('root_ssh_authorized_file') or \
             CONF.root_ssh_authorized_file
-        self.extra_files = data.get('extra_files') or CONF.extra_files
+        self.extra_dirs = data.get('extra_dirs')
 
         self.include_kernel_module = data.get('include_kernel_module')
         self.blacklist_kernel_module = data.get('blacklist_kernel_module')
@@ -74,7 +74,7 @@ class BootstrapDataBuilder(object):
                 'extend_kopts': self.extend_kopts,
                 'post_script_file': self.post_script_file,
                 'uuid': self.uuid,
-                'extra_files': self.extra_files,
+                'extra_files': self._get_extra_dirs(),
                 'root_ssh_authorized_file': self.root_ssh_authorized_file,
                 'container': {
                     'meta_file': consts.METADATA_FILE,
@@ -88,6 +88,14 @@ class BootstrapDataBuilder(object):
             'packages': self._get_packages(),
             'image_data': self._prepare_image_data()
         }
+
+    def _get_extra_dirs(self):
+        dirs = set()
+        if self.extra_dirs:
+            dirs |= set(self.extra_dirs)
+        if CONF.extra_dirs:
+            dirs |= set(CONF.extra_dirs)
+        return list(dirs)
 
     def _prepare_modules(self):
         modules = copy.copy(consts.BOOTSTRAP_MODULES)
