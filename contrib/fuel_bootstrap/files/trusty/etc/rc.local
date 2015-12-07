@@ -1,3 +1,9 @@
 #!/bin/sh -e
 
+# Apply work-around for net.ifnames
+let-rename || true
+
+# Perform fuel bootstrap configuration
 fix-configs-on-startup || true
+
+

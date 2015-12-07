@@ -3,7 +3,7 @@
 #post_script_file: /tmp/my_custom_script
 root_ssh_authorized_file: /root/.ssh/id_rsa.pub
 # Extended kernel PXE options
-extend_kopts: "biosdevname=0 debug ignore_loglevel log_buf_len=10M print_fatal_signals=1 LOGLEVEL=8"
+extend_kopts: "biosdevname=0 net.ifnames=1 debug ignore_loglevel log_buf_len=10M print_fatal_signals=1 LOGLEVEL=8"
 # Directory that will be injected to the image
 # root filesystem. **NOTE** Files/packages will be
 # injected after installing all packages, but before
