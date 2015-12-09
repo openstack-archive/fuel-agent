@@ -21,7 +21,9 @@ import tarfile
 import tempfile
 import yaml
 
+from fuel_agent import manager
 from fuel_agent.utils import utils
+from oslo_config import cfg
 
 from fuel_bootstrap import consts
 from fuel_bootstrap import errors
@@ -142,17 +144,13 @@ def make_bootstrap(data=None):
 
     LOG.info("Try to build image with data:\n%s", yaml.safe_dump(bootdata))
 
-    with tempfile.NamedTemporaryFile() as f:
-        f.write(yaml.safe_dump(bootdata))
-        f.flush()
-
-        opts = ['fa_mkbootstrap', '--nouse-syslog', '--data_driver',
-                'bootstrap_build_image', '--nodebug', '-v',
-                '--input_data_file', f.name]
-        if data.get('image_build_dir'):
-            opts.extend(['--image_build_dir', data['image_build_dir']])
-
-        utils.execute(*opts)
+    OSLO_CONF = cfg.CONF
+    OSLO_CONF(['--data_driver', 'bootstrap_build_image'], project='fuel-agent')
+    mngr = manager.Manager(bootdata)
+    LOG.info("Build process is in progress. Usually it takes 15-20 minutes."
+             " It depends on your internet connection and hardware"
+             " performance.")
+    mngr.do_mkbootstrap()
 
     return bootdata['bootstrap']['uuid'], bootdata['output']
 

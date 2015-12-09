@@ -615,7 +615,7 @@ def recompress_initramfs(chroot, compress='xz', initrd_mask='initrd*'):
     add_env_vars = {'TMPDIR': '/tmp',
                     'TMP': '/tmp'}
 
-    LOG.info('Changing initramfs compression type to: %s', compress)
+    LOG.debug('Changing initramfs compression type to: %s', compress)
     utils.execute(
         'sed', '-i', 's/^COMPRESS=.*/COMPRESS={0}/'.format(compress),
         os.path.join(chroot, 'etc/initramfs-tools/initramfs.conf'))
@@ -626,6 +626,7 @@ def recompress_initramfs(chroot, compress='xz', initrd_mask='initrd*'):
     remove_files('/', initrds)
 
     env_vars.update(add_env_vars)
+    LOG.info('Building initramfs')
     cmds = ['chroot', chroot, 'update-initramfs -v -c -k all']
     utils.execute(*cmds,
                   env_variables=env_vars, logged=True)
@@ -662,8 +663,7 @@ def restore_resolv_conf(chroot):
     for conf_name in ('resolv.conf', 'hosts'):
         dst_conf_name = os.path.join(c_etc, conf_name)
         if os.path.isfile(dst_conf_name + '.bak'):
-            LOG.info('Restoring default {0} inside chroot'.
-                     format(conf_name))
+            LOG.debug('Restoring default %s inside chroot', conf_name)
             shutil.move(dst_conf_name + '.bak', dst_conf_name)
 
 
@@ -751,6 +751,7 @@ def run_mksquashfs(chroot, output_name=None, compression_algorithm='xz'):
         # run mksquashfs
         chroot_squash = os.path.join('/mnt/dst/' + temp)
         long_squash = os.path.join(chroot, 'mnt/dst/{0}'.format(temp))
+        LOG.info('Building squashfs')
         utils.execute(
             'chroot', chroot, 'mksquashfs', '/mnt/src',
             chroot_squash,
