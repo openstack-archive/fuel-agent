@@ -14,7 +14,7 @@ extra_dirs:
 # Save generated bootstrap container to
 output_dir: /tmp/
 # Defines kernel version
-kernel-flavor: linux-image-generic-lts-trusty
+kernel_flavor: linux-image-generic-lts-trusty
 # Define packages list
 packages:
   - vim

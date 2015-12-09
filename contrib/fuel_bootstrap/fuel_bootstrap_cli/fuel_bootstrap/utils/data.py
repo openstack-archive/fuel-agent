@@ -60,8 +60,8 @@ class BootstrapDataBuilder(object):
         self.packages = data.get('packages')
 
         self.label = data.get('label') or self.uuid
-        self.extend_kopts = data.get('extend_kopts')
-        self.kernel_flavor = data.get('kernel_flavor')
+        self.extend_kopts = data.get('extend_kopts') or CONF.extend_kopts
+        self.kernel_flavor = data.get('kernel_flavor') or CONF.kernel_flavor
 
         file_name = "{0}.{1}".format(self.uuid, self.container_format)
         output_dir = data.get('output_dir', CONF.output_dir)
