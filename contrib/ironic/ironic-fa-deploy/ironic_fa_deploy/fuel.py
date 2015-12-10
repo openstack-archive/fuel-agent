@@ -14,6 +14,7 @@
 
 from ironic.drivers import base
 from ironic.drivers.modules import ipmitool
+from ironic.drivers.modules import lib_virt
 from ironic.drivers.modules import ssh
 
 from ironic_fa_deploy.modules import fuel_agent
@@ -55,4 +56,24 @@ class FuelAndSSHDriver(base.BaseDriver):
         self.power = ssh.SSHPower()
         self.deploy = fuel_agent.FuelAgentDeploy()
         self.management = ssh.SSHManagement()
+        self.vendor = fuel_agent.FuelAgentVendor()
+
+
+class FuelAndLibvirtDriver(base.BaseDriver):
+    """Fuel + Libvirt driver.
+
+    NOTE: This driver is meant only for testing environments.
+
+    This driver implements the `core` functionality, combining
+    :class:`ironic.drivers.modules.lib_virt.Libvirt` (for power on/off and reboot of
+    virtual machines tunneled over Libvirt API, with
+    :class:`ironic.drivers.modules.fuel_agent.FuelAgentDeploy` (for image
+    deployment). Implementations are in those respective classes; this class
+    is merely the glue between them.
+    """
+
+    def __init__(self):
+        self.power = lib_virt.LibvirtPower()
+        self.deploy = fuel_agent.FuelAgentDeploy()
+        self.management = lib_virt.LibvirtManagement()
         self.vendor = fuel_agent.FuelAgentVendor()
