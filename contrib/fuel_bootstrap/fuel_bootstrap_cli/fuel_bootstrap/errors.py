@@ -47,3 +47,7 @@ class IncorrectImage(FuelBootstrapException):
 
 class ConfigFileNotExists(FuelBootstrapException):
     """Should be raised when default config file is not found"""
+
+
+class WrongCobblerProfile(FuelBootstrapException):
+    """Should be raised when wrong cobbler profile has been chosen"""

@@ -155,6 +155,68 @@ def make_bootstrap(data=None):
     return bootdata['bootstrap']['uuid'], bootdata['output']
 
 
+def _update_astute_yaml(flavor=None):
+    config = consts.ASTUTE_CONFIG_FILE
+    LOG.debug("Switching in %s BOOTSTRAP/flavor to :%s",
+              config, flavor)
+    try:
+        with open(config, 'r') as f:
+            data = yaml.safe_load(f)
+        data.update({'BOOTSTRAP': {'flavor': flavor}})
+        with open(config, 'wt') as f:
+            yaml.safe_dump(data, stream=f, encoding='utf-8',
+                           default_flow_style=False,
+                           default_style='"')
+    except IOError:
+        LOG.error("Config file %s has not been processed successfully", config)
+        raise
+    except AttributeError:
+        LOG.error("Seems %s config file is empty", config)
+        raise
+
+
+def _run_puppet(container=None, manifest=None):
+    """Run puppet apply inside docker container
+
+    :param container:
+    :param manifest:
+    :return:
+    """
+    LOG.debug('Trying apply manifest:%s \ninside container:%s',
+              manifest, container)
+    utils.execute('dockerctl', 'shell', container, 'puppet', 'apply',
+                  '--detailed-exitcodes', '-dv', manifest, logged=True,
+                  check_exit_code=[0, 2], attempts=2)
+
+
+def _activate_dockerized(flavor=None):
+    """Switch between cobbler distro profiles, in case dockerized system
+
+    Unfortunately, we don't support switching between profiles "on fly",
+    so to perform this we need:
+    1) Update asute.yaml - which used by puppet to determine options
+    2) Re-run puppet for cobbler(to perform default system update, regarding
+       new profile)
+    3) Re-run puppet for astute
+    4) Restart astuted service in container
+
+    :param flavor: Switch between ubuntu\centos cobbler profile
+    :return:
+    """
+    flavor = flavor.lower()
+    if flavor not in consts.DISTROS:
+        raise errors.WrongCobblerProfile(
+            'Wrong cobbler profile passed:%s \n possible profiles:',
+            flavor, consts.DISTROS.keys())
+    _update_astute_yaml(consts.DISTROS[flavor]['astute_flavor'])
+    _run_puppet(consts.COBBLER_DOCKER, consts.COBBLER_MANIFEST)
+    _run_puppet(consts.ASTUTE_DOCKER, consts.ASTUTE_MANIFEST)
+    # restart astuted to be sure that it catches new profile
+    LOG.debug('Reloading astuted')
+    utils.execute('dockerctl', 'shell', 'astute', 'service', 'astute',
+                  'restart')
+
+
 def activate(image_uuid=""):
     is_centos = image_uuid.lower() == 'centos'
     symlink = CONF.active_bootstrap_symlink
@@ -172,9 +234,9 @@ def activate(image_uuid=""):
     else:
         LOG.warning("WARNING: switching to depracated centos-bootstrap")
 
-    # FIXME: Do normal activation when it become clear how to do it
+    # FIXME: Add pre-activate verify
     flavor = 'centos' if is_centos else 'ubuntu'
-    utils.execute('fuel-bootstrap-image-set', flavor)
+    _activate_dockerized(flavor)
 
     return image_uuid
 
