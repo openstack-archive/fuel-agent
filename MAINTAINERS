@@ -34,3 +34,18 @@ maintainers:
   - name:   Vladimir Kozhukalov
     email:  vkozhukalov@mirantis.com
     IRC:    kozhukalov
+
+- specs/: &MOS_packaging_team
+  - name:   Artem Silenkov
+    email:  asilenkov@mirantis.com
+    IRC:    asilenkov
+
+  - name:   Alexander Tsamutali
+    email:  atsamutali@mirantis.com
+    IRC:    astsmtl
+
+  - name:   Daniil Trishkin
+    email:  dtrishkin@mirantis.com
+    IRC:    dtrishkin
+
+- debian/: *MOS_packaging_team
