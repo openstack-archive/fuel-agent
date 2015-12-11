@@ -645,6 +645,7 @@ class NailgunBuildImage(BaseDataDriver):
         "debconf-utils",
         "gdisk",
         "grub-pc",
+        "hpsa-dkms",
         "i40e-dkms",
         "linux-firmware",
         "linux-firmware-nonfree",
