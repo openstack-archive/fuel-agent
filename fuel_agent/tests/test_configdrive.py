@@ -63,7 +63,7 @@ class TestConfigDriveScheme(unittest2.TestCase):
             'timezone', {'repo1': 'repo1_url', 'repo2': 'repo2_url'}, 'gw')
         cd_puppet = configdrive.ConfigDrivePuppet('master', 0)
         cd_mcollective = configdrive.ConfigDriveMcollective(
-            'pskey', 'vhost', 'host', 'user', 'password', 'connector', 1)
+            'pskey', 'vhost', 'host', 'user', 'password', 'connector', 1, -1)
         self.cd_scheme.common = cd_common
         self.cd_scheme.puppet = cd_puppet
         self.cd_scheme.mcollective = cd_mcollective

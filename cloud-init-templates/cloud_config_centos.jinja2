@@ -67,6 +67,7 @@ mcollective:
     ttl: 4294957
     securityprovider: psk
     plugin.psk: {{ mcollective.pskey }}
+    identity: {{ mcollective.identity }}
 {% if mcollective.connector == 'stomp' %}
     connector = stomp
     plugin.stomp.host: {{ mcollective.host }}
