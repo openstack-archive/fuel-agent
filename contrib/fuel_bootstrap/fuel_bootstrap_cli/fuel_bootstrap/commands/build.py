@@ -31,27 +31,13 @@ class BuildCommand(command.Command):
                  " only trusty).",
         )
         parser.add_argument(
-            '--ubuntu-repo',
-            type=str,
-            metavar='REPOSITORY',
-            help="Use the specified Ubuntu repository. Format"
-                 " 'uri codename'.",
-        )
-        parser.add_argument(
-            '--mos-repo',
-            type=str,
-            metavar='REPOSITORY',
-            help="Add link to repository with fuel* packages. That"
-                 " should either http://mirror.fuel-infra.org/mos-repos"
-                 " or its mirror. Format 'uri codename'.",
-        )
-        parser.add_argument(
             '--repo',
-            dest='extra_repos',
+            dest='repos',
             type=str,
             metavar='REPOSITORY',
-            help="Add one more repository. format 'type uri"
-                 " codename [sections][,priority]'.",
+            help="Add one more repository. NOTE: The first repo should be"
+                 " release repo. REPOSITORY format:"
+                 " 'type uri codename [sections][,priority]'.",
             action='append'
         )
         parser.add_argument(

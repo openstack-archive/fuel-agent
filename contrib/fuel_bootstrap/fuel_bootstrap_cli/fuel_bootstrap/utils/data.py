@@ -35,12 +35,9 @@ class BootstrapDataBuilder(object):
         self.container_format = consts.CONTAINER_FORMAT
 
         self.ubuntu_release = \
-            data.get('ubuntu_release') or \
-            consts.UBUNTU_RELEASE
+            data.get('ubuntu_release') or consts.UBUNTU_RELEASE
 
-        self.ubuntu_repo = data.get('ubuntu_repo')
-        self.mos_repo = data.get('mos_repo')
-        self.extra_repos = data.get('extra_repos') or []
+        self.repos = data.get('repos') or []
 
         self.http_proxy = data.get('http_proxy') or CONF.http_proxy
         self.https_proxy = data.get('https_proxy') or CONF.https_proxy
@@ -69,6 +66,7 @@ class BootstrapDataBuilder(object):
         self.output = os.path.join(output_dir, file_name)
 
     def build(self):
+        repos = self._get_repos()
         return {
             'bootstrap': {
                 'modules': self._prepare_modules(),
@@ -82,7 +80,7 @@ class BootstrapDataBuilder(object):
                     'format': self.container_format
                 }
             },
-            'repos': self._get_repos(),
+            'repos': repos,
             'proxies': self._get_proxy_settings(),
             'codename': self.ubuntu_release,
             'output': self.output,
@@ -127,25 +125,14 @@ class BootstrapDataBuilder(object):
 
     def _get_repos(self):
         repos = []
-        if self.ubuntu_repo:
-            repos.extend(self._parse_ubuntu_repos(self.ubuntu_repo))
-        else:
-            repos.extend(CONF.ubuntu_repos)
 
-        if self.mos_repo:
-            repos.extend(self._parse_mos_repos(self.mos_repo))
-        else:
-            repos.extend(CONF.mos_repos)
-
-        repo_count = 0
-        for repo in self.extra_repos:
-            repo_count += 1
+        for idx, repo in enumerate(self.repos):
             repos.append(self._parse_repo(
                 repo,
-                name="extra_repo{0}".format(repo_count)))
+                name="repo_{0}".format(idx)))
 
-        if not self.extra_repos and CONF.extra_repos:
-            repos.extend(CONF.extra_repos)
+        if not self.repos and CONF.repos:
+            repos.extend(CONF.repos)
 
         return repos
 
@@ -156,74 +143,10 @@ class BootstrapDataBuilder(object):
             result |= set(CONF.packages)
         return list(result)
 
-    def _parse_ubuntu_repos(self, repo):
-        uri, suite = self._parse_not_extra_repo(repo)
-
-        return self._generate_repos_from_uri(
-            uri=uri,
-            codename=self.ubuntu_release,
-            name='ubuntu',
-            components=['', '-updates', '-security'],
-            section='main universe multiverse'
-        )
-
-    @classmethod
-    def _parse_not_extra_repo(cls, repo):
-        regexp = r"(?P<uri>[^\s]+) (?P<suite>[^\s]+)"
-
-        match = re.match(regexp, repo)
-
-        if not match:
-            raise errors.IncorrectRepository(
-                "Coulnd't parse ubuntu repository {0}".
-                format(repo)
-            )
-
-        return match.group('uri', 'suite')
-
-    @classmethod
-    def _parse_mos_repos(cls, repo):
-        uri, suite = cls._parse_not_extra_repo(repo)
-
-        result = cls._generate_repos_from_uri(
-            uri=uri,
-            codename=suite,
-            name='mos',
-            components=['', '-updates', '-security'],
-            section='main restricted',
-            priority='1050'
-        )
-        result += cls._generate_repos_from_uri(
-            uri=uri,
-            codename=suite,
-            name='mos',
-            components=['-holdback'],
-            section='main restricted',
-            priority='1100'
-        )
-        return result
-
-    @classmethod
-    def _generate_repos_from_uri(cls, uri, codename, name, components=None,
-                                 section=None, type_=None, priority=None):
-        if not components:
-            components = ['']
-        result = []
-        for component in components:
-            result.append({
-                "name": "{0}{1}".format(name, component),
-                "type": type_ or "deb",
-                "uri": uri,
-                "priority": priority,
-                "section": section,
-                "suite": "{0}{1}".format(codename, component)
-            })
-        return result
-
     @classmethod
     def _parse_repo(cls, repo, name=None):
-        regexp = r"(?P<type>deb(-src)?) (?P<uri>[^\s]+) (?P<suite>[^\s]+)( "\
-                 r"(?P<section>[\w\s]*))?(,(?P<priority>[\d]+))?"
+        regexp = (r"(?P<type>deb(-src)?) (?P<uri>[^\s]+) (?P<suite>[^\s]+)( "
+                  r"(?P<section>[\w\s]*))?(,(?P<priority>[\d]+))?")
 
         match = re.match(regexp, repo)
 

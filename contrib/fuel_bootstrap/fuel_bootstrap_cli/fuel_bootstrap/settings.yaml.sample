@@ -46,8 +46,9 @@ packages:
 # Pass proxy parameters, for access to repos
 #http_proxy: "192.168.1.50:8080"
 #https_proxy: "192.168.1.50:8080"
-# Define upstream ubuntu-mirror
-#ubuntu_repos:
+# Define repos: upstream ubuntu-mirror, MirantisOpenstack mirror, extra repos.
+# First repo should be distro repo.
+#repos:
 #  -
 #    name: ubuntu
 #    priority: null
@@ -69,8 +70,6 @@ packages:
 #    suite: trusty-security
 #    type: deb
 #    uri: "http://archive.ubuntu.com/ubuntu"
-## Define MirantisOpenstack mirror
-#mos_repos:
 #  -
 #    name: mos
 #    priority: "1050"
@@ -99,8 +98,6 @@ packages:
 #    suite: mos9.0-holdback
 #    type: deb
 #    uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/9.0"
-## Define other deb repositories
-#extra_repos:
 #  -
 #    name: Extra_repo
 #    priority: null
