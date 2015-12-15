@@ -27,9 +27,9 @@ from oslo_config import cfg
 
 from fuel_bootstrap import consts
 from fuel_bootstrap import errors
-from fuel_bootstrap.objects import master_node_settings
 from fuel_bootstrap import settings
 from fuel_bootstrap.utils import data as data_util
+from fuel_bootstrap.utils import notifier
 
 CONF = settings.Configuration()
 LOG = logging.getLogger(__name__)
@@ -136,9 +136,7 @@ def extract_to_dir(arch_path, extract_path):
     tarfile.open(arch_path, 'r').extractall(extract_path)
 
 
-def make_bootstrap(data=None):
-    if not data:
-        data = {}
+def make_bootstrap(data):
     bootdata_builder = data_util.BootstrapDataBuilder(data)
     bootdata = bootdata_builder.build()
 
@@ -217,7 +215,8 @@ def _activate_dockerized(flavor=None):
                   'restart')
 
 
-def activate(image_uuid=""):
+@notifier.notify_webui_on_fail
+def _activate(image_uuid):
     is_centos = image_uuid.lower() == 'centos'
     symlink = CONF.active_bootstrap_symlink
 
@@ -226,7 +225,6 @@ def activate(image_uuid=""):
         LOG.debug("Symlink %s was deleted", symlink)
 
     if not is_centos:
-        parse(image_uuid)
         dir_path = full_path(image_uuid)
         os.symlink(dir_path, symlink)
         LOG.debug("Symlink %s to %s directory has been created",
@@ -238,30 +236,16 @@ def activate(image_uuid=""):
     flavor = 'centos' if is_centos else 'ubuntu'
     _activate_dockerized(flavor)
 
+    notifier.notify_webui("")
+
     return image_uuid
 
 
-def call_wrapped_method(name, notify_webui, **kwargs):
-    wrapped_methods = {
-        'build': make_bootstrap,
-        'activate': activate
-    }
-    failed = False
-    try:
-        return wrapped_methods[name](**kwargs)
-    except Exception:
-        failed = True
-        raise
-    finally:
-        if notify_webui:
-            notify_webui_about_results(failed, consts.ERROR_MSG)
+def activate(image_uuid):
+    # need to verify image_uuid
+    # TODO(asvechnikov): add check for already active image_uuid
+    #                    after cobbler will be used for is_active
+    if image_uuid.lower() != 'centos':
+        parse(image_uuid)
 
-
-def notify_webui_about_results(failed, error_message):
-    mn_settings = master_node_settings.MasterNodeSettings()
-    settings = mn_settings.get()
-    settings['settings'].setdefault('bootstrap', {}).setdefault('error', {})
-    if not failed:
-        error_message = ""
-    settings['settings']['bootstrap']['error']['value'] = error_message
-    mn_settings.update(settings)
+    return _activate(image_uuid)
