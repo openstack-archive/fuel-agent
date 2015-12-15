@@ -36,6 +36,10 @@ maintainers:
     IRC:    kozhukalov
 
 - specs/: &MOS_packaging_team
+  - name:   Mikhail Ivanov
+    email:  mivanov@mirantis.com
+    IRC:    mivanov
+
   - name:   Artem Silenkov
     email:  asilenkov@mirantis.com
     IRC:    asilenkov
@@ -47,5 +51,13 @@ maintainers:
   - name:   Daniil Trishkin
     email:  dtrishkin@mirantis.com
     IRC:    dtrishkin
+
+  - name:   Ivan Udovichenko
+    email:  iudovichenko@mirantis.com
+    IRC:    tlbr
+
+  - name:   Igor Yozhikov
+    email:  iyozhikov@mirantis.com
+    IRC:    IgorYozhikov
 
 - debian/: *MOS_packaging_team
