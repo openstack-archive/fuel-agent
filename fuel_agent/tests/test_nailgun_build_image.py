@@ -36,6 +36,7 @@ DEFAULT_TRUSTY_PACKAGES = [
     "debconf-utils",
     "gdisk",
     "grub-pc",
+    "hpsa-dkms",
     "i40e-dkms",
     "linux-firmware",
     "linux-firmware-nonfree",
