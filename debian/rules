@@ -23,6 +23,7 @@ override_dh_install:
 		python$$pyvers setup.py install --install-layout=deb \
 			--root $(CURDIR)/debian/fuel-agent; \
 	done
+	cp -r $(CURDIR)/etc $(CURDIR)/debian/fuel-agent/
 	cd contrib/ironic/ironic-fa-deploy/; \
 	set -e ; for pyvers in $(PYTHONS); do \
 		python$$pyvers ./setup.py install --install-layout=deb \
