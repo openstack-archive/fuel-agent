@@ -33,6 +33,8 @@ packages:
   - wget
   - linux-firmware
   - linux-firmware-nonfree
+  - hpsa-dkms
+  - i40e-dkms
   - xz-utils
   - squashfs-tools
   - msmtp-mta
