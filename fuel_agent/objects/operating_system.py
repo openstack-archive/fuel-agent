@@ -12,15 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from fuel_agent.objects import users
+
 
 class OperatingSystem(object):
     def __init__(self, repos, packages, major='unknown', minor='unknown',
-                 proxies=None):
+                 proxies=None, user_accounts=None):
         self.repos = repos
         self.packages = packages
         self.major = major
         self.minor = minor
         self.proxies = proxies
+        self.user_accounts = user_accounts or []
+
+    def add_user_account(self, **kwargs):
+        self.user_accounts.append(users.User(**kwargs))
 
     def to_dict(self):
         return {'major': self.major,
