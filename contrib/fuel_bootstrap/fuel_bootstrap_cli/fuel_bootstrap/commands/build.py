@@ -83,25 +83,6 @@ class BuildCommand(command.Command):
                  " initramfs."
         )
         parser.add_argument(
-            '--include-kernel-module',
-            help="Make sure the given modules are included into initramfs"
-                 " image. (by adding module into /etc/initramfs-tools/"
-                 "modules) **NOTE** If the module in question is not"
-                 " shipped with the kernel itself please add the package"
-                 " providing it (see the `--packege` option). Keep in mind"
-                 " that initramfs image should be kept as small as"
-                 " possible. This option is intended to include uncommon"
-                 " network interface cards' drivers so the initramfs can"
-                 " fetch the root filesystem image via the network."
-        )
-        parser.add_argument(
-            '--blacklist-kernel-module',
-            help="Make sure the given modules never get loaded"
-                 " automatically. **NOTE** Direct injection of files into"
-                 " the image is not recommended, and a proper way to"
-                 " customize an image is adding (custom) packages."
-        )
-        parser.add_argument(
             '--package',
             dest='packages',
             type=str,

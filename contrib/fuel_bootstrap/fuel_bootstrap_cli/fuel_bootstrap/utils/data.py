@@ -54,9 +54,6 @@ class BootstrapDataBuilder(object):
             CONF.root_ssh_authorized_file
         self.extra_dirs = data.get('extra_dirs')
 
-        self.include_kernel_module = data.get('include_kernel_module')
-        self.blacklist_kernel_module = data.get('blacklist_kernel_module')
-
         self.packages = data.get('packages')
 
         self.label = data.get('label') or self.uuid
