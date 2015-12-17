@@ -1,3 +1,9 @@
+fuel-agent (9.0-1) unstable; urgency=low
+
+  * Bump version to 9.0
+
+ -- Sergey Kulanov <skulanov@mirantis.com>  Thu, 17 Dec 2015 15:50:44 +0200
+
 fuel-agent (8.0-1) unstable; urgency=low
 
   * Bump version to 8.0
