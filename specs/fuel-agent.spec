@@ -99,10 +99,9 @@ cp -a %{_builddir}/%{name}-%{version}/contrib/ironic/bootstrap-files/* %{buildro
 cd %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/ && PBR_VERSION=%{version} python setup.py install --single-version-externally-managed -O1 --root=$RPM_BUILD_ROOT --record=%{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/INSTALLED_FILES
 install -d -m 755 %{buildroot}%{_sysconfdir}/fuel-bootstrap-cli
 install -p -D -m 644 %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/fuel_bootstrap/settings.yaml.sample %{buildroot}%{_sysconfdir}/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml
-install -p -D -m 644 %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/fuel_bootstrap/settings.yaml.sample %{buildroot}%{_sysconfdir}/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml.sample
+install -p -D -m 644 %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/fuel_bootstrap/settings.yaml.sample %{buildroot}%{_datadir}/fuel_bootstrap_cli/fuel_bootstrap_cli.yaml.sample
 install -d -m 755 %{buildroot}%{_datadir}/fuel_bootstrap_cli/files/
 cp -a %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/files/* %{buildroot}%{_datadir}/fuel_bootstrap_cli/files/
-
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -119,6 +118,7 @@ rm -rf $RPM_BUILD_ROOT
 %files -n fuel-bootstrap-cli -f %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/INSTALLED_FILES
 %defattr(0644,root,root,0755)
 %config(noreplace) %{_sysconfdir}/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml
+%{_datadir}/fuel_bootstrap_cli/fuel_bootstrap_cli.yaml.sample
 %attr(0755,root,root) %{_bindir}/fuel-bootstrap
 %{_datadir}/fuel_bootstrap_cli/files/*
 %attr(0755,root,root)  %{_datadir}/fuel_bootstrap_cli/files/trusty/usr/bin/fix-configs-on-startup
