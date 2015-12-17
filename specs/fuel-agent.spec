@@ -99,6 +99,7 @@ cp -a %{_builddir}/%{name}-%{version}/contrib/ironic/bootstrap-files/* %{buildro
 cd %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/ && PBR_VERSION=%{version} python setup.py install --single-version-externally-managed -O1 --root=$RPM_BUILD_ROOT --record=%{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/INSTALLED_FILES
 install -d -m 755 %{buildroot}%{_sysconfdir}/fuel-bootstrap-cli
 install -p -D -m 644 %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/fuel_bootstrap/settings.yaml.sample %{buildroot}%{_sysconfdir}/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml
+install -p -D -m 644 %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/fuel_bootstrap/settings.yaml.sample %{buildroot}%{_sysconfdir}/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml.sample
 install -d -m 755 %{buildroot}%{_datadir}/fuel_bootstrap_cli/files/
 cp -a %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/files/* %{buildroot}%{_datadir}/fuel_bootstrap_cli/files/
 

@@ -162,7 +162,7 @@ def _update_astute_yaml(flavor=None):
     try:
         with open(config, 'r') as f:
             data = yaml.safe_load(f)
-        data.update({'BOOTSTRAP': {'flavor': flavor}})
+        data['BOOTSTRAP']['flavor'] = flavor
         with open(config, 'wt') as f:
             yaml.safe_dump(data, stream=f, encoding='utf-8',
                            default_flow_style=False,
@@ -170,8 +170,9 @@ def _update_astute_yaml(flavor=None):
     except IOError:
         LOG.error("Config file %s has not been processed successfully", config)
         raise
-    except AttributeError:
-        LOG.error("Seems %s config file is empty", config)
+    except (KeyError, TypeError):
+        LOG.error("Seems config file %s is empty or doesn't contain BOOTSTRAP"
+                  " section", config)
         raise
 
 
