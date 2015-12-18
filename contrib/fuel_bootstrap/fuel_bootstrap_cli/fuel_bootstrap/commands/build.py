@@ -171,25 +171,14 @@ class BuildCommand(command.Command):
             help="Activate bootstrap image after build",
             action='store_true'
         )
-        parser.add_argument(
-            '--notify-webui',
-            help="Notify WebUI with result of command",
-            action='store_true'
-        )
         return parser
 
     def take_action(self, parsed_args):
-        image_uuid, path = bs_image.call_wrapped_method(
-            'build',
-            parsed_args.notify_webui,
-            data=vars(parsed_args))
+        image_uuid, path = bs_image.make_bootstrap(vars(parsed_args))
         self.app.stdout.write("Bootstrap image {0} has been built: {1}\n"
                               .format(image_uuid, path))
         if parsed_args.activate:
             bs_image.import_image(path)
-            bs_image.call_wrapped_method(
-                'activate',
-                parsed_args.notify_webui,
-                image_uuid=image_uuid)
+            bs_image.activate(image_uuid)
             self.app.stdout.write("Bootstrap image {0} has been activated.\n"
                                   .format(image_uuid))

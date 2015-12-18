@@ -36,12 +36,6 @@ class ImportCommand(command.Command):
             help="Activate bootstrap image after import",
             action='store_true'
         )
-        parser.add_argument(
-            '--notify-webui',
-            help="Notify WebUI with result of command"
-                 "Works only with --activate",
-            action='store_true'
-        )
         return parser
 
     def take_action(self, parsed_args):
@@ -50,9 +44,6 @@ class ImportCommand(command.Command):
         self.app.stdout.write("Bootstrap image {0} has been imported.\n"
                               .format(image_uuid))
         if parsed_args.activate:
-            image_uuid = bs_image.call_wrapped_method(
-                'activate',
-                parsed_args.notify_webui,
-                image_uuid=image_uuid)
+            image_uuid = bs_image.activate(image_uuid)
             self.app.stdout.write("Bootstrap image {0} has been activated\n"
                                   .format(image_uuid))

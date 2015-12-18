@@ -32,18 +32,10 @@ class ActivateCommand(command.Command):
                  " 'centos' can be used instead of ID, then Centos"
                  " bootstrap image will be used by default."
         )
-        parser.add_argument(
-            '--notify-webui',
-            help="Notify WebUI with result of command",
-            action='store_true'
-        )
         return parser
 
     def take_action(self, parsed_args):
         # cliff handles errors by itself
-        image_uuid = bs_image.call_wrapped_method(
-            'activate',
-            parsed_args.notify_webui,
-            image_uuid=parsed_args.id)
+        image_uuid = bs_image.activate(parsed_args.id)
         self.app.stdout.write("Bootstrap image {0} has been activated.\n"
                               .format(image_uuid))
