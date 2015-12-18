@@ -16,6 +16,7 @@
 
 import logging
 import os
+import re
 import shutil
 import tarfile
 import tempfile
@@ -37,6 +38,12 @@ ACTIVE = 'active'
 
 
 def get_all():
+    """Return info about all valid bootstrap images
+
+    :return: array of dict
+    """
+    # TODO(asvechnikov): need to change of determining active bootstrap
+    #                    cobbler profile must be used
     data = []
     LOG.debug("Searching images in %s", CONF.bootstrap_images_dir)
     for name in os.listdir(CONF.bootstrap_images_dir):
@@ -46,7 +53,30 @@ def get_all():
             data.append(parse(name))
         except errors.IncorrectImage as e:
             LOG.debug("Image [%s] is skipped due to %s", name, e)
+    data.append(get_centos_data())
     return data
+
+
+def _cobbler_profile():
+    """Parse current active profile from cobbler system
+
+    :return: string
+    """
+
+    stdout, _ = utils.execute('dockerctl', 'shell', 'cobbler', 'cobbler',
+                              'system', 'report', '--name', 'default')
+    regex = r"(?P<label>Profile)\s*:\s*(?P<profile>[^\s]+)"
+    return re.search(regex, stdout).group('profile')
+
+
+def get_centos_data():
+    """Return info about centos image
+
+    :return: dict
+    """
+    return {'uuid': 'centos',
+            'label': 'deprecated',
+            'status': ACTIVE if 'ubuntu' not in _cobbler_profile() else ''}
 
 
 def parse(image_uuid):
