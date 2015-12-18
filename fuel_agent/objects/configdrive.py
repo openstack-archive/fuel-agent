@@ -44,7 +44,8 @@ class ConfigDrivePuppet(object):
 
 
 class ConfigDriveMcollective(object):
-    def __init__(self, pskey, vhost, host, user, password, connector, enable):
+    def __init__(self, pskey, vhost, host, user, password, connector,
+                 enable, identity):
         self.pskey = pskey
         self.vhost = vhost
         self.host = host
@@ -52,6 +53,7 @@ class ConfigDriveMcollective(object):
         self.password = password
         self.connector = connector
         self.enable = enable
+        self.identity = identity
 
 
 class ConfigDriveScheme(object):

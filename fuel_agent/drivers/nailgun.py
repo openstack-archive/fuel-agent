@@ -525,7 +525,8 @@ class Nailgun(BaseDataDriver):
             user=data['ks_meta']['mco_user'],
             password=data['ks_meta']['mco_password'],
             connector=data['ks_meta']['mco_connector'],
-            enable=data['ks_meta']['mco_enable']
+            enable=data['ks_meta']['mco_enable'],
+            identity=data['ks_meta']['mco_identity']
         )
 
         LOG.debug('Setting configdrive profile %s' % data['profile'])

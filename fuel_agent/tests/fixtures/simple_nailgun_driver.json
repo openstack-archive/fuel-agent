@@ -60,6 +60,7 @@
         "mco_pskey": "unset",
         "mco_user": "mcollective",
         "mco_vhost": "mcollective",
+        "mco_identity": -1,
         "pm_data": {
             "kernel_params": "console=ttyS0,9600 console=tty0 rootdelay=90 nomodeset",
             "ks_spaces": []

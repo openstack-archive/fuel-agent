@@ -99,6 +99,7 @@ PROVISION_SAMPLE_DATA = {
         },
         "timezone": "America/Los_Angeles",
         "master_ip": "10.20.0.2",
+        "mco_identity": -1,
         "mco_enable": 1,
         "mco_vhost": "mcollective",
         "mco_pskey": "unset",
