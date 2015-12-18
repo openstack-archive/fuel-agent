@@ -49,7 +49,7 @@ cloud-init-per instance resolv_conf_head_nameserver /bin/sh -c 'echo nameserver 
 # configure black module lists
 # virt-what should be installed
 if [ ! -f /etc/modprobe.d/blacklist-i2c_piix4.conf ]; then
-    ([[ $(virt-what) = "virtualbox" ]] && echo "blacklist i2c_piix4" >> /etc/modprobe.d/blacklist-i2c_piix4.conf || :) && update-initramfs -u -k all
+    ( (virt-what | fgrep -q "virtualbox") && echo "blacklist i2c_piix4" >> /etc/modprobe.d/blacklist-i2c_piix4.conf || :) && update-initramfs -u -k all
     modprobe -r i2c_piix4
 fi
 
