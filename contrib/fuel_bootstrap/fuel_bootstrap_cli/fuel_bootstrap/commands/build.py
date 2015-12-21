@@ -152,6 +152,21 @@ class BuildCommand(command.Command):
             help="Activate bootstrap image after build",
             action='store_true'
         )
+        parser.add_argument(
+            '--no-default-packages',
+            help="Do not append default packages",
+            action='store_true'
+        )
+        parser.add_argument(
+            '--no-default-direct-repo-addr',
+            help="Do not append default direct repo address",
+            action='store_true'
+        )
+        parser.add_argument(
+            '--no-default-extra-dirs',
+            help="Do not append default extra directories",
+            action='store_true'
+        )
         return parser
 
     def take_action(self, parsed_args):
