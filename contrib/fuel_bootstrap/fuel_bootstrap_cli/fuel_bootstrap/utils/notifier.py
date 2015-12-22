@@ -25,7 +25,7 @@ LOG = logging.getLogger(__name__)
 def notify_webui_on_fail(function):
     def wrapper(*args, **kwargs):
         try:
-            function(*args, **kwargs)
+            return function(*args, **kwargs)
         except Exception:
             notify_webui("Last bootstrap image activation was failed."
                          " It's possible that nodes will not discovered"
