@@ -44,7 +44,9 @@ class BootstrapDataBuilder(object):
 
         self.http_proxy = data.get('http_proxy') or CONF.http_proxy
         self.https_proxy = data.get('https_proxy') or CONF.https_proxy
-        self.direct_repo_addr = data.get('direct_repo_addr')
+        self.direct_repo_addr = data.get('direct_repo_addr') or []
+        self.no_default_direct_repo_addr = data.get(
+            'no_default_direct_repo_addr')
 
         self.post_script_file = \
             data.get('post_script_file') or \
@@ -52,9 +54,11 @@ class BootstrapDataBuilder(object):
         self.root_ssh_authorized_file = \
             data.get('root_ssh_authorized_file') or \
             CONF.root_ssh_authorized_file
-        self.extra_dirs = data.get('extra_dirs')
+        self.extra_dirs = data.get('extra_dirs') or []
+        self.no_default_extra_dirs = data.get('no_default_extra_dirs')
 
-        self.packages = data.get('packages')
+        self.packages = data.get('packages') or []
+        self.no_default_packages = data.get('no_default_packages')
 
         self.label = data.get('label') or self.uuid
         self.extend_kopts = data.get('extend_kopts') or CONF.extend_kopts
@@ -87,9 +91,9 @@ class BootstrapDataBuilder(object):
         }
 
     def _get_extra_dirs(self):
-        dirs = set()
-        if self.extra_dirs:
-            dirs |= set(self.extra_dirs)
+        if self.no_default_extra_dirs:
+            return self.extra_dirs
+        dirs = set(self.extra_dirs)
         if CONF.extra_dirs:
             dirs |= set(CONF.extra_dirs)
         return list(dirs)
@@ -113,11 +117,11 @@ class BootstrapDataBuilder(object):
         return {}
 
     def _get_direct_repo_addr(self):
-        addrs = set()
-        if self.direct_repo_addr:
-            addrs |= set(self.direct_repo_addr)
-
-        addrs |= set(CONF.direct_repo_adresses)
+        if self.no_default_direct_repo_addr:
+            return self.direct_repo_addr
+        addrs = set(self.direct_repo_addr)
+        if CONF.direct_repo_addresses:
+            addrs |= set(CONF.direct_repo_addresses)
 
         return list(addrs)
 
@@ -146,10 +150,10 @@ class BootstrapDataBuilder(object):
         return repos
 
     def _get_packages(self):
-        result = set(CONF.packages)
+        result = set(self.packages)
         result.add(self.kernel_flavor)
-        if self.packages:
-            result |= set(self.packages)
+        if not self.no_default_packages and CONF.packages:
+            result |= set(CONF.packages)
         return list(result)
 
     def _parse_ubuntu_repos(self, repo):

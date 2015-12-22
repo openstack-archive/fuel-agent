@@ -172,8 +172,12 @@ def make_bootstrap(data):
 
     LOG.info("Try to build image with data:\n%s", yaml.safe_dump(bootdata))
 
+    opts = ['--data_driver', 'bootstrap_build_image']
+    if data.get('image_build_dir'):
+        opts.extend(['--image_build_dir', data['image_build_dir']])
+
     OSLO_CONF = cfg.CONF
-    OSLO_CONF(['--data_driver', 'bootstrap_build_image'], project='fuel-agent')
+    OSLO_CONF(opts, project='fuel-agent')
     mngr = manager.Manager(bootdata)
     LOG.info("Build process is in progress. Usually it takes 15-20 minutes."
              " It depends on your internet connection and hardware"
