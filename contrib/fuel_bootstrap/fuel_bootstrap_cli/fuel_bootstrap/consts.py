@@ -20,7 +20,8 @@
 # TODO(asvechnikov): add possibility to specify custom config file
 CONFIG_FILE = "/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml"
 METADATA_FILE = "metadata.yaml"
-CONTAINER_FORMAT = "tar.gz"
+COMPRESSED_CONTAINER_FORMAT = "tar.gz"
+UNCOMPRESSED_CONTAINER_FORMAT = "directory"
 ROOTFS = {'name': 'rootfs',
           'mask': 'rootfs',
           'compress_format': 'xz',
