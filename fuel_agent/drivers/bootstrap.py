@@ -22,3 +22,4 @@ class BootstrapBuildImage(nailgun.NailgunBuildImage):
     def __init__(self, data):
         super(BootstrapBuildImage, self).__init__(data)
         self.bootstrap_scheme = base.DictWrapperObject(data['bootstrap'])
+        self.output = data['output']

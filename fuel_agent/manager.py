@@ -874,12 +874,12 @@ class Manager(object):
                 chroot, os.path.join(c_dir, os.path.basename(rootfs.uri)),
                 rootfs.compress_format)
             self.dump_mkbootstrap_meta(metadata, c_dir, bs_scheme)
-            arch_file = bu.make_targz(c_dir, self.driver.data['output'])
-            LOG.debug('Output archive file : {0}'.format(arch_file))
+            output = bu.save_bs_container(self.driver.output, c_dir,
+                                          bs_scheme.container.format)
             LOG.info('--- Building bootstrap image END (do_mkbootstrap) ---')
-            return arch_file
+            return output
         except Exception as exc:
-            LOG.error('Failed to bootstrap image: %s', exc)
+            LOG.error('Failed to build bootstrap image: %s', exc)
             raise
         finally:
             LOG.info('Cleanup chroot')
