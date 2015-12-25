@@ -13,6 +13,8 @@ cat > /etc/send2syslog.conf <<EOF
 "watchlist": [
     {"servers": [ {"host": "$masternode_ip"} ],
         "watchfiles": [
+            {"tag": "bootstrap/kern.log", "files": ["/var/log/kern.log"]},
+            {"tag": "bootstrap/udev", "files": ["/var/log/udev"]},
             {"tag": "bootstrap/dmesg", "files": ["/var/log/dmesg"]},
             {"tag": "bootstrap/secure", "files": ["/var/log/secure"]},
             {"tag": "bootstrap/messages", "files": ["/var/log/messages"]},
