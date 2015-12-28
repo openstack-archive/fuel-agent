@@ -32,7 +32,9 @@ class BootstrapDataBuilder(object):
     def __init__(self, data):
         self.uuid = six.text_type(uuid.uuid4())
 
-        self.container_format = consts.CONTAINER_FORMAT
+        self.container_format = consts.COMPRESSED_CONTAINER_FORMAT
+        if data.get('no_compress'):
+            self.container_format = consts.UNCOMPRESSED_CONTAINER_FORMAT
 
         self.ubuntu_release = \
             data.get('ubuntu_release') or consts.UBUNTU_RELEASE
@@ -61,9 +63,10 @@ class BootstrapDataBuilder(object):
         self.extend_kopts = data.get('extend_kopts') or CONF.extend_kopts
         self.kernel_flavor = data.get('kernel_flavor') or CONF.kernel_flavor
 
-        file_name = "{0}.{1}".format(self.uuid, self.container_format)
-        output_dir = data.get('output_dir', CONF.output_dir)
-        self.output = os.path.join(output_dir, file_name)
+        self.output = data.get('output_dir') or CONF.output_dir
+        if not data.get('no_compress'):
+            file_name = "{0}.{1}".format(self.uuid, self.container_format)
+            self.output = os.path.join(self.output, file_name)
 
     def build(self):
         repos = self._get_repos()

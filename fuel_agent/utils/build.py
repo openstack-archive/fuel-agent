@@ -818,3 +818,37 @@ def dump_runtime_uuid(uuid, config):
     LOG.debug('Save runtime_uuid:%s to file: %s', uuid, config)
     with open(config, 'wt') as f:
         yaml.safe_dump(data, stream=f, encoding='utf-8')
+
+
+def save_bs_container(output, input_dir, format="tar.gz"):
+    """Copy files from dir to archive or another directory
+
+    :param output:
+    :param input_dir:
+    :param format:
+    :return:
+    """
+
+    if format == 'directory':
+        utils.makedirs_if_not_exists(output)
+        bs_files = os.listdir(input_dir)
+        LOG.debug("Output folder: %s\ntry to copy bootstrap files: %s",
+                  output, bs_files)
+        for bs_file in bs_files:
+            abs_bs_file = os.path.join(input_dir, bs_file)
+            if (os.path.isfile(abs_bs_file)):
+                if os.path.isfile(os.path.join(output, bs_file)):
+                    raise errors.BootstrapFileAlreadyExists(
+                        "File: {0} already exists in: {1}"
+                        .format(bs_file, output))
+                shutil.copy(abs_bs_file, output)
+                os.chmod(os.path.join(output, bs_file), 0o755)
+        return output
+    elif format == 'tar.gz':
+        LOG.debug("Try to make output archive file: %s", output)
+        output = make_targz(input_dir, output_name=output)
+        return output
+    else:
+        raise errors.WrongOutputContainer(
+            "Unsupported bootstrap container format {0}."
+            .format(format))
