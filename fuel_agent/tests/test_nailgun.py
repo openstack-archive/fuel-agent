@@ -634,6 +634,25 @@ FIRST_DISK_HUGE_KS_SPACES = [
     }
 ]
 
+ONLY_ROOTFS_IMAGE_SPACES = [
+    {
+        "name": "sda",
+        "extra": [],
+        "free_space": 11000,
+        "volumes": [
+            {
+                "mount": "/",
+                "type": "partition",
+                "file_system": "ext4",
+                "size": 10000
+            }
+        ],
+        "size": 11000,
+        "type": "disk",
+        "id": "sda",
+    }
+]
+
 FIRST_DISK_NVME_KS_SPACES = [
     {
         "name": "nvme0n1",
@@ -1433,8 +1452,13 @@ class TestNailgunMockedMeta(unittest2.TestCase):
         data = copy.deepcopy(PROVISION_SAMPLE_DATA)
         data['ks_meta']['pm_data']['ks_spaces'] = NO_BOOT_KS_SPACES
         mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
-        self.assertRaises(errors.WrongPartitionSchemeError,
-                          nailgun.Nailgun, data)
+        drv = nailgun.Nailgun(data)
+        self.assertEqual(
+            drv.partition_scheme.fs_by_mount('/').device,
+            '/dev/sda3')
+        # there's no boot partition is scheme.
+        # It is not expected to be created
+        self.assertIsNone(drv.partition_scheme.fs_by_mount('/boot'))
 
     def test_boot_partition_no_boot_nvme(self, mock_lbd, mock_image_meta):
         data = copy.deepcopy(PROVISION_SAMPLE_DATA)
@@ -1453,6 +1477,28 @@ class TestNailgunMockedMeta(unittest2.TestCase):
         self.assertEqual(
             drv.partition_scheme.fs_by_mount('/boot').device,
             '/dev/sda3')
+
+    def test_boot_partition_is_on_rootfs_nailgun(self, mock_lbd,
+                                                 mock_image_meta):
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        data['ks_meta']['pm_data']['ks_spaces'] = ONLY_ROOTFS_IMAGE_SPACES
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE_NVME
+        drv = nailgun.Nailgun(data)
+        self.assertEqual(
+            drv.partition_scheme.fs_by_mount('/').device,
+            '/dev/sda3')
+        self.assertIsNone(drv.partition_scheme.fs_by_mount('/boot'))
+
+    def test_boot_partition_is_on_rootfs_ironic(self, mock_lbd,
+                                                mock_image_meta):
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        data['ks_meta']['pm_data']['ks_spaces'] = ONLY_ROOTFS_IMAGE_SPACES
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE_NVME
+        drv = nailgun.Ironic(data)
+        self.assertEqual(
+            drv.partition_scheme.fs_by_mount('/').device,
+            '/dev/sda3')
+        self.assertIsNone(drv.partition_scheme.fs_by_mount('/boot'))
 
     def test_md_metadata_centos(self, mock_lbd, mock_image_meta):
         data = copy.deepcopy(PROVISION_SAMPLE_DATA)
