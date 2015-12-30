@@ -141,7 +141,7 @@ def validate(scheme):
 
     for space in scheme:
         for volume in space.get('volumes', []):
-            if volume['size'] > 16777216 and volume['mount'] == '/':
+            if volume['size'] > 16777216 and volume.get('mount') == '/':
                 raise errors.WrongPartitionSchemeError(
                     'Root file system must be less than 16T')
 
