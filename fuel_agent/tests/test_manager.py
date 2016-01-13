@@ -907,9 +907,12 @@ class TestImageBuild(unittest2.TestCase):
             '/tmp/imgdir', allow_unsigned_file=CONF.allow_unsigned_file,
             force_ipv4_file=CONF.force_ipv4_file, proxies={'fake': 'fake'},
             direct_repo_addr='fake_addr')
+        driver_os = self.mgr.driver.operating_system
         mock_set_apt_repos.assert_called_with(
             '/tmp/imgdir',
-            self.mgr.driver.operating_system.repos
+            driver_os.repos,
+            proxies=driver_os.proxies.proxies,
+            direct_repo_addrs=driver_os.proxies.direct_repo_addr_list
         )
 
         mock_utils.makedirs_if_not_exists.assert_called_once_with(
