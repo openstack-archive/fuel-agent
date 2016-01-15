@@ -61,3 +61,12 @@ maintainers:
     IRC:    IgorYozhikov
 
 - debian/: *MOS_packaging_team
+
+- contrib/fuel_bootstrap:
+  - name:   Artur Svechnikov
+    email:  asvechnikov@mirantis.com
+    IRC:    asvechnikov
+
+  - name:   Aleksey Zvyagintsev
+    email:  azvyagintsev@mirantis.com
+    IRC:    azvyagintsev
