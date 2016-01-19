@@ -164,12 +164,46 @@ class ExecuteTestCase(unittest2.TestCase):
             self.assertEqual('d41d8cd98f00b204e9800998ecf8427e',
                              utils.calculate_md5('fake', 0))
 
+    def test_should_bypass_proxy_true(self):
+        hostname = 'fake.hostname.11.42'
+        url = "http://{0}/place?query".format(hostname)
+        self.assertTrue(utils.should_bypass_proxy(
+            url, [hostname]))
+
+    def test_should_bypass_proxy_false(self):
+        self.assertFalse(utils.should_bypass_proxy(
+            'http://fake.hostname.11.42', ['0.0.0.0']))
+
+    @mock.patch.object(requests, 'get')
+    def test_init_http_request_proxy(self, mock_req):
+        proxies = {'http': 'proxy1'}
+        noproxy_addrs = ['fake.hostname.11.42']
+        utils.init_http_request('http://fake_url',
+                                proxies=proxies,
+                                noproxy_addrs=noproxy_addrs)
+        mock_req.assert_called_once_with(
+            'http://fake_url', stream=True, timeout=CONF.http_request_timeout,
+            headers={'Range': 'bytes=0-'}, proxies=proxies)
+
+    @mock.patch.object(requests, 'get')
+    def test_init_http_requests_bypass_proxy(self, mock_req):
+        proxies = {'http': 'proxy1'}
+        hostname = 'fake.hostname.11.42'
+        url = "http://{0}/web".format(hostname)
+        noproxy_addrs = [hostname]
+        utils.init_http_request(url,
+                                proxies=proxies,
+                                noproxy_addrs=noproxy_addrs)
+        mock_req.assert_called_once_with(
+            url, stream=True, timeout=CONF.http_request_timeout,
+            headers={'Range': 'bytes=0-'}, proxies=None)
+
     @mock.patch.object(requests, 'get')
     def test_init_http_request_ok(self, mock_req):
-        utils.init_http_request('fake_url')
+        utils.init_http_request('http://fake_url')
         mock_req.assert_called_once_with(
-            'fake_url', stream=True, timeout=CONF.http_request_timeout,
-            headers={'Range': 'bytes=0-'})
+            'http://fake_url', stream=True, timeout=CONF.http_request_timeout,
+            headers={'Range': 'bytes=0-'}, proxies=None)
 
     @mock.patch('time.sleep')
     @mock.patch.object(requests, 'get')
@@ -182,7 +216,7 @@ class ExecuteTestCase(unittest2.TestCase):
                                 requests.exceptions.TooManyRedirects(),
                                 socket.timeout(),
                                 mock_ok]
-        req_obj = utils.init_http_request('fake_url')
+        req_obj = utils.init_http_request('http://fake_url')
         self.assertEqual(mock_ok, req_obj)
 
     @mock.patch.object(requests, 'get')
@@ -190,14 +224,14 @@ class ExecuteTestCase(unittest2.TestCase):
         mock_fail = mock.Mock()
         mock_fail.raise_for_status.side_effect = KeyError()
         mock_req.return_value = mock_fail
-        self.assertRaises(KeyError, utils.init_http_request, 'fake_url')
+        self.assertRaises(KeyError, utils.init_http_request, 'http://fake_url')
 
     @mock.patch('time.sleep')
     @mock.patch.object(requests, 'get')
     def test_init_http_request_max_retries_exceeded(self, mock_req, mock_s):
         mock_req.side_effect = requests.exceptions.ConnectionError()
         self.assertRaises(errors.HttpUrlConnectionError,
-                          utils.init_http_request, 'fake_url')
+                          utils.init_http_request, 'http://fake_url')
 
     @mock.patch('fuel_agent.utils.utils.os.makedirs')
     @mock.patch('fuel_agent.utils.utils.os.path.isdir', return_value=False)
