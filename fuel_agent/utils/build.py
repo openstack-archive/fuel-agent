@@ -53,6 +53,9 @@ PROXY_PROTOCOLS = {
     'http': '01fuel_agent-use-proxy-http',
     'https': '01fuel_agent-use-proxy-https'
 }
+ADDITIONAL_DEBOOTSTRAP_PACKAGES = ['ca-certificates',
+                                   'apt-transport-https']
+
 # NOTE(agordeev): hardcoded to r00tme
 ROOT_PASSWORD = '$6$IInX3Cqo$5xytL1VZbZTusOewFnG6couuF0Ia61yS3rbC6P5YbZP2TYcl'\
                 'wHqMq9e3Tg8rvQxhxSlBXP1DZhdUamxdOBXK0.'
@@ -77,7 +80,9 @@ def run_debootstrap(uri, suite, chroot, arch='amd64', eatmydata=False,
         env_vars['no_proxy'] = ','.join(direct_repo_addr)
         LOG.debug('Setting no_proxy for: {0}'.format(env_vars['no_proxy']))
 
-    cmds = ['debootstrap', '--verbose', '--no-check-gpg',
+    cmds = ['debootstrap',
+            '--include={0}'.format(",".join(ADDITIONAL_DEBOOTSTRAP_PACKAGES)),
+            '--verbose', '--no-check-gpg',
             '--arch={0}'.format(arch)]
     if eatmydata:
         cmds.extend(['--include=eatmydata'])
@@ -810,6 +815,12 @@ def rsync_inject(src, dst):
     LOG.debug('Rsync files from %s to: %s', src, dst)
     utils.execute('rsync', '-rlptDKv', src + '/',
                   dst + '/', logged=True)
+
+
+def update_certs(chroot):
+    """Try to update CA certificates in chroot"""
+    utils.execute('chroot', chroot, 'update-ca-certificates',
+                  check_exit_code=False, logged=True)
 
 
 def dump_runtime_uuid(uuid, config):
