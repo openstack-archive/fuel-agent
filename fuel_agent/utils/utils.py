@@ -222,7 +222,7 @@ def should_bypass_proxy(url, noproxy_addrs):
     return False
 
 
-def init_http_request(url, proxies=None, noproxy_addrs=None, byte_range=0):
+def init_http_request(url, byte_range=0, proxies=None, noproxy_addrs=None):
     LOG.debug("Trying to initialize http request object %s, byte range: %s",
               url, byte_range)
     if should_bypass_proxy(url, noproxy_addrs):
