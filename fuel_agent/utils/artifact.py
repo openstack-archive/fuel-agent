@@ -110,7 +110,7 @@ class HttpUrl(Target):
             except Exception as exc:
                 LOG.exception(exc)
                 self.response_obj = utils.init_http_request(
-                    self.url, self.processed_bytes)
+                    self.url, byte_range=self.processed_bytes)
                 continue
             else:
                 self.processed_bytes += len(data)
