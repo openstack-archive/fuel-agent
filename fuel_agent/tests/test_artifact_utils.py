@@ -87,6 +87,22 @@ class TestHttpUrl(unittest2.TestCase):
         for data in enumerate(httpurl):
             self.assertEqual(content[data[0]], data[1])
 
+    @mock.patch.object(utils, 'init_http_request')
+    def test_httpurl_next_slow_connection(self, mock_req):
+        url = "http://fake_url"
+        content = ['fake content #1', '', 'fake content #2']
+        req_mock = mock.Mock(headers={'content-length': 30})
+        req_mock.raw.read.side_effect = content
+        mock_req.return_value = req_mock
+        http_url = au.HttpUrl(url)
+
+        for data in content:
+            if data:
+                self.assertEqual(data, next(http_url))
+        expected_calls = [mock.call(url),
+                          mock.call(url, byte_range=len(content[0]))]
+        self.assertEqual(expected_calls, mock_req.call_args_list)
+
 
 class TestGunzipStream(unittest2.TestCase):
     def test_gunzip_stream_next(self):
