@@ -53,7 +53,5 @@ DISTROS = {'ubuntu': {'cobbler_profile': 'ubuntu_bootstrap',
                       'astute_flavor': 'ubuntu'},
            'centos': {'cobbler_profile': 'bootstrap',
                       'astute_flavor': 'centos'}}
-COBBLER_DOCKER = 'cobbler'
-COBBLER_MANIFEST = '/etc/puppet/modules/nailgun/examples/cobbler-only.pp'
-ASTUTE_DOCKER = 'astute'
-ASTUTE_MANIFEST = '/etc/puppet/modules/nailgun/examples/astute-only.pp'
+COBBLER_MANIFEST = '/etc/puppet/modules/fuel/examples/cobbler.pp'
+ASTUTE_MANIFEST = '/etc/puppet/modules/fuel/examples/astute.pp'
