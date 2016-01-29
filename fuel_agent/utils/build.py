@@ -817,8 +817,10 @@ def rsync_inject(src, dst):
                   dst + '/', logged=True)
 
 
-def update_certs(chroot):
-    """Try to update CA certificates in chroot"""
+def copy_update_certs(certs, chroot):
+    """Try to copy and update CA certificates in chroot"""
+    for cert in certs:
+        rsync_inject(cert, chroot)
     utils.execute('chroot', chroot, 'update-ca-certificates',
                   check_exit_code=False, logged=True)
 
