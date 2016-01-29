@@ -158,6 +158,14 @@ class BuildCommand(command.Command):
                  " images are not supported by fuel-bootstrap.",
             action='store_true'
         )
+        parser.add_argument(
+            '--load-cert',
+            dest='certs',
+            metavar='FULL_PATH',
+            help="Load CA certificate for https connections. Work as extra"
+                 " files",
+            action='append'
+        )
         return parser
 
     def take_action(self, parsed_args):
