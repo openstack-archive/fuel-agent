@@ -134,7 +134,7 @@ def _get_deploy_data(context, image_source):
     image_props = glance.show(image_source).get('properties', {})
     LOG.debug('Image %s properties are: %s', image_source, image_props)
     try:
-        disk_data = json.loads(image_props['mos_disk_info'])
+        disk_data = json.loads(image_props['fuel_disk_info'])
     except KeyError:
         raise exception.MissingParameterValue(_('Image %s does not contain '
                                               'disk layout data.') %
