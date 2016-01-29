@@ -55,9 +55,9 @@ Replace KERNEL, INITRD, ROOTFS with Glance UUIDs of deploy images, PRIVATE_KEY
 with path to private key file.
 
 8. Place disks scheme in Nailgun format to the metadata of Glance instance
-   image with ``mos_disk_info`` key, example::
+   image with ``fuel_disk_info`` key, example::
 
-    glance image-update <image uuid> --property mos_disk_info='[{"name": "sda",
+    glance image-update <image uuid> --property fuel_disk_info='[{"name": "sda",
        "extra": [], "free_space": 11000, "type": "disk", "id": "vda",
        "size": 11000, "volumes": [{"mount": "/", "type": "partition",
        "file_system": "ext4", "size": 10000}]}]'
