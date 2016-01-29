@@ -823,15 +823,14 @@ class Manager(object):
                       ' '.join(packages))
             # disable hosts/resolv files
             bu.propagate_host_resolv_conf(chroot)
-            # for case when https proxy is used we need to upload cert file
-            # into chroot and update certificates
-            if hasattr(bs_scheme, 'extra_files') and bs_scheme.extra_files:
-                for extra in bs_scheme.extra_files:
-                        bu.rsync_inject(extra, chroot)
-                bu.update_certs(chroot)
+            if hasattr(bs_scheme, 'certs') and bs_scheme.certs:
+                bu.copy_update_certs(bs_scheme.certs, chroot)
             bu.run_apt_get(chroot, packages=packages,
                            attempts=CONF.fetch_packages_attempts)
             LOG.debug('Post-install OS configuration')
+            if hasattr(bs_scheme, 'extra_files') and bs_scheme.extra_files:
+                for extra in bs_scheme.extra_files:
+                        bu.rsync_inject(extra, chroot)
             if (hasattr(bs_scheme, 'root_ssh_authorized_file') and
                     bs_scheme.root_ssh_authorized_file):
                 LOG.debug('Put ssh auth file %s',

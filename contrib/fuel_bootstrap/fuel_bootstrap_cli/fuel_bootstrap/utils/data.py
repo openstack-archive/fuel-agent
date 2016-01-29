@@ -68,6 +68,8 @@ class BootstrapDataBuilder(object):
             file_name = "{0}.{1}".format(self.uuid, self.container_format)
             self.output = os.path.join(self.output, file_name)
 
+        self.certs = data.get('certs')
+
     def build(self):
         repos = self._get_repos()
         return {
@@ -82,7 +84,8 @@ class BootstrapDataBuilder(object):
                     'meta_file': consts.METADATA_FILE,
                     'format': self.container_format
                 },
-                'label': self.label
+                'label': self.label,
+                'certs': self.certs
             },
             'repos': repos,
             'proxies': self._get_proxy_settings(),
