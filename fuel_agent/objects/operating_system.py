@@ -28,6 +28,15 @@ class OperatingSystem(object):
     def add_user_account(self, **kwargs):
         self.user_accounts.append(users.User(**kwargs))
 
+    def get_user_by_name(self, name):
+        """Get User object by name from user_accounts.
+
+        If there is no users with such name return None
+        """
+        for user in self.user_accounts:
+            if user.name == name:
+                return user
+
     def to_dict(self):
         return {'major': self.major,
                 'minor': self.minor,

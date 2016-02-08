@@ -56,10 +56,6 @@ PROXY_PROTOCOLS = {
 ADDITIONAL_DEBOOTSTRAP_PACKAGES = ['ca-certificates',
                                    'apt-transport-https']
 
-# NOTE(agordeev): hardcoded to r00tme
-ROOT_PASSWORD = '$6$IInX3Cqo$5xytL1VZbZTusOewFnG6couuF0Ia61yS3rbC6P5YbZP2TYcl'\
-                'wHqMq9e3Tg8rvQxhxSlBXP1DZhdUamxdOBXK0.'
-
 
 def run_debootstrap(uri, suite, chroot, arch='amd64', eatmydata=False,
                     attempts=10, proxies=None, direct_repo_addr=None):
@@ -180,11 +176,12 @@ def clean_apt_settings(chroot, allow_unsigned_file='allow_unsigned_packages',
     clean_dirs(chroot, dirs)
 
 
-def do_post_inst(chroot, allow_unsigned_file='allow_unsigned_packages',
+def do_post_inst(chroot, hashed_root_password,
+                 allow_unsigned_file='allow_unsigned_packages',
                  force_ipv4_file='force_ipv4'):
     # NOTE(agordeev): set up password for root
     utils.execute('sed', '-i',
-                  's%root:[\*,\!]%root:' + ROOT_PASSWORD + '%',
+                  's%root:[\*,\!]%root:' + hashed_root_password + '%',
                   os.path.join(chroot, 'etc/shadow'))
     # NOTE(agordeev): backport from bash-script:
     # in order to prevent the later puppet workflow outage, puppet service

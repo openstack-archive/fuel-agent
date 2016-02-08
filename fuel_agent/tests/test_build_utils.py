@@ -180,14 +180,22 @@ class BuildUtilsTestCase(unittest2.TestCase):
                           mock_open):
         mock_path.join.return_value = 'fake_path'
         mock_path.exists.return_value = True
-        bu.do_post_inst('chroot', allow_unsigned_file='fake_unsigned',
+
+        # crypt.crypt('qwerty')
+        password = ('$6$KyOsgFgf9cLbGNST$Ej0Usihfy7W/WT2H0z0mC1DapC/IUpA0jF'
+                    '.Fs83mFIdkGYHL9IOYykRCjfssH.YL4lHbmrvOd/6TIfiyh1hDY1')
+
+        bu.do_post_inst('chroot',
+                        hashed_root_password=password,
+                        allow_unsigned_file='fake_unsigned',
                         force_ipv4_file='fake_force_ipv4')
         file_handle_mock = mock_open.return_value.__enter__.return_value
         file_handle_mock.write.assert_called_once_with('manual\n')
         mock_exec_expected_calls = [
-            mock.call('sed', '-i', 's%root:[\*,\!]%root:$6$IInX3Cqo$5xytL1VZb'
-                      'ZTusOewFnG6couuF0Ia61yS3rbC6P5YbZP2TYclwHqMq9e3Tg8rvQx'
-                      'hxSlBXP1DZhdUamxdOBXK0.%', 'fake_path'),
+            mock.call('sed',
+                      '-i',
+                      's%root:[\*,\!]%root:{}%'.format(password),
+                      'fake_path'),
             mock.call('chroot', 'chroot', 'update-rc.d', 'puppet', 'disable'),
             mock.call('chroot', 'chroot', 'dpkg-divert', '--local', '--add',
                       'fake_path'),

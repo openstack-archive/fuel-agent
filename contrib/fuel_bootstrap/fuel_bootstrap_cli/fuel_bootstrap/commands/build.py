@@ -166,6 +166,13 @@ class BuildCommand(command.Command):
                  " files",
             action='append'
         )
+        parser.add_argument(
+            '--root-password',
+            type=str,
+            help=("Root password for bootstrap image. PasswordAuthentication"
+                  " by ssh still rejected by default! This password actual"
+                  " only for tty login!"),
+        )
         return parser
 
     def take_action(self, parsed_args):

@@ -117,3 +117,5 @@ active_bootstrap_symlink: "/var/www/nailgun/bootstraps/active_bootstrap"
 #  "user": "admin"
 #  "password": "admin"
 
+# User can provide default hashed root password for bootstrap image
+# hashed_root_password: "$6$IInX3Cqo$5xytL1VZbZTusOewFnG6couuF0Ia61yS3rbC6P5YbZP2TYclwHqMq9e3Tg8rvQxhxSlBXP1DZhdUamxdOBXK0."
