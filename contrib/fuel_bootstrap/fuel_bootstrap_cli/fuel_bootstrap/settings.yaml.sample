@@ -17,29 +17,31 @@ output_dir: /tmp/
 kernel_flavor: linux-image-generic-lts-trusty
 # Define packages list
 packages:
-  - vim
-  - mc
-  - openssh-client
-  - openssh-server
-  - ntp
-  - mcollective
-  - nailgun-agent
-  - nailgun-mcagents
-  - network-checker
   - fuel-agent
-  - ubuntu-minimal
-  - live-boot
-  - live-boot-initramfs-tools
-  - wget
+  - hwloc
+  - hpsa-dkms
+  - i40e-dkms
   - linux-firmware
   - linux-firmware-nonfree
   - linux-headers-generic
-  - hpsa-dkms
-  - i40e-dkms
-  - xz-utils
-  - squashfs-tools
+  - live-boot
+  - live-boot-initramfs-tools
+  - mc
+  - mcollective
   - msmtp-mta
-  - hwloc
+  - multipath-tools
+  - multipath-tools-boot
+  - nailgun-agent
+  - nailgun-mcagents
+  - network-checker
+  - ntp
+  - openssh-client
+  - openssh-server
+  - squashfs-tools
+  - ubuntu-minimal
+  - vim
+  - wget
+  - xz-utils
 # Ignore proxy for this repos
 #direct_repo_addresses:
 #    - 127.0.0.1
