@@ -127,7 +127,7 @@ class TestPartitionUtils(unittest2.TestCase):
         }
         pu.make_partition('/dev/fake', 100, 200, 'primary')
         mock_exec_expected_calls = [
-            mock.call('parted', '-a', 'optimal', '-s', '/dev/fake', 'unit',
+            mock.call('parted', '-a', 'minimal', '-s', '/dev/fake', 'unit',
                       'MiB', 'mkpart', 'primary', '100', '200',
                       check_exit_code=[0, 1])]
         mock_udev.assert_called_once_with()

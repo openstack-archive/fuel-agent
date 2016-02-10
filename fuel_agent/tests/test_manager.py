@@ -448,18 +448,19 @@ class TestManager(unittest2.TestCase):
 
         mock_pu_mp_expected_calls = [
             mock.call('/dev/sda', 1, 25, 'primary'),
-            mock.call('/dev/sda', 25, 225, 'primary'),
-            mock.call('/dev/sda', 225, 425, 'primary'),
-            mock.call('/dev/sda', 425, 625, 'primary'),
-            mock.call('/dev/sda', 625, 20063, 'primary'),
-            mock.call('/dev/sda', 20063, 65660, 'primary'),
-            mock.call('/dev/sda', 65660, 65680, 'primary'),
+            mock.call('/dev/sda', 26, 226, 'primary'),
+            mock.call('/dev/sda', 227, 427, 'primary'),
+            mock.call('/dev/sda', 428, 628, 'primary'),
+            mock.call('/dev/sda', 629, 20067, 'primary'),
+            mock.call('/dev/sda', 20068, 65665, 'primary'),
+            mock.call('/dev/sda', 65666, 65686, 'primary'),
             mock.call('/dev/sdb', 1, 25, 'primary'),
-            mock.call('/dev/sdb', 25, 225, 'primary'),
-            mock.call('/dev/sdb', 225, 65196, 'primary'),
+            mock.call('/dev/sdb', 26, 226, 'primary'),
+            mock.call('/dev/sdb', 227, 65198, 'primary'),
             mock.call('/dev/sdc', 1, 25, 'primary'),
-            mock.call('/dev/sdc', 25, 225, 'primary'),
-            mock.call('/dev/sdc', 225, 65196, 'primary')]
+            mock.call('/dev/sdc', 26, 226, 'primary'),
+            mock.call('/dev/sdc', 227, 65198, 'primary')]
+
         self.assertEqual(mock_pu_mp_expected_calls, mock_pu_mp.call_args_list)
 
         mock_pu_spf_expected_calls = [mock.call('/dev/sda', 1, 'bios_grub'),
@@ -1099,6 +1100,7 @@ class TestManagerMultipathPartition(unittest2.TestCase):
             test_nailgun.MPATH_DISK_KS_SPACES
         self.mgr = manager.Manager(data)
 
+    @mock.patch.object(mu, 'mdclean_all')
     @mock.patch.object(manager.utils, 'refresh_multipath')
     @mock.patch.object(hu, 'is_multipath_device')
     @mock.patch.object(manager.os.path, 'exists')
@@ -1109,7 +1111,7 @@ class TestManagerMultipathPartition(unittest2.TestCase):
     @mock.patch.object(hu, 'list_block_devices')
     def test_do_partitioning_mp(self, mock_hu_lbd, mock_fu_mf, mock_exec,
                                 mock_unbl, mock_bl, mock_os_path, mock_mp,
-                                mock_refresh_multipath):
+                                mock_refresh_multipath, mock_md_clean):
         mock_os_path.return_value = True
         mock_hu_lbd.return_value = test_nailgun.LIST_BLOCK_DEVICES_MPATH
         self.mgr._make_partitions = mock.MagicMock()
@@ -1170,10 +1172,10 @@ class TestManagerMultipathPartition(unittest2.TestCase):
 
         self.assertEqual(mock_make_partition.mock_calls, [
             mock.call('/dev/mapper/12312', 1, 25, 'primary'),
-            mock.call('/dev/mapper/12312', 25, 225, 'primary'),
-            mock.call('/dev/mapper/12312', 225, 425, 'primary'),
-            mock.call('/dev/mapper/12312', 425, 625, 'primary'),
-            mock.call('/dev/mapper/12312', 625, 645, 'primary'),
+            mock.call('/dev/mapper/12312', 26, 226, 'primary'),
+            mock.call('/dev/mapper/12312', 227, 427, 'primary'),
+            mock.call('/dev/mapper/12312', 428, 628, 'primary'),
+            mock.call('/dev/mapper/12312', 629, 649, 'primary'),
             mock.call('/dev/sdc', 1, 201, 'primary')])
 
         self.assertEqual(mock_set_partition_flag.mock_calls, [
