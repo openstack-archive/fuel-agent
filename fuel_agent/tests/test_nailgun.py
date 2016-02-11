@@ -542,6 +542,52 @@ SINGLE_DISK_KS_SPACES = [
     }
 ]
 
+SECOND_DISK_OS_KS_SPACES = [
+    {
+        "name": "sda",
+        "extra": ["sda"],
+        "free_space": 1024,
+        "volumes": [
+            {
+                "type": "boot",
+                "size": 300
+            },
+        ],
+        "type": "disk",
+        "id": "sda",
+        "size": 102400
+    },
+    {
+        "name": "sdb",
+        "extra": ["sdb"],
+        "free_space": 1024,
+        "volumes": [
+            {
+                "type": "boot",
+                "size": 300
+            },
+            {
+                "mount": "/boot",
+                "size": 200,
+                "type": "partition",
+                "file_system": "ext2",
+                "name": "Boot"
+            },
+            {
+                "mount": "/",
+                "size": 200,
+                "type": "partition",
+                "file_system": "ext4",
+                "name": "Root",
+                "keep_data": True
+            },
+        ],
+        "type": "disk",
+        "id": "sdb",
+        "size": 102400
+    }
+]
+
 NO_BOOT_KS_SPACES = [
     {
         "name": "sda",
@@ -1430,6 +1476,25 @@ class TestNailgunMockedMeta(unittest2.TestCase):
         for fs in drv.partition_scheme.fss:
             if fs.mount != '/':
                 self.assertFalse(fs.keep_data)
+
+    def test_configdrive_partition_on_os_disk(self, mock_lbd,
+                                              mock_image_meta):
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        data['ks_meta']['pm_data']['ks_spaces'] = SECOND_DISK_OS_KS_SPACES
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
+        drv = nailgun.Nailgun(data)
+        root_device = drv.partition_scheme.root_device()[:-1]
+        self.assertIn(root_device, drv.partition_scheme.configdrive_device())
+        self.assertEqual('/dev/sdb', root_device)
+
+    @mock.patch.object(nailgun.Nailgun, '_needs_configdrive',
+                       return_value=False)
+    def test_configdrive_partition_not_needed(self, mock_cdrive, mock_lbd,
+                                              mock_image_meta):
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
+        drv = nailgun.Nailgun(data)
+        self.assertIsNone(drv.partition_scheme.configdrive_device())
 
     def test_boot_partition_ok_many_normal_disks(self, mock_lbd,
                                                  mock_image_meta):
