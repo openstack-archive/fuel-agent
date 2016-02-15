@@ -198,7 +198,7 @@ def grub1_stage1(chroot=''):
 
 
 def grub1_cfg(kernel=None, initrd=None,
-              kernel_params='', chroot='', grub_timeout=5):
+              kernel_params='', chroot='', grub_timeout=10):
 
     if not kernel:
         kernel = guess_kernel(chroot=chroot)
@@ -227,7 +227,7 @@ def grub2_install(install_devices, chroot=''):
         utils.execute(*cmd, run_as_root=True, check_exit_code=[0])
 
 
-def grub2_cfg(kernel_params='', chroot='', grub_timeout=5):
+def grub2_cfg(kernel_params='', chroot='', grub_timeout=10):
     grub_defaults = chroot + guess_grub2_default(chroot=chroot)
     rekerparams = re.compile(r'^.*GRUB_CMDLINE_LINUX=.*')
     retimeout = re.compile(r'^.*GRUB_HIDDEN_TIMEOUT=.*')

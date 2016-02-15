@@ -398,7 +398,7 @@ class TestGrubUtils(unittest2.TestCase):
         mock_initrd.return_value = 'initrd-version'
         config = """
 default=0
-timeout=5
+timeout=10
 title Default (kernel-version)
     kernel /kernel-version kernel-params
     initrd /initrd-version
