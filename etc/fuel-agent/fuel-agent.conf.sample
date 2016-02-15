@@ -41,7 +41,7 @@
 #image_build_suffix=.fuel-agent-image
 
 # Timeout in secs for GRUB (integer value)
-#grub_timeout=5
+#grub_timeout=10
 
 # Maximum allowed loop devices count to use (integer value)
 #max_loop_devices_count=255

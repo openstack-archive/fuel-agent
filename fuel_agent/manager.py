@@ -76,7 +76,7 @@ opts = [
     ),
     cfg.IntOpt(
         'grub_timeout',
-        default=5,
+        default=10,
         help='Timeout in secs for GRUB'
     ),
     cfg.IntOpt(
