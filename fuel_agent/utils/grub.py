@@ -230,16 +230,18 @@ def grub2_install(install_devices, chroot=''):
 def grub2_cfg(kernel_params='', chroot='', grub_timeout=10):
     grub_defaults = chroot + guess_grub2_default(chroot=chroot)
     rekerparams = re.compile(r'^.*GRUB_CMDLINE_LINUX=.*')
-    retimeout = re.compile(r'^.*GRUB_HIDDEN_TIMEOUT=.*')
+    retimeout = re.compile(r'^.*GRUB_TIMEOUT=.*')
+    rehidtimeout = re.compile(r'^.*GRUB_HIDDEN_TIMEOUT.*')
     new_content = ''
     with open(grub_defaults) as f:
         for line in f:
             line = rekerparams.sub(
                 'GRUB_CMDLINE_LINUX="{kernel_params}"'.
                 format(kernel_params=kernel_params), line)
-            line = retimeout.sub('GRUB_HIDDEN_TIMEOUT={grub_timeout}'.
+            line = retimeout.sub('GRUB_TIMEOUT={grub_timeout}'.
                                  format(grub_timeout=grub_timeout), line)
-            new_content += line
+            if not rehidtimeout.search(line):
+                new_content += line
     # NOTE(agordeev): explicitly add record fail timeout, in order to
     # prevent user confirmation appearing if unexpected reboot occured.
     new_content += '\nGRUB_RECORDFAIL_TIMEOUT={grub_timeout}\n'.\

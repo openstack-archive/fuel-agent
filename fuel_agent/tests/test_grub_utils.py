@@ -456,9 +456,13 @@ title Default (kernel-version-set)
         mock_mkconfig.return_value = '/sbin/grub-mkconfig'
         mock_conf.return_value = '/boot/grub/grub.cfg'
         orig_content = """foo
+GRUB_HIDDEN_TIMEOUT=5
+GRUB_HIDDEN_TIMEOUT_QUIET=true
+GRUB_TIMEOUT=5
 GRUB_CMDLINE_LINUX="kernel-params-orig"
 bar"""
         new_content = """foo
+GRUB_TIMEOUT=10
 GRUB_CMDLINE_LINUX="kernel-params-new"
 bar
 GRUB_RECORDFAIL_TIMEOUT=10

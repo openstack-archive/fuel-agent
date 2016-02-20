@@ -13,6 +13,7 @@ dist
 
 *.egg
 .testrepository
+.cache
 .tox
 .idea
 .DS_Store
