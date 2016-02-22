@@ -1,3 +1,9 @@
+fuel-agent (9.0-2) unstable; urgency=low
+
+  * Add fuel_libvirt driver
+
+ -- Vasyl Saienko <vsaienko@mirantis.com>  Mon, 22 Feb 2016 16:10:30 +0200
+
 fuel-agent (9.0-1) unstable; urgency=low
 
   * Bump version to 9.0

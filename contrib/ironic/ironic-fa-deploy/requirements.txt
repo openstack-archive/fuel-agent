@@ -1,3 +1,4 @@
 # The driver uses Ironic code base and it's requirements, no additional
 # requirements needed
 ironic>=4.2.0
+libvirt-python>=1.2.5 # LGPLv2+
