@@ -165,6 +165,60 @@ supports-register-dump: yes
                                           '--name=/dev/fake',
                                           check_exit_code=[0])
 
+    def test_multipath_true(self):
+        uspec = {
+            'DEVLINKS': ['/dev/disk/by-id/fakeid1',
+                         '/dev/disk/by-id/dm-uuid-mpath-231'],
+            'DEVNAME': '/dev/dm-0',
+            'DEVPATH': '/devices/fakepath',
+            'DEVTYPE': 'disk',
+            'MAJOR': '11',
+            'MINOR': '0',
+            'ID_BUS': 'fakebus',
+            'ID_MODEL': 'fakemodel',
+            'ID_SERIAL_SHORT': 'fakeserial',
+            'ID_WWN': 'fakewwn',
+            'ID_CDROM': '1'
+        }
+        self.assertEqual(True, hu.is_multipath_device('/dev/mapper/231',
+                                                      uspec))
+
+    def test_multipath_false(self):
+        uspec = {
+            'DEVLINKS': ['/dev/disk/by-id/fakeid1',
+                         '/dev/disk/by-id/dm-name-fakeid1'],
+            'DEVNAME': '/dev/dm-0',
+            'DEVPATH': '/devices/fakepath',
+            'DEVTYPE': 'disk',
+            'MAJOR': '11',
+            'MINOR': '0',
+            'ID_BUS': 'fakebus',
+            'ID_MODEL': 'fakemodel',
+            'ID_SERIAL_SHORT': 'fakeserial',
+            'ID_WWN': 'fakewwn',
+            'ID_CDROM': '1'
+        }
+        self.assertEqual(False, hu.is_multipath_device('/dev/sda', uspec))
+
+    @mock.patch.object(hu, 'udevreport')
+    def test_multipath_no_uspec(self, mock_udev):
+        uspec = {
+            'DEVLINKS': ['/dev/disk/by-id/fakeid1',
+                         '/dev/disk/by-id/dm-uuid-mpath-231'],
+            'DEVNAME': '/dev/dm-0',
+            'DEVPATH': '/devices/fakepath',
+            'DEVTYPE': 'disk',
+            'MAJOR': '11',
+            'MINOR': '0',
+            'ID_BUS': 'fakebus',
+            'ID_MODEL': 'fakemodel',
+            'ID_SERIAL_SHORT': 'fakeserial',
+            'ID_WWN': 'fakewwn',
+            'ID_CDROM': '1'
+        }
+        mock_udev.return_value = uspec
+        self.assertEqual(True, hu.is_multipath_device('/dev/mapper/231'))
+
     @mock.patch.object(utils, 'execute')
     def test_blockdevreport(self, mock_exec):
         # should run blockdev OS command

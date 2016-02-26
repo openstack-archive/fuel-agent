@@ -758,3 +758,107 @@ class BuildUtilsTestCase(unittest2.TestCase):
             '/test/dst/dir/mnt/dst/.mksquashfs.tmp.fake_uuid',
             'myname'
         )
+
+    @mock.patch.object(utils, 'execute')
+    def test_get_config_value(self, mock_exec):
+        mock_exec.return_value = [r'foo=42', '']
+        self.assertEqual(42, bu.get_lvm_config_value('fake_chroot',
+                                                     'section', 'foo'))
+
+        mock_exec.return_value = [r'bar=0.5', '']
+        self.assertEqual(0.5, bu.get_lvm_config_value('fake_chroot',
+                                                      'section', 'bar'))
+
+        mock_exec.return_value = [r'buzz="spam"', '']
+        self.assertEqual("spam", bu.get_lvm_config_value('fake_chroot',
+                                                         'section', 'buzz'))
+
+        mock_exec.return_value = [r'list=[1, 2.3, 4., .5, "6", "7", "8"]', '']
+        self.assertEqual([1, 2.3, 4., .5, "6", "7", "8"],
+                         bu.get_lvm_config_value('fake_chroot',
+                                                 'section', 'list'))
+
+        mock_exec.return_value = [r'ist2=["1", "spam egg", '
+                                  r'"^kind\of\regex?[.$42]"]', '']
+        self.assertEqual(["1", "spam egg", r"^kind\of\regex?[.$42]"],
+                         bu.get_lvm_config_value('fake_chroot',
+                                                 'section', 'list2'))
+
+    def test_update_raw_config(self):
+        RAW_CONFIG = '''
+foo {
+\tbar=42
+}'''
+        self.assertEqual('''
+foo {
+\tbar=1
+}''', bu._update_option_in_lvm_raw_config('foo', 'bar', 1, RAW_CONFIG))
+        self.assertEqual('''
+foo {
+\tbar=42
+\tbuzz=1
+}''', bu._update_option_in_lvm_raw_config('foo', 'buzz', 1, RAW_CONFIG))
+        self.assertEqual('''
+foo {
+\tbar=42
+}
+spam {
+\tegg=1
+}''', bu._update_option_in_lvm_raw_config('spam', 'egg', 1, RAW_CONFIG))
+        self.assertEqual('''
+foo {
+\tbar=[1, 2.3, "foo", "buzz"]
+}''', bu._update_option_in_lvm_raw_config('foo', 'bar',
+                                          [1, 2.3, "foo", "buzz"],
+                                          RAW_CONFIG))
+
+    @mock.patch.object(os, 'remove')
+    @mock.patch.object(utils, 'execute')
+    @mock.patch.object(bu, '_update_option_in_lvm_raw_config')
+    @mock.patch.object(shutil, 'copy')
+    @mock.patch.object(shutil, 'move')
+    def test_override_config_value(self, m_move, m_copy, m_upd, m_execute,
+                                   m_remove):
+        m_execute.side_effect = (['old_fake_config', ''],
+                                 ['fake_config', ''])
+        m_upd.return_value = 'fake_config'
+        with mock.patch('six.moves.builtins.open', create=True) as mock_open:
+            file_handle_mock = mock_open.return_value.__enter__.return_value
+            bu.override_lvm_config_value('fake_chroot',
+                                         'foo', 'bar', 'buzz', 'lvm.conf')
+        file_handle_mock.write.assert_called_with('fake_config')
+        m_upd.assert_called_once_with('foo', 'bar', 'buzz', 'old_fake_config')
+        m_copy.assert_called_once_with('lvm.conf',
+                                       'lvm.conf.bak')
+
+    @mock.patch.object(os, 'remove')
+    @mock.patch.object(utils, 'execute')
+    @mock.patch.object(bu, '_update_option_in_lvm_raw_config')
+    @mock.patch.object(shutil, 'copy')
+    @mock.patch.object(shutil, 'move')
+    def test_override_config_value_fail(self, m_move, m_copy, m_upd, m_execute,
+                                        m_remove):
+        m_execute.side_effect = (['old_fake_config', ''],
+                                 errors.ProcessExecutionError())
+        m_upd.return_value = 'fake_config'
+        with mock.patch('six.moves.builtins.open', create=True) as mock_open:
+            file_handle_mock = mock_open.return_value.__enter__.return_value
+            self.assertRaises(errors.ProcessExecutionError,
+                              bu.override_lvm_config_value,
+                              'fake_chroot', 'foo', 'bar', 'buzz', 'lvm.conf')
+        self.assertTrue(file_handle_mock.write.called)
+        m_copy.assert_called_once_with('lvm.conf',
+                                       'lvm.conf.bak')
+        m_move.assert_called_once_with('lvm.conf.bak',
+                                       'lvm.conf')
+
+    @mock.patch.object(bu, 'get_lvm_config_value')
+    @mock.patch.object(bu, 'override_lvm_config_value')
+    def test_append_lvm_devices_filter(self, m_override_config, m_get_config):
+        m_get_config.return_value = ['fake1']
+        bu.append_lvm_devices_filter('fake_chroot', ['fake2', 'fake3'])
+        m_override_config.assert_called_once_with(
+            'fake_chroot',
+            'devices', 'filter',
+            ['fake1', 'fake2', 'fake3'],
+            'fake_chroot/etc/lvm/lvm.conf')

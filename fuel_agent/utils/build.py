@@ -877,3 +877,134 @@ def save_bs_container(output, input_dir, format="tar.gz"):
         raise errors.WrongOutputContainer(
             "Unsupported bootstrap container format {0}."
             .format(format))
+
+
+# NOTE(sslypushenko) Modern lvm supports lvmlocal.conf to selective overriding
+# set of configuration options. So, this functionality for patching lvm
+# configuration should be removed after lvm upgrade in Ubuntu repositories and
+# replaced with proper lvmlocal.conf file
+def get_lvm_config_value(chroot, section, name):
+    """Get option value from current lvm configuration.
+
+    If option is not present in lvm.conf, None returns
+    """
+    raw_value = utils.execute('chroot', chroot, 'lvm dumpconfig',
+                              '/'.join((section, name)),
+                              check_exit_code=[0, 5])[0]
+    if '=' not in raw_value:
+        return
+
+    raw_value = raw_value.split('=')[1].strip()
+
+    re_str = '"[^"]*"'
+    re_float = '\\d*\\.\\d*'
+    re_int = '\\d+'
+    tokens = re.findall('|'.join((re_str, re_float, re_int)), raw_value)
+
+    values = []
+    for token in tokens:
+        if re.match(re_str, token):
+            values.append(token.strip('"'))
+        elif re.match(re_float, token):
+            values.append(float(token))
+        elif re.match(re_int, token):
+            values.append(int(token))
+
+    if not values:
+        return
+    elif len(values) == 1:
+        return values[0]
+    else:
+        return values
+
+
+def _update_option_in_lvm_raw_config(section, name, value, raw_config):
+    """Update option in dumped LVM configuration.
+
+    :param raw_config should be a string with dumped LVM configuration.
+
+    If section and key present in config, option will be overwritten.
+    If there is no key but section presents in config, option will be added
+    in to the end of section.
+    If there are no section and key in config, section will be added in the end
+    of the config.
+    """
+    def dump_value(value):
+        if isinstance(value, int):
+            return str(value)
+        elif isinstance(value, float):
+            return '{:.10f}'.format(value).rstrip('0')
+        elif isinstance(value, str):
+            return '"{}"'.format(value)
+        elif isinstance(value, list or tuple):
+            return '[{}]'.format(', '.join(dump_value(v) for v in value))
+
+    lines = raw_config.splitlines()
+    section_start = next((n for n, line in enumerate(lines)
+                          if line.strip().startswith('{} '.format(section))),
+                         None)
+    if section_start is None:
+        raw_section = '{} {{\n\t{}={}\n}}'.format(section, name,
+                                                  dump_value(value))
+        lines.append(raw_section)
+        return '\n'.join(lines)
+
+    line_no = section_start
+    while not lines[line_no].strip().endswith('}'):
+        if lines[line_no].strip().startswith(name):
+            lines[line_no] = '\t{}={}'.format(name, dump_value(value))
+            return '\n'.join(lines)
+        line_no += 1
+
+    lines[line_no] = '\t{}={}\n}}'.format(name, dump_value(value))
+    return '\n'.join(lines)
+
+
+def override_lvm_config_value(chroot, section, name, value, lvm_conf_file):
+    """Override option in LVM configuration.
+
+    If option is not valid, then errors.ProcessExecutionError will be raised
+    and lvm configuration will remain unchanged
+    """
+    updated_config = _update_option_in_lvm_raw_config(
+        section, name, value,
+        utils.execute('chroot', chroot, 'lvm dumpconfig')[0])
+    lvm_conf_file_bak = '.'.join((lvm_conf_file, 'bak'))
+    shutil.copy(lvm_conf_file, lvm_conf_file_bak)
+    LOG.debug('Backup for origin LVM configuration file: {}'
+              ''.format(lvm_conf_file_bak))
+    with open(lvm_conf_file, mode='w') as lvm_conf:
+        lvm_conf.write(updated_config)
+
+    # NOTE(sslypushenko) Extra cycle of dump/save lvm.conf is required to be
+    # sure that updated configuration is valid and to adjust it to general
+    # lvm.conf formatting
+    try:
+        current_config = utils.execute('chroot', chroot, 'lvm dumpconfig')[0]
+        with open(lvm_conf_file, mode='w') as lvm_conf:
+            lvm_conf.write(current_config)
+        LOG.info('LVM configuration updated')
+    except errors.ProcessExecutionError as exc:
+        shutil.move(lvm_conf_file_bak, lvm_conf_file)
+        LOG.debug('Option {}/{} can not be updated with value {}.'
+                  ''.format(section, name, value))
+        raise exc
+
+
+def append_lvm_devices_filter(chroot, multipath_lvm_filter,
+                              lvm_conf_path='/etc/lvm/lvm.conf'):
+    """Append custom devises filters to LVM configuration
+
+    LVM configuration should de updated to force lvm work with partitions
+    on multipath devices using /dev/mapper/<id>-part<n> links.
+    Other links to these devices should be blacklisted in devices/filter
+    option
+    """
+    lvm_filter = get_lvm_config_value(chroot, 'devices', 'filter') or []
+    if isinstance(lvm_filter, str):
+        lvm_filter = [lvm_filter]
+    lvm_filter = set(lvm_filter)
+    lvm_filter.update(multipath_lvm_filter)
+    override_lvm_config_value(chroot, 'devices', 'filter',
+                              sorted(list(lvm_filter)),
+                              os.path.join(chroot, lvm_conf_path.lstrip('/')))

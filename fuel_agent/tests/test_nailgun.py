@@ -510,6 +510,100 @@ LIST_BLOCK_DEVICES_SAMPLE_NVME = [
      'size': 500107862016},
 ]
 
+LIST_BLOCK_DEVICES_MPATH = [
+    {'uspec':
+        {'DEVLINKS': [
+            'disk/by-id/scsi-SATA_VBOX_HARDDISK_VB69050467-b385c7cd',
+            '/dev/disk/by-id/wwn-fake_wwn_1',
+            '/dev/disk/by-path/pci-0000:00:1f.2-scsi-0:0:0:0'],
+         'ID_SERIAL_SHORT': 'fake_serial_1',
+         'ID_WWN': 'fake_wwn_1',
+         'DEVPATH': '/devices/pci0000:00/0000:00:1f.2/ata1/host0/'
+                    'target0:0:0/0:0:0:0/block/sda',
+         'ID_MODEL': 'fake_id_model',
+         'DEVNAME': '/dev/sda',
+         'MAJOR': '8',
+         'DEVTYPE': 'disk', 'MINOR': '0', 'ID_BUS': 'ata'
+         },
+     'startsec': '0',
+     'device': '/dev/sda',
+     'espec': {'state': 'running', 'timeout': '30', 'removable': '0'},
+     'bspec': {
+         'sz': '976773168', 'iomin': '4096', 'size64': '500107862016',
+         'ss': '512', 'ioopt': '0', 'alignoff': '0', 'pbsz': '4096',
+         'ra': '256', 'ro': '0', 'maxsect': '1024'
+         },
+     'size': 500107862016},
+    {'uspec':
+        {'DEVLINKS': [
+            'disk/by-id/scsi-SATA_VBOX_HARDDISK_VB69050467-b385c7cd',
+            '/dev/disk/by-id/wwn-fake_wwn_1',
+            '/dev/disk/by-path/pci-0000:00:1f.2-scsi-0:0:1:0'],
+         'ID_SERIAL_SHORT': 'fake_serial_1',
+         'ID_WWN': 'fake_wwn_1',
+         'DEVPATH': '/devices/pci0000:00/0000:00:1f.2/ata1/host0/'
+                    'target0:0:0/0:0:0:0/block/sdb',
+         'ID_MODEL': 'fake_id_model',
+         'DEVNAME': '/dev/sdb',
+         'MAJOR': '8',
+         'DEVTYPE': 'disk', 'MINOR': '0', 'ID_BUS': 'ata'
+         },
+     'startsec': '0',
+     'device': '/dev/sdb',
+     'espec': {'state': 'running', 'timeout': '30', 'removable': '0'},
+     'bspec': {
+         'sz': '976773168', 'iomin': '4096', 'size64': '500107862016',
+         'ss': '512', 'ioopt': '0', 'alignoff': '0', 'pbsz': '4096',
+         'ra': '256', 'ro': '0', 'maxsect': '1024'
+         },
+     'size': 500107862016},
+    {'uspec':
+        {'DEVLINKS': [
+            'disk/by-id/scsi-SATA_VBOX_HARDDISK_VB69050467-b385c7cd',
+            '/dev/disk/by-id/wwn-fake_wwn_1',
+            '/dev/disk/by-id/dm-uuid-mpath-fake_wwn_1'
+            ],
+         'ID_SERIAL_SHORT': 'fake_serial_1',
+         'ID_WWN': 'fake_wwn_1',
+         'DEVPATH': '/devices/pci0000:00/0000:00:1f.2/ata1/host0/',
+         'ID_MODEL': 'fake_id_model',
+         'DEVNAME': '/dev/dm-0',
+         'MAJOR': '8',
+         'DEVTYPE': 'disk', 'MINOR': '0', 'ID_BUS': 'ata'
+         },
+     'startsec': '0',
+     'device': '/dev/mapper/12312',
+     'espec': {'state': 'running', 'timeout': '30', 'removable': '0'},
+     'bspec': {
+         'sz': '976773168', 'iomin': '4096', 'size64': '500107862016',
+         'ss': '512', 'ioopt': '0', 'alignoff': '0', 'pbsz': '4096',
+         'ra': '256', 'ro': '0', 'maxsect': '1024'
+         },
+     'size': 500107862016},
+    {'uspec':
+        {'DEVLINKS': [
+            'disk/by-id/scsi-SATA_VBOX_HARDDISK_VB69050467-fffff',
+            '/dev/disk/by-id/wwn-fake_wwn_2'
+            '/dev/disk/by-path/pci-0000:00:1f.2-scsi-0:0:4:0'],
+         'ID_SERIAL_SHORT': 'fake_serial_2',
+         'ID_WWN': 'fake_wwn_1',
+         'DEVPATH': '/devices/pci0000:00/0000:00:1f.2/ata2/host1/',
+         'ID_MODEL': 'fake_id_model',
+         'DEVNAME': '/dev/sdc',
+         'MAJOR': '8',
+         'DEVTYPE': 'disk', 'MINOR': '0', 'ID_BUS': 'ata'
+         },
+     'startsec': '0',
+     'device': '/dev/sdc',
+     'espec': {'state': 'running', 'timeout': '30', 'removable': '0'},
+     'bspec': {
+         'sz': '976773168', 'iomin': '4096', 'size64': '500107862016',
+         'ss': '512', 'ioopt': '0', 'alignoff': '0', 'pbsz': '4096',
+         'ra': '256', 'ro': '0', 'maxsect': '1024'
+         },
+     'size': 500107862016},
+]
+
 SINGLE_DISK_KS_SPACES = [
     {
         "name": "sda",
@@ -584,6 +678,58 @@ SECOND_DISK_OS_KS_SPACES = [
         ],
         "type": "disk",
         "id": "sdb",
+        "size": 102400
+    }
+]
+
+MPATH_DISK_KS_SPACES = [
+    {
+        "name": "mapper/12312",
+        "extra": [
+            'disk/by-id/scsi-SATA_VBOX_HARDDISK_VB69050467-b385c7cd',
+            'disk/by-id/wwn-fake_wwn_1'],
+        "free_space": 1024,
+        "volumes": [
+            {
+                "type": "boot",
+                "size": 300
+            },
+            {
+                "mount": "/boot",
+                "size": 200,
+                "type": "partition",
+                "file_system": "ext2",
+                "name": "Boot"
+            },
+            {
+                "mount": "/",
+                "size": 200,
+                "type": "partition",
+                "file_system": "ext4",
+                "name": "Root",
+            },
+        ],
+        "type": "disk",
+        "id": "dm-0",
+        "size": 102400
+    },
+    {
+        "name": "sdc",
+        "extra": [
+            'disk/by-id/scsi-SATA_VBOX_HARDDISK_VB69050467-fffff',
+            'disk/by-id/wwn-fake_wwn_2'],
+        "free_space": 1024,
+        "volumes": [
+            {
+                "mount": "/home",
+                "size": 200,
+                "type": "partition",
+                "file_system": "ext4",
+                "name": "Root",
+            },
+        ],
+        "type": "disk",
+        "id": "sdc",
         "size": 102400
     }
 ]

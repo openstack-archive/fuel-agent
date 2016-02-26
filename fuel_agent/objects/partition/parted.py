@@ -95,10 +95,14 @@ class Parted(base.Serializable):
     def next_name(self):
         if self.next_type() == 'extended':
             return None
-        separator = ''
+
         special_devices = ('cciss', 'nvme', 'loop', 'md')
         if any(n in self.name for n in special_devices):
             separator = 'p'
+        elif '/dev/mapper' in self.name:
+            separator = '-part'
+        else:
+            separator = ''
         return '%s%s%s' % (self.name, separator, self.next_count())
 
     def partition_by_name(self, name):

@@ -309,6 +309,7 @@ def blacklist_udev_rules(udev_rules_dir, udev_rules_lib_dir,
     so we should increase processing speed for those events,
     otherwise partitioning is doomed.
     """
+    LOG.debug("Enabling udev's rules blacklisting")
     empty_rule_path = os.path.join(udev_rules_dir,
                                    os.path.basename(udev_empty_rule))
     with open(empty_rule_path, 'w') as f:
@@ -335,6 +336,7 @@ def blacklist_udev_rules(udev_rules_dir, udev_rules_lib_dir,
 
 def unblacklist_udev_rules(udev_rules_dir, udev_rename_substr):
     """disable udev's rules blacklisting"""
+    LOG.debug("Disabling udev's rules blacklisting")
     for rule in os.listdir(udev_rules_dir):
         src = os.path.join(udev_rules_dir, rule)
         if os.path.isdir(src):
@@ -361,6 +363,17 @@ def unblacklist_udev_rules(udev_rules_dir, udev_rename_substr):
     execute('udevadm', 'trigger', '--subsystem-match=block',
             check_exit_code=[0])
     udevadm_settle()
+
+
+def wait_for_udev_settle(attempts):
+    """Wait for emptiness of udev queue within attempts*0.1 seconds"""
+    for attempt in six.moves.range(attempts):
+        try:
+            udevadm_settle()
+        except errors.ProcessExecutionError:
+            LOG.warning("udevadm settle did return non-zero exit code. "
+                        "Partitioning continues.")
+        time.sleep(0.1)
 
 
 def udevadm_settle():

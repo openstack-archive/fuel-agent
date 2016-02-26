@@ -271,6 +271,16 @@ class TestParted(unittest2.TestCase):
             expected_name = '%sp%s' % (self.prtd.name, 1)
             self.assertEqual(expected_name, self.prtd.next_name())
 
+    @mock.patch.object(objects.Parted, 'next_count')
+    @mock.patch.object(objects.Parted, 'next_type')
+    def test_next_name_with_separator_part(self, nt_mock, nc_mock):
+        nc_mock.return_value = 2
+        nt_mock.return_value = 'not_extended'
+        self.prtd.name = '/dev/mapper/123'
+
+        expected_name = '/dev/mapper/123-part2'
+        self.assertEqual(expected_name, self.prtd.next_name())
+
     def test_next_begin_empty_partitions(self):
         self.assertEqual(1, self.prtd.next_begin())
 

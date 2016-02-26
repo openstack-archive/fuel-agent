@@ -252,6 +252,14 @@ def is_block_device(filepath):
     return stat.S_ISBLK(mode)
 
 
+def is_multipath_device(device, uspec=None):
+    """Check whether block device with given uspec is multipath device"""
+    if uspec is None:
+        uspec = udevreport(device)
+    return any((devlink.startswith('/dev/disk/by-id/dm-uuid-mpath-')
+                for devlink in uspec.get('DEVLINKS', [])))
+
+
 def get_block_devices_from_udev_db():
     devs = []
     output = utils.execute('udevadm', 'info', '--export-db')[0]
@@ -310,6 +318,12 @@ def list_block_devices(disks=True):
         # if device is not disk, skip it
         if disks and not is_disk(device, bspec=bspec, uspec=uspec):
             continue
+
+        # NOTE(kszukielojc) if block device is multipath device,
+        # devlink /dev/mapper/* should be used instead /dev/dm-*
+        if is_multipath_device(device, uspec=uspec):
+            device = [devlink for devlink in uspec['DEVLINKS']
+                      if devlink.startswith('/dev/mapper/')][0]
 
         bdev = {
             'device': device,
