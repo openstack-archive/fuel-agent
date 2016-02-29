@@ -75,4 +75,5 @@ Package: ironic-fa-deploy
 Architecture: all
 Section: python
 Depends: ironic-conductor (>= 4.2.0),
+         python-libvirt (>= 1.2.5),
 Description: Ironic-fa-deploy package

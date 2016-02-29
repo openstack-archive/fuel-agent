@@ -14,10 +14,10 @@
 
 from ironic.drivers import base
 from ironic.drivers.modules import ipmitool
-from ironic.drivers.modules import lib_virt
 from ironic.drivers.modules import ssh
 
 from ironic_fa_deploy.modules import fuel_agent
+from ironic_fa_deploy.modules import lib_virt
 
 
 class FuelAndIPMIToolDriver(base.BaseDriver):
