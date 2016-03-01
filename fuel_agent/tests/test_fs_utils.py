@@ -25,22 +25,40 @@ class TestFSUtils(unittest2.TestCase):
 
     def test_make_xfs_add_f_flag(self, mock_exec):
         fu.make_fs('xfs', '--other-options --passed', '', '/dev/fake')
-        mock_exec.assert_called_once_with('mkfs.xfs', '--other-options',
-                                          '--passed', '-f', '/dev/fake')
+        expected_calls = [
+            mock.call('mkfs.xfs', '--other-options', '--passed',
+                      '-f', '/dev/fake'),
+            mock.call('blkid', '-c', '/dev/null', '-o', 'value',
+                      '-s', 'UUID', '/dev/fake')
+        ]
+        self.assertEqual(mock_exec.call_args_list, expected_calls)
 
     def test_make_xfs_empty_options(self, mock_exec):
         fu.make_fs('xfs', '', '', '/dev/fake')
-        mock_exec.assert_called_once_with('mkfs.xfs', '-f', '/dev/fake')
+        expected_calls = [
+            mock.call('mkfs.xfs', '-f', '/dev/fake'),
+            mock.call('blkid', '-c', '/dev/null', '-o', 'value',
+                      '-s', 'UUID', '/dev/fake')
+        ]
+        self.assertEqual(mock_exec.call_args_list, expected_calls)
 
     def test_make_fs(self, mock_exec):
         fu.make_fs('ext4', '-F', 'fake_label', '/dev/fake')
-        mock_exec.assert_called_once_with('mkfs.ext4', '-F', '-L',
-                                          'fake_label', '/dev/fake')
+        expected_calls = [
+            mock.call('mkfs.ext4', '-F', '-L', 'fake_label', '/dev/fake'),
+            mock.call('blkid', '-c', '/dev/null', '-o', 'value',
+                      '-s', 'UUID', '/dev/fake')
+        ]
+        self.assertEqual(mock_exec.call_args_list, expected_calls)
 
     def test_make_fs_swap(self, mock_exec):
-        fu.make_fs('swap', '-f', 'fake_label', '/dev/fake')
-        mock_exec.assert_called_once_with('mkswap', '-f', '-L', 'fake_label',
-                                          '/dev/fake')
+        fu.make_fs('swap', '', 'fake_label', '/dev/fake')
+        expected_calls = [
+            mock.call('mkswap', '-f', '-L', 'fake_label', '/dev/fake'),
+            mock.call('blkid', '-c', '/dev/null', '-o', 'value',
+                      '-s', 'UUID', '/dev/fake')
+        ]
+        self.assertEqual(mock_exec.call_args_list, expected_calls)
 
     def test_extend_fs_ok_ext2(self, mock_exec):
         fu.extend_fs('ext2', '/dev/fake')
@@ -142,3 +160,37 @@ class TestFSUtils(unittest2.TestCase):
 
         self.assertEqual(fu.format_fs_label(long_label),
                          template.format(long_label_trimmed))
+
+
+class TestFSRetry(unittest2.TestCase):
+
+    def test_make_fs_bad_swap_retry(self):
+        # We mock utils.execute to throw an exception on first two
+        # invocations of blkid to test the retry loop.
+        rvs = [
+            None, errors.ProcessExecutionError(),
+            None, errors.ProcessExecutionError(),
+            None, None
+        ]
+        with mock.patch.object(utils, 'execute', side_effect=rvs) as mock_exec:
+            fu.make_fs('swap', '', 'fake_label', '/dev/fake')
+            expected_calls = 3 * [
+                mock.call('mkswap', '-f', '-L', 'fake_label', '/dev/fake'),
+                mock.call('blkid', '-c', '/dev/null', '-o', 'value',
+                          '-s', 'UUID', '/dev/fake')
+            ]
+            self.assertEqual(mock_exec.call_args_list, expected_calls)
+
+    def test_make_fs_bad_swap_failure(self):
+        # We mock utils.execute to throw an exception on invocations
+        # of blkid (MAX_MKFS_TRIES times) to see if it fails.
+        rvs = fu.MAX_MKFS_TRIES * [None, errors.ProcessExecutionError()]
+        with mock.patch.object(utils, 'execute', side_effect=rvs) as mock_exec:
+            with self.assertRaises(errors.FsUtilsError):
+                fu.make_fs('swap', '', 'fake_label', '/dev/fake')
+                expected_calls = 3 * [
+                    mock.call('mkswap', '-f', '-L', 'fake_label', '/dev/fake'),
+                    mock.call('blkid', '-c', '/dev/null', '-o', 'value',
+                              '-s', 'UUID', '/dev/fake')
+                ]
+                self.assertEqual(mock_exec.call_args_list, expected_calls)
