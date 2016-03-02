@@ -17,6 +17,7 @@ import unittest2
 
 from fuel_agent import errors
 from fuel_agent.objects import configdrive
+from fuel_agent.objects import User
 
 
 class TestConfigDriveScheme(unittest2.TestCase):
@@ -64,10 +65,17 @@ class TestConfigDriveScheme(unittest2.TestCase):
         cd_puppet = configdrive.ConfigDrivePuppet('master', 0)
         cd_mcollective = configdrive.ConfigDriveMcollective(
             'pskey', 'vhost', 'host', 'user', 'password', 'connector', 1, -1)
+        cd_user_accounts = []
+        cd_user_accounts.append(User('fuel', 'fuel', '/var/lib/fuel',
+                                     ['ALL=(ALL) NOPASSWD: ALL']))
+        cd_user_accounts.append(User('test', 'test', '/home/test',
+                                     ['SUDO'], ['KEY']))
         self.cd_scheme.common = cd_common
         self.cd_scheme.puppet = cd_puppet
         self.cd_scheme.mcollective = cd_mcollective
+        self.cd_scheme.user_accounts = cd_user_accounts
         template_data = self.cd_scheme.template_data()
         self.assertEqual(cd_common, template_data['common'])
         self.assertEqual(cd_puppet, template_data['puppet'])
         self.assertEqual(cd_mcollective, template_data['mcollective'])
+        self.assertEqual(cd_user_accounts, template_data['user_accounts'])
