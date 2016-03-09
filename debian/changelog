@@ -1,3 +1,9 @@
+fuel-agent (9.0.0-1) unstable; urgency=low
+
+  * Align fuel package versioning schema
+
+ -- Sergey Kulanov <skulanov@mirantis.com>  Wed, 09 Mar 2016 17:17:07 +0200
+
 fuel-agent (9.0-2) unstable; urgency=low
 
   * Add fuel_libvirt driver
