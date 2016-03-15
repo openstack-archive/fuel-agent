@@ -96,7 +96,10 @@ def handle_exception(exc):
 def main(actions=None):
     # NOTE(agordeev): get its own process group by calling setpgrp.
     # Process group is used to distribute signals to subprocesses.
-    os.setpgrp()
+    # The main application is already a process group leader,
+    # then there's no need to call os.setpgrp
+    if os.getpid() != os.getpgrp():
+        os.setpgrp()
     signal.signal(signal.SIGTERM, handle_sigterm)
     CONF(sys.argv[1:], project='fuel-agent',
          version=version.version_info.release_string())
