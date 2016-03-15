@@ -18,12 +18,10 @@ import shutil
 import signal
 import tempfile
 
-from oslo_config import cfg
 import six
 import yaml
 
 from fuel_agent import errors
-from fuel_agent.openstack.common import log as logging
 from fuel_agent.utils import artifact as au
 from fuel_agent.utils import build as bu
 from fuel_agent.utils import fs as fu
@@ -33,6 +31,9 @@ from fuel_agent.utils import lvm as lu
 from fuel_agent.utils import md as mu
 from fuel_agent.utils import partition as pu
 from fuel_agent.utils import utils
+
+from oslo_config import cfg
+from oslo_log import log as logging
 
 opts = [
     cfg.StrOpt(

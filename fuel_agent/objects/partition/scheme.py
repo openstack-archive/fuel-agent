@@ -23,7 +23,7 @@ from fuel_agent.objects.partition.parted import Parted
 from fuel_agent.objects.partition.pv import PhysicalVolume
 from fuel_agent.objects.partition.vg import VolumeGroup
 
-from fuel_agent.openstack.common import log as logging
+from oslo_log import log as logging
 
 
 LOG = logging.getLogger(__name__)

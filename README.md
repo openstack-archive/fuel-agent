@@ -72,7 +72,6 @@ fuel-agent
 │   ├── openstack
 │   ├── tests
 │   ├── utils
-├── openstack-common.conf
 ├── README.md
 ├── LICENSE
 ├── requirements.txt

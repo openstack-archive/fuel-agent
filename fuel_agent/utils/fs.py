@@ -15,8 +15,8 @@
 import tempfile
 
 from fuel_agent import errors
-from fuel_agent.openstack.common import log as logging
 from fuel_agent.utils import utils
+from oslo_log import log as logging
 
 import six
 

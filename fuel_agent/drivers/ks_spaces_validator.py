@@ -15,7 +15,8 @@
 import jsonschema
 
 from fuel_agent import errors
-from fuel_agent.openstack.common import log as logging
+
+from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 

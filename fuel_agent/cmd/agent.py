@@ -16,14 +16,15 @@ import os
 import signal
 import sys
 
-from oslo_config import cfg
 import six
 import yaml
 
 from fuel_agent import errors
 from fuel_agent import manager as manager
-from fuel_agent.openstack.common import log as logging
 from fuel_agent import version
+
+from oslo_config import cfg
+from oslo_log import log as logging
 
 cli_opts = [
     cfg.StrOpt(
@@ -39,7 +40,28 @@ cli_opts = [
 ]
 
 CONF = cfg.CONF
-CONF.register_cli_opts(cli_opts)
+LOG = logging.getLogger(__name__)
+PROJECT = 'fuel-agent'
+
+
+def list_opts():
+    """Returns a list of oslo.config options available in the library.
+
+    The returned list includes all oslo.config options which may be registered
+    at runtime by the library.
+
+    Each element of the list is a tuple. The first element is the name of the
+    group under which the list of elements in the second element will be
+    registered. A group name of None corresponds to the [DEFAULT] group in
+    config files.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator (oslo-config-generator) to discover the options exposed to users
+    by this library.
+
+    :returns: a list of (group_name, opts) tuples
+    """
+    return [('CLI', (cli_opts))]
 
 
 def provision():
@@ -101,11 +123,13 @@ def main(actions=None):
     if os.getpid() != os.getpgrp():
         os.setpgrp()
     signal.signal(signal.SIGTERM, handle_sigterm)
-    CONF(sys.argv[1:], project='fuel-agent',
-         version=version.version_info.release_string())
 
-    logging.setup('fuel-agent')
-    LOG = logging.getLogger(__name__)
+    # Setup logging and process configuration options
+    logging.register_options(CONF)
+    CONF.register_cli_opts(cli_opts)
+    CONF(sys.argv[1:], project=PROJECT,
+         version=version.version_info.release_string())
+    logging.setup(CONF, PROJECT)
 
     try:
         if CONF.input_data:

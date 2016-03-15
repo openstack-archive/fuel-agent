@@ -26,7 +26,6 @@ import subprocess
 import time
 
 import jinja2
-from oslo_config import cfg
 import requests
 import six
 import stevedore.driver
@@ -34,7 +33,9 @@ import urllib3
 
 
 from fuel_agent import errors
-from fuel_agent.openstack.common import log as logging
+
+from oslo_config import cfg
+from oslo_log import log as logging
 
 random = _random.SystemRandom()
 

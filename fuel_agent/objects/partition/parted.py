@@ -17,7 +17,7 @@
 import copy
 
 from fuel_agent.objects import base
-from fuel_agent.openstack.common import log as logging
+from oslo_log import log as logging
 
 
 LOG = logging.getLogger(__name__)

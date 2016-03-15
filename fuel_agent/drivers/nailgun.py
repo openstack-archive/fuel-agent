@@ -16,7 +16,6 @@ import itertools
 import math
 import os
 
-from oslo_config import cfg
 import six
 from six.moves.urllib.parse import urljoin
 from six.moves.urllib.parse import urlparse
@@ -27,10 +26,11 @@ from fuel_agent.drivers.base import BaseDataDriver
 from fuel_agent.drivers import ks_spaces_validator
 from fuel_agent import errors
 from fuel_agent import objects
-from fuel_agent.openstack.common import log as logging
 from fuel_agent.utils import hardware as hu
 from fuel_agent.utils import utils
 
+from oslo_config import cfg
+from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 
