@@ -17,7 +17,6 @@
 import logging
 
 from fuel_bootstrap.objects import master_node_settings
-from requests import exceptions
 
 LOG = logging.getLogger(__name__)
 
@@ -41,8 +40,6 @@ def notify_webui(error_message):
         settings['settings'].setdefault('bootstrap', {}).setdefault(
             'error', {})['value'] = error_message
         mn_settings.update(settings)
-    except exceptions.ConnectionError as exc:
+    except Exception as e:
         LOG.warning("Can't send notification '%s' to WebUI due to %s",
-                    error_message, exc)
-    except KeyError:
-        LOG.warning("WebUI settings doesn't contain 'settings' section")
+                    error_message, e)
