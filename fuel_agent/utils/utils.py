@@ -377,7 +377,7 @@ def wait_for_udev_settle(attempts):
 
 
 def udevadm_settle():
-    execute('udevadm', 'settle', '--quiet', check_exit_code=[0])
+    execute('udevadm', 'settle', check_exit_code=[0])
 
 
 def parse_kernel_cmdline():
