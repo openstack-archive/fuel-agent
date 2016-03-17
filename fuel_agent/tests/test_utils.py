@@ -289,7 +289,7 @@ class ExecuteTestCase(unittest2.TestCase):
     @mock.patch.object(utils, 'execute')
     def test_udevadm_settle(self, mock_exec):
         utils.udevadm_settle()
-        mock_exec.assert_called_once_with('udevadm', 'settle', '--quiet',
+        mock_exec.assert_called_once_with('udevadm', 'settle',
                                           check_exit_code=[0])
 
 

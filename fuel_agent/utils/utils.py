@@ -364,7 +364,7 @@ def unblacklist_udev_rules(udev_rules_dir, udev_rename_substr):
 
 
 def udevadm_settle():
-    execute('udevadm', 'settle', '--quiet', check_exit_code=[0])
+    execute('udevadm', 'settle', check_exit_code=[0])
 
 
 def parse_kernel_cmdline():
