@@ -69,6 +69,11 @@ u_opts = [
         default=2.0,
         help='Delay in seconds before the next exectuion will retry',
     ),
+    cfg.IntOpt(
+        'partition_udev_settle_attempts',
+        default=10,
+        help='How many times udev settle will be called after partitioning'
+    ),
 ]
 
 CONF = cfg.CONF
@@ -368,8 +373,9 @@ def unblacklist_udev_rules(udev_rules_dir, udev_rename_substr):
     udevadm_settle()
 
 
-def wait_for_udev_settle(attempts):
+def wait_for_udev_settle(attempts=None):
     """Wait for emptiness of udev queue within attempts*0.1 seconds"""
+    attempts = attempts or CONF.partition_udev_settle_attempts
     for attempt in six.moves.range(attempts):
         try:
             udevadm_settle()
@@ -381,6 +387,26 @@ def wait_for_udev_settle(attempts):
 
 def udevadm_settle():
     execute('udevadm', 'settle', check_exit_code=[0])
+
+
+def udevadm_trigger_blocks():
+    try:
+        execute('udevadm', 'trigger', '--subsystem-match=block')
+        wait_for_udev_settle()
+    except errors.ProcessExecutionError:
+        LOG.warning("udevadm trigger did return non-zero exit code. "
+                    "Partitioning continues.")
+
+
+def refresh_multipath():
+    # NOTE(kszukielojc): When creating partitions for multipath sometimes
+    # symlink without "-part" in /dev/mapper will be generated. To fix that
+    # we trigger udev, but this causes both links to coexists. Following calls
+    # remove symlinks without "-part".
+    execute('dmsetup', 'remove_all')
+    execute('multipath', '-F')
+    execute('multipath', '-r')
+    wait_for_udev_settle()
 
 
 def parse_kernel_cmdline():

@@ -292,6 +292,25 @@ class ExecuteTestCase(unittest2.TestCase):
         mock_exec.assert_called_once_with('udevadm', 'settle',
                                           check_exit_code=[0])
 
+    @mock.patch.object(utils, 'execute')
+    @mock.patch.object(utils, 'wait_for_udev_settle')
+    def test_udevadm_trigger_blocks(self, mock_wait, mock_exec):
+        utils.udevadm_trigger_blocks()
+        mock_exec.assert_called_once_with(
+            'udevadm', 'trigger', '--subsystem-match=block')
+        self.assertTrue(mock_wait.called)
+
+    @mock.patch.object(utils, 'execute')
+    @mock.patch.object(utils, 'wait_for_udev_settle')
+    def test_multipath_refresh(self, mock_wait, mock_exec):
+        utils.refresh_multipath()
+        call_list = mock_exec.call_args_list
+        self.assertEqual(call_list, [
+            mock.call('dmsetup', 'remove_all'),
+            mock.call('multipath', '-F'),
+            mock.call('multipath', '-r')])
+        self.assertTrue(mock_wait.called)
+
 
 @mock.patch.object(utils, 'open', create=True, new_callable=mock.mock_open)
 @mock.patch.object(utils, 'os', autospec=True)

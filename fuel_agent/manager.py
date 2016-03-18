@@ -140,11 +140,6 @@ opts = [
         help='Allow to skip MD containers (fake raid leftovers) while '
              'cleaning the rest of MDs',
     ),
-    cfg.IntOpt(
-        'partition_udev_settle_attempts',
-        default=10,
-        help='How many times udev settle will be called after partitioning'
-    ),
     cfg.ListOpt(
         'multipath_lvm_filter',
         default=['r|/dev/mapper/.*-part.*|',
@@ -203,14 +198,12 @@ class Manager(object):
                 fu.make_fs(fs.type, fs.options, fs.label, fs.device)
 
     @staticmethod
-    def _make_partitions(parteds, wait_for_udev_settle=False):
+    def _make_partitions(parteds):
         for parted in parteds:
             pu.make_label(parted.name, parted.label)
             for prt in parted.partitions:
                 pu.make_partition(prt.device, prt.begin, prt.end, prt.type)
-                if wait_for_udev_settle:
-                    utils.wait_for_udev_settle(
-                        attempts=CONF.partition_udev_settle_attempts)
+                utils.udevadm_trigger_blocks()
                 for flag in prt.flags:
                     pu.set_partition_flag(prt.device, prt.count, flag)
                 if prt.guid:
@@ -275,7 +268,7 @@ class Manager(object):
             udev_rules_dir=CONF.udev_rules_dir,
             udev_rename_substr=CONF.udev_rename_substr)
 
-        self._make_partitions(parteds_with_rules, wait_for_udev_settle=True)
+        self._make_partitions(parteds_with_rules)
 
         # If one creates partitions with the same boundaries as last time,
         # there might be md and lvm metadata on those partitions. To prevent
@@ -285,6 +278,9 @@ class Manager(object):
         lu.lvremove_all()
         lu.vgremove_all()
         lu.pvremove_all()
+
+        if parteds_with_rules:
+            utils.refresh_multipath()
 
         # creating meta disks
         for md in self.driver.partition_scheme.mds:
