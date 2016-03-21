@@ -77,30 +77,30 @@ packages:
 #    name: mos
 #    priority: "1050"
 #    section: "main restricted"
-#    suite: mos9.0
+#    suite: mos10.0
 #    type: deb
-#    uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/9.0"
+#    uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/10.0"
 #  -
 #    name: mos-updates
 #    priority: "1050"
 #    section: "main restricted"
-#    suite: mos9.0-updates
+#    suite: mos10.0-updates
 #    type: deb
-#    uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/9.0"
+#    uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/10.0"
 #  -
 #    name: mos-security
 #    priority: "1050"
 #    section: "main restricted"
-#    suite: mos9.0-security
+#    suite: mos10.0-security
 #    type: deb
-#    uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/9.0"
+#    uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/10.0"
 #  -
 #    name: mos-holdback
 #    priority: "1100"
 #    section: "main restricted"
-#    suite: mos9.0-holdback
+#    suite: mos10.0-holdback
 #    type: deb
-#    uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/9.0"
+#    uri: "http://mirror.fuel-infra.org/mos-repos/ubuntu/10.0"
 #  -
 #    name: Extra_repo
 #    priority: null

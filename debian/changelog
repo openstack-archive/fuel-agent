@@ -1,3 +1,9 @@
+fuel-agent (10.0.0-1) unstable; urgency=low
+
+  *  Bump version to 10.0
+
+ -- Sergey Kulanov <skulanov@mirantis.com>  Mon, 21 Mar 2016 13:44:26 +0200
+
 fuel-agent (9.0.0-1) unstable; urgency=low
 
   * Align fuel package versioning schema
