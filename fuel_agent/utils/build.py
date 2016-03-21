@@ -963,10 +963,12 @@ def override_lvm_config_value(chroot, section, name, value, lvm_conf_file):
     If option is not valid, then errors.ProcessExecutionError will be raised
     and lvm configuration will remain unchanged
     """
+    lvm_conf_file = os.path.join(chroot, lvm_conf_file.lstrip('/'))
     updated_config = _update_option_in_lvm_raw_config(
         section, name, value,
         utils.execute('chroot', chroot, 'lvm dumpconfig')[0])
-    lvm_conf_file_bak = '.'.join((lvm_conf_file, 'bak'))
+    lvm_conf_file_bak = '{}.bak.{}'.format(lvm_conf_file,
+                                           time.strftime("%Y_%m_%d_%H_%M_%S"))
     shutil.copy(lvm_conf_file, lvm_conf_file_bak)
     LOG.debug('Backup for origin LVM configuration file: {}'
               ''.format(lvm_conf_file_bak))
@@ -980,28 +982,34 @@ def override_lvm_config_value(chroot, section, name, value, lvm_conf_file):
         current_config = utils.execute('chroot', chroot, 'lvm dumpconfig')[0]
         with open(lvm_conf_file, mode='w') as lvm_conf:
             lvm_conf.write(current_config)
-        LOG.info('LVM configuration updated')
+        LOG.info('LVM configuration {} updated. '
+                 'Option {}/{} gets new value: {}'
+                 ''.format(lvm_conf_file, section, name, value))
     except errors.ProcessExecutionError as exc:
         shutil.move(lvm_conf_file_bak, lvm_conf_file)
-        LOG.debug('Option {}/{} can not be updated with value {}.'
-                  ''.format(section, name, value))
+        LOG.debug('Option {}/{} can not be updated with value {}. '
+                  'Configuration restored'.format(section, name, value))
         raise exc
 
 
-def append_lvm_devices_filter(chroot, multipath_lvm_filter,
-                              lvm_conf_path='/etc/lvm/lvm.conf'):
-    """Append custom devises filters to LVM configuration
+def override_lvm_config(chroot, config, lvm_conf_path='/etc/lvm/lvm.conf',
+                        update_initramfs=False):
+    """Override custom values in LVM configuration
 
-    LVM configuration should de updated to force lvm work with partitions
-    on multipath devices using /dev/mapper/<id>-part<n> links.
-    Other links to these devices should be blacklisted in devices/filter
-    option
+    :param config: should be a dict with part of LVM configuration to override
+    Example:
+    {'devices': {'filter': ['a/.*/'],
+                 'preferred_names': '^/dev/mapper/'}}
     """
-    lvm_filter = get_lvm_config_value(chroot, 'devices', 'filter') or []
-    if isinstance(lvm_filter, str):
-        lvm_filter = [lvm_filter]
-    lvm_filter = set(lvm_filter)
-    lvm_filter.update(multipath_lvm_filter)
-    override_lvm_config_value(chroot, 'devices', 'filter',
-                              sorted(list(lvm_filter)),
-                              os.path.join(chroot, lvm_conf_path.lstrip('/')))
+
+    for section in config:
+        for name in config[section]:
+            override_lvm_config_value(chroot, section, name,
+                                      config[section][name],
+                                      lvm_conf_path)
+    if update_initramfs:
+        # NOTE(sslypushenko) We need to update initramfs for pushing
+        # LVM configuration into it.
+        LOG.info('Updating target initramfs')
+        utils.execute('chroot', chroot, 'update-initramfs -v -u -k all')
+        LOG.debug('Running "update-initramfs" completed')

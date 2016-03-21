@@ -15,6 +15,7 @@
 import os
 import shutil
 import signal
+import time
 
 import mock
 import unittest2
@@ -820,13 +821,14 @@ foo {
                                           [1, 2.3, "foo", "buzz"],
                                           RAW_CONFIG))
 
+    @mock.patch.object(time, 'strftime', return_value='fake_timestamp')
     @mock.patch.object(os, 'remove')
     @mock.patch.object(utils, 'execute')
     @mock.patch.object(bu, '_update_option_in_lvm_raw_config')
     @mock.patch.object(shutil, 'copy')
     @mock.patch.object(shutil, 'move')
     def test_override_config_value(self, m_move, m_copy, m_upd, m_execute,
-                                   m_remove):
+                                   m_remove, m_time):
         m_execute.side_effect = (['old_fake_config', ''],
                                  ['fake_config', ''])
         m_upd.return_value = 'fake_config'
@@ -836,16 +838,18 @@ foo {
                                          'foo', 'bar', 'buzz', 'lvm.conf')
         file_handle_mock.write.assert_called_with('fake_config')
         m_upd.assert_called_once_with('foo', 'bar', 'buzz', 'old_fake_config')
-        m_copy.assert_called_once_with('lvm.conf',
-                                       'lvm.conf.bak')
+        m_copy.assert_called_once_with(
+            'fake_chroot/lvm.conf',
+            'fake_chroot/lvm.conf.bak.fake_timestamp')
 
+    @mock.patch.object(time, 'strftime', return_value='fake_timestamp')
     @mock.patch.object(os, 'remove')
     @mock.patch.object(utils, 'execute')
     @mock.patch.object(bu, '_update_option_in_lvm_raw_config')
     @mock.patch.object(shutil, 'copy')
     @mock.patch.object(shutil, 'move')
     def test_override_config_value_fail(self, m_move, m_copy, m_upd, m_execute,
-                                        m_remove):
+                                        m_remove, m_time):
         m_execute.side_effect = (['old_fake_config', ''],
                                  errors.ProcessExecutionError())
         m_upd.return_value = 'fake_config'
@@ -855,18 +859,24 @@ foo {
                               bu.override_lvm_config_value,
                               'fake_chroot', 'foo', 'bar', 'buzz', 'lvm.conf')
         self.assertTrue(file_handle_mock.write.called)
-        m_copy.assert_called_once_with('lvm.conf',
-                                       'lvm.conf.bak')
-        m_move.assert_called_once_with('lvm.conf.bak',
-                                       'lvm.conf')
+        m_copy.assert_called_once_with(
+            'fake_chroot/lvm.conf',
+            'fake_chroot/lvm.conf.bak.fake_timestamp')
+        m_move.assert_called_once_with(
+            'fake_chroot/lvm.conf.bak.fake_timestamp',
+            'fake_chroot/lvm.conf')
 
-    @mock.patch.object(bu, 'get_lvm_config_value')
+    @mock.patch.object(utils, 'execute')
     @mock.patch.object(bu, 'override_lvm_config_value')
-    def test_append_lvm_devices_filter(self, m_override_config, m_get_config):
-        m_get_config.return_value = ['fake1']
-        bu.append_lvm_devices_filter('fake_chroot', ['fake2', 'fake3'])
+    def test_override_config(self, m_override_config, m_execute,):
+        bu.override_lvm_config('fake_chroot',
+                               {'foo': {'bar': ['fake1', 'fake2']}},
+                               lvm_conf_path='/etc/lvm/lvm.conf',
+                               update_initramfs=True)
         m_override_config.assert_called_once_with(
             'fake_chroot',
-            'devices', 'filter',
-            ['fake1', 'fake2', 'fake3'],
-            'fake_chroot/etc/lvm/lvm.conf')
+            'foo', 'bar',
+            ['fake1', 'fake2'],
+            '/etc/lvm/lvm.conf')
+        m_execute.assert_called_once_with(
+            'chroot', 'fake_chroot', 'update-initramfs -v -u -k all')
