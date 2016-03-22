@@ -209,3 +209,6 @@ log_file=/var/log/fuel-agent.log
 #execute_retry_delay=2.0
 
 
+# Default password for root user
+# (string value)
+default_root_password=r00tme

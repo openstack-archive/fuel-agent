@@ -17,9 +17,11 @@ import hashlib
 import locale
 import math
 import os
+import random as _random
 import re
 import shlex
 import socket
+import string
 import subprocess
 import time
 
@@ -34,6 +36,7 @@ import urllib3
 from fuel_agent import errors
 from fuel_agent.openstack.common import log as logging
 
+random = _random.SystemRandom()
 
 LOG = logging.getLogger(__name__)
 
@@ -407,3 +410,11 @@ def get_interface_ip(mac_addr):
             match = ip_pattern.search(ip_line)
             if match:
                 return match.group(1)
+
+
+def gensalt():
+    """Generate SHA-512 salt for crypt.crypt function."""
+    letters = string.ascii_letters + string.digits + './'
+    sha512prefix = "$6$"
+    random_letters = ''.join(random.choice(letters) for _ in range(16))
+    return sha512prefix + random_letters

@@ -37,6 +37,7 @@ LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 CONF.import_opt('prepare_configdrive', 'fuel_agent.manager')
 CONF.import_opt('config_drive_path', 'fuel_agent.manager')
+CONF.import_opt('default_root_password', 'fuel_agent.manager')
 
 
 def match_device(hu_disk, ks_disk):
@@ -804,6 +805,21 @@ class NailgunBuildImage(BaseDataDriver):
 
         os = objects.Ubuntu(repos=repos, packages=packages, major=14, minor=4,
                             proxies=proxies)
+
+        # add root account
+        root_password = self.data.get('root_password')
+        hashed_root_password = self.data.get('hashed_root_password')
+
+        # for backward compatibily set default password is no password provided
+        if root_password is None and hashed_root_password is None:
+            root_password = CONF.default_root_password
+
+        os.add_user_account(
+            name='root',
+            password=root_password,
+            homedir='/root',
+            hashed_password=hashed_root_password,
+        )
         return os
 
     def parse_schemes(self):
