@@ -7,7 +7,7 @@ disable_root: false
 users:
 {% for user in user_accounts %}
   - name: {{ user.name }}
-    plain_text_passwd: {{ user.password }}
+    passwd: {{ user.hashed_password }}
     lock_passwd: False
     homedir: {{ user.homedir }}
     shell: {{ user.shell }}
