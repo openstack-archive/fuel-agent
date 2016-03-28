@@ -29,8 +29,6 @@ class ActivateCommand(command.Command):
             type=str,
             metavar='ID',
             help="ID of bootstrap image to be activated."
-                 " 'centos' can be used instead of ID, then Centos"
-                 " bootstrap image will be used by default."
         )
         return parser
 

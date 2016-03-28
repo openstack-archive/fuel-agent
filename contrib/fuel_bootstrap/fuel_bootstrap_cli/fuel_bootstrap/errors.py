@@ -51,3 +51,7 @@ class ConfigFileNotExists(FuelBootstrapException):
 
 class WrongCobblerProfile(FuelBootstrapException):
     """Should be raised when wrong cobbler profile has been chosen"""
+
+
+class WrongUbuntuRelease(FuelBootstrapException):
+    """Should be raised when wrong Ubuntu Release profile has been chosen"""
