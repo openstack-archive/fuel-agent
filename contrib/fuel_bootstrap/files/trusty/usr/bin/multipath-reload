@@ -1,0 +1,28 @@
+#!/bin/bash -x
+
+LOG_NAME='multipath-reload'
+TIMEOUT='360s'
+KILL_TIMEOUT='120s'
+SETTLE_ATTEMPTS='10'
+
+wait_for_udev_settle() {
+# See more info in https://review.openstack.org/#/c/285340/
+    for i in `seq 1 ${SETTLE_ATTEMPTS}`; do
+        udevadm settle --timeout=${TIMEOUT}
+        sleep 0.1
+    done
+}
+
+m_reload() {
+# See more info in https://review.openstack.org/#/c/294430/
+    echo "`date '+%Y-%m-%d-%H-%M-%S'`: Perform multipath reloading"
+    timeout --kill-after=${KILL_TIMEOUT} ${TIMEOUT} dmsetup remove_all
+    timeout --kill-after=${KILL_TIMEOUT} ${TIMEOUT} dmsetup udevcomplete_all -y
+    timeout --kill-after=${KILL_TIMEOUT} ${TIMEOUT} multipath -F
+    timeout --kill-after=${KILL_TIMEOUT} ${TIMEOUT} multipath -r
+    timeout --kill-after=${KILL_TIMEOUT} ${TIMEOUT} udevadm trigger --subsystem-match=block
+    wait_for_udev_settle
+    echo "`date '+%Y-%m-%d-%H-%M-%S'`: Multipath reloading is done"
+}
+
+m_reload 2>&1 | tee -a /var/log/${LOG_NAME}  | /usr/bin/logger -i -t ${LOG_NAME}
