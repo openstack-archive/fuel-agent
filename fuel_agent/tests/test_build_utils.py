@@ -190,7 +190,7 @@ class BuildUtilsTestCase(unittest2.TestCase):
                         allow_unsigned_file='fake_unsigned',
                         force_ipv4_file='fake_force_ipv4')
         file_handle_mock = mock_open.return_value.__enter__.return_value
-        file_handle_mock.write.assert_called_once_with('manual\n')
+        file_handle_mock.write.assert_called_with('manual\n')
         mock_exec_expected_calls = [
             mock.call('sed',
                       '-i',
@@ -209,6 +209,7 @@ class BuildUtilsTestCase(unittest2.TestCase):
                                            allow_unsigned_file='fake_unsigned',
                                            force_ipv4_file='fake_force_ipv4')
         mock_path_join_expected_calls = [
+            mock.call('chroot', 'etc/multipath.conf'),
             mock.call('chroot', 'etc/shadow'),
             mock.call('chroot', 'etc/init.d/puppet'),
             mock.call('chroot', 'etc/init/mcollective.override'),
