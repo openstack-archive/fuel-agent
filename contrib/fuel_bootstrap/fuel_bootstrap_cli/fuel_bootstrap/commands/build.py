@@ -106,9 +106,7 @@ class BuildCommand(command.Command):
         parser.add_argument(
             '--kernel-flavor',
             type=str,
-            help="Defines kernel version. 'linux-image-generic-lts-trusty'"
-                 " will be used by default.",
-            default='linux-image-generic-lts-trusty'
+            help="Defines kernel version."
         )
         parser.add_argument(
             '--root-ssh-authorized-file',

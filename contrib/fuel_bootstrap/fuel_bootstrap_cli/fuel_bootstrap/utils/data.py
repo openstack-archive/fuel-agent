@@ -36,8 +36,10 @@ class BootstrapDataBuilder(object):
         if data.get('no_compress'):
             self.container_format = consts.UNCOMPRESSED_CONTAINER_FORMAT
 
-        self.ubuntu_release = \
-            data.get('ubuntu_release') or consts.UBUNTU_RELEASE
+        self.ubuntu_release = data.get('ubuntu_release') or CONF.ubuntu_release
+        if not self.ubuntu_release:
+            raise errors.WrongUbuntuRelease(
+                "'ubuntu_release' value has not been passed!")
 
         self.repos = data.get('repos') or []
 

@@ -53,7 +53,6 @@ def get_all():
             data.append(parse(name))
         except errors.IncorrectImage as e:
             LOG.debug("Image [%s] is skipped due to %s", name, e)
-    data.append(get_centos_data())
     return data
 
 
@@ -67,16 +66,6 @@ def _cobbler_profile():
                               '--name', 'default')
     regex = r"(?P<label>Profile)\s*:\s*(?P<profile>[^\s]+)"
     return re.search(regex, stdout).group('profile')
-
-
-def get_centos_data():
-    """Return info about centos image
-
-    :return: dict
-    """
-    return {'uuid': 'centos',
-            'label': 'deprecated',
-            'status': ACTIVE if 'ubuntu' not in _cobbler_profile() else ''}
 
 
 def parse(image_uuid):
@@ -230,7 +219,7 @@ def _activate_flavor(flavor=None):
        new profile)
     3) Re-run puppet for astute
 
-    :param flavor: Switch between ubuntu\centos cobbler profile
+    :param flavor: Switch between cobbler profile
     :return:
     """
     flavor = flavor.lower()
@@ -248,23 +237,19 @@ def _activate_flavor(flavor=None):
 
 @notifier.notify_webui_on_fail
 def _activate(image_uuid):
-    is_centos = image_uuid.lower() == 'centos'
     symlink = CONF.active_bootstrap_symlink
 
     if os.path.lexists(symlink):
         os.unlink(symlink)
         LOG.debug("Symlink %s was deleted", symlink)
 
-    if not is_centos:
-        dir_path = full_path(image_uuid)
-        os.symlink(dir_path, symlink)
-        LOG.debug("Symlink %s to %s directory has been created",
-                  symlink, dir_path)
-    else:
-        LOG.warning("WARNING: switching to depracated centos-bootstrap")
+    dir_path = full_path(image_uuid)
+    os.symlink(dir_path, symlink)
+    LOG.debug("Symlink %s to %s directory has been created",
+              symlink, dir_path)
 
     # FIXME: Add pre-activate verify
-    flavor = 'centos' if is_centos else 'ubuntu'
+    flavor = 'ubuntu'
     _activate_flavor(flavor)
 
     notifier.notify_webui("")
@@ -276,7 +261,6 @@ def activate(image_uuid):
     # need to verify image_uuid
     # TODO(asvechnikov): add check for already active image_uuid
     #                    after cobbler will be used for is_active
-    if image_uuid.lower() != 'centos':
-        parse(image_uuid)
+    parse(image_uuid)
 
     return _activate(image_uuid)

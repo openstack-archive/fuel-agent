@@ -41,8 +41,6 @@ BOOTSTRAP_MODULES = [
 
 IMAGE_DATA = {'/': ROOTFS}
 
-UBUNTU_RELEASE = 'trusty'
-
 # FIXME(azvyagintsev) bug: https://bugs.launchpad.net/fuel/+bug/1525882
 # Nailgun\astute should support API call to change their bootstrap profile
 # While its not implemented, we need astute.yaml file to perform
@@ -50,8 +48,6 @@ UBUNTU_RELEASE = 'trusty'
 ASTUTE_CONFIG_FILE = "/etc/fuel/astute.yaml"
 # FIXME(azvyagintsev) bug: https://bugs.launchpad.net/fuel/+bug/1525857
 DISTROS = {'ubuntu': {'cobbler_profile': 'ubuntu_bootstrap',
-                      'astute_flavor': 'ubuntu'},
-           'centos': {'cobbler_profile': 'bootstrap',
-                      'astute_flavor': 'centos'}}
+                      'astute_flavor': 'ubuntu'}}
 COBBLER_MANIFEST = '/etc/puppet/modules/fuel/examples/cobbler.pp'
 ASTUTE_MANIFEST = '/etc/puppet/modules/fuel/examples/astute.pp'
