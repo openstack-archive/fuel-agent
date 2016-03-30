@@ -178,7 +178,8 @@ supports-register-dump: yes
             'ID_MODEL': 'fakemodel',
             'ID_SERIAL_SHORT': 'fakeserial',
             'ID_WWN': 'fakewwn',
-            'ID_CDROM': '1'
+            'ID_CDROM': '1',
+            'DM_UUID': 'mpath-3600144f0534f392c000056e972830002'
         }
         self.assertEqual(True, hu.is_multipath_device('/dev/mapper/231',
                                                       uspec))
@@ -202,7 +203,7 @@ supports-register-dump: yes
 
     @mock.patch.object(hu, 'udevreport')
     def test_multipath_no_uspec(self, mock_udev):
-        uspec = {
+        mock_udev.return_value = {
             'DEVLINKS': ['/dev/disk/by-id/fakeid1',
                          '/dev/disk/by-id/dm-uuid-mpath-231'],
             'DEVNAME': '/dev/dm-0',
@@ -214,9 +215,9 @@ supports-register-dump: yes
             'ID_MODEL': 'fakemodel',
             'ID_SERIAL_SHORT': 'fakeserial',
             'ID_WWN': 'fakewwn',
-            'ID_CDROM': '1'
+            'ID_CDROM': '1',
+            'DM_UUID': 'mpath-3600144f0534f392c000056e972830002'
         }
-        mock_udev.return_value = uspec
         self.assertEqual(True, hu.is_multipath_device('/dev/mapper/231'))
 
     @mock.patch.object(utils, 'execute')

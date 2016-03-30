@@ -141,12 +141,26 @@ opts = [
              'cleaning the rest of MDs',
     ),
     cfg.ListOpt(
-        'multipath_lvm_filter',
-        default=['r|/dev/mapper/.*-part.*|',
-                 'r|/dev/dm-.*|',
-                 'r|/dev/disk/by-id/.*|'],
-        help='Extra filters for lvm.conf to force lvm work with partions '
-             'on multipath devices using /dev/mapper/<id>-part<n> links'
+        'lvm_filter_for_mpath',
+        default=['r|^/dev/disk/.*|',
+                 'a|^/dev/mapper/.*|',
+                 'r/.*/'],
+        help='Extra filters for lvm.conf to force LVM works with partitions '
+             'on multipath devices properly.'
+    ),
+    cfg.ListOpt(
+        'mpath_lvm_preferred_names',
+        default=['^/dev/mapper/'],
+        help='List of devlinks patterns which are preffered for LVM. If '
+             'multipath device has a few devlinks, LVM will use the one '
+             'matching to the given pattern.'
+    ),
+    cfg.ListOpt(
+        'mpath_lvm_scan_dirs',
+        default=['/dev/disk/', '/dev/mapper/'],
+        help='List of directories to scan recursively for LVM physical '
+             'volumes. Devices in directories outside this hierarchy will be '
+             'ignored.'
     ),
     cfg.StrOpt(
         'lvm_conf_path',
@@ -700,6 +714,47 @@ class Manager(object):
             raise errors.WrongPartitionSchemeError(
                 'Error: device with / mountpoint has not been found')
 
+        # NOTE(sslypushenko) Due to possible races between LVM and multipath,
+        # we need to adjust LVM devices filter.
+        # This code is required only for Ubuntu 14.04, because in trusty,
+        # LVM filters, does not recognize partions on multipath devices
+        # out of the box. It is fixed in latest LVM versions
+        multipath_devs = [parted.name
+                          for parted in self.driver.partition_scheme.parteds
+                          if hw.is_multipath_device(parted.name)]
+        # If there are no multipath devices on the node, we should not do
+        # anything to prevent regression.
+        if multipath_devs:
+            # We need to explicitly whitelist each non-mutlipath device
+            lvm_filter = []
+            for parted in self.driver.partition_scheme.parteds:
+                device = parted.name
+                if device in multipath_devs:
+                    continue
+                # We use devlinks from /dev/disk/by-id instead of /dev/sd*,
+                # because the first one are persistent.
+                devlinks_by_id = [
+                    link for link in hw.udevreport(device).get('DEVLINKS', [])
+                    if link.startswith('/dev/disk/by-id/')]
+                for link in devlinks_by_id:
+                    lvm_filter.append(
+                        'a|^{}(p)?(-part)?[0-9]*|'.format(link))
+
+            # Multipath devices should be whitelisted. All other devlinks
+            # should be blacklisted, to prevent LVM from grubbing underlying
+            # multipath devices.
+            lvm_filter.extend(CONF.lvm_filter_for_mpath)
+            # Setting devices/preferred_names also helps LVM to find devices by
+            # the proper devlinks
+            bu.override_lvm_config(
+                chroot,
+                {'devices': {
+                    'scan': CONF.mpath_lvm_scan_dirs,
+                    'global_filter': lvm_filter,
+                    'preferred_names': CONF.mpath_lvm_preferred_names}},
+                lvm_conf_path=CONF.lvm_conf_path,
+                update_initramfs=True)
+
         grub = self.driver.grub
 
         guessed_version = gu.guess_grub_version(chroot=chroot)
@@ -886,9 +941,13 @@ class Manager(object):
             bu.dump_runtime_uuid(bs_scheme.uuid,
                                  os.path.join(chroot,
                                               'etc/nailgun-agent/config.yaml'))
-            bu.append_lvm_devices_filter(chroot, CONF.multipath_lvm_filter,
-                                         CONF.lvm_conf_path)
-
+            # NOTE(sslypushenko) Preferred names in LVM config should updated
+            # due to point LVM to work only with /dev/mapper folder
+            bu.override_lvm_config(
+                chroot,
+                {'devices': {
+                    'preferred_names': CONF.mpath_lvm_preferred_names}},
+                lvm_conf_path=CONF.lvm_conf_path)
             root = driver_os.get_user_by_name('root')
             bu.do_post_inst(chroot,
                             hashed_root_password=root.hashed_password,

@@ -61,6 +61,8 @@ class TestManager(unittest2.TestCase):
         mock_lbd.return_value = test_nailgun.LIST_BLOCK_DEVICES_SAMPLE
         self.mgr = manager.Manager(test_nailgun.PROVISION_SAMPLE_DATA)
 
+    @mock.patch('fuel_agent.manager.hw', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.manager.gu', create=True)
@@ -69,7 +71,9 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_grub1_kernel_initrd_guessed(self, mock_umount,
                                                        mock_mount, mock_utils,
-                                                       mock_gu, mock_open):
+                                                       mock_gu, mock_open,
+                                                       mock_bu, mock_hw):
+        mock_hw.is_multipath_device.return_value = False
         mock_utils.execute.return_value = ('', '')
         mock_gu.guess_grub_version.return_value = 1
         # grub has kernel_name and initrd_name both set to None
@@ -95,6 +99,8 @@ class TestManager(unittest2.TestCase):
         mock_gu.guess_kernel.assert_called_once_with(
             regexp='fake_kernel_regexp', chroot='/tmp/target')
 
+    @mock.patch('fuel_agent.manager.hw', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.manager.gu', create=True)
@@ -103,7 +109,9 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_grub1_kernel_initrd_set(self, mock_umount,
                                                    mock_mount, mock_utils,
-                                                   mock_gu, mock_open):
+                                                   mock_gu, mock_open,
+                                                   mock_bu, mock_hw):
+        mock_hw.is_multipath_device.return_value = False
         mock_utils.execute.return_value = ('', '')
         mock_gu.guess_grub_version.return_value = 1
         self.mgr.driver.grub.kernel_params = 'fake_kernel_params'
@@ -122,7 +130,10 @@ class TestManager(unittest2.TestCase):
             '/dev/sda3', chroot='/tmp/target')
         self.assertFalse(mock_gu.guess_initrd.called)
         self.assertFalse(mock_gu.guess_kernel.called)
+        self.assertFalse(mock_bu.override_lvm_config.called)
 
+    @mock.patch('fuel_agent.manager.hw', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.objects.bootloader.Grub', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
@@ -132,12 +143,13 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_rootfs_uuid(self, mock_umount, mock_mount,
                                        mock_utils, mock_gu, mock_open,
-                                       mock_grub):
+                                       mock_grub, mock_bu, mock_hw):
         def _fake_uuid(*args, **kwargs):
             if len(args) >= 8 and args[7] == '/dev/mapper/os-root':
                 return ('FAKE_ROOTFS_UUID', None)
             else:
                 return ('FAKE_UUID', None)
+        mock_hw.is_multipath_device.return_value = False
         mock_utils.execute.side_effect = _fake_uuid
         mock_grub.version = 2
         mock_gu.guess_grub_version.return_value = 2
@@ -150,9 +162,13 @@ class TestManager(unittest2.TestCase):
             'root=UUID=FAKE_ROOTFS_UUID ')
         self.assertEqual(2, mock_grub.version)
 
+    @mock.patch('fuel_agent.manager.hw', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.utils', create=True)
     @mock.patch.object(manager.Manager, 'mount_target')
-    def test_do_bootloader_rootfs_not_found(self, mock_umount, mock_utils):
+    def test_do_bootloader_rootfs_not_found(self, mock_umount, mock_utils,
+                                            mock_bu, mock_hw):
+        mock_hw.is_multipath_device.return_value = False
         mock_utils.execute.return_value = ('fake', 'fake')
         self.mgr.driver._partition_scheme = objects.PartitionScheme()
         self.mgr.driver.partition_scheme.add_fs(
@@ -162,6 +178,8 @@ class TestManager(unittest2.TestCase):
         self.assertRaises(errors.WrongPartitionSchemeError,
                           self.mgr.do_bootloader)
 
+    @mock.patch('fuel_agent.manager.hw', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.manager.gu', create=True)
@@ -169,8 +187,10 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.Manager, 'mount_target')
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_grub_version_changes(
-            self, mock_umount, mock_mount, mock_utils, mock_gu, mock_open):
+            self, mock_umount, mock_mount, mock_utils, mock_gu, mock_open,
+            mock_bu, mock_hw):
         # actually covers only grub1 related logic
+        mock_hw.is_multipath_device.return_value = False
         mock_utils.execute.return_value = ('fake_UUID\n', None)
         mock_gu.guess_grub_version.return_value = 'expected_version'
         self.mgr.do_bootloader()
@@ -178,6 +198,8 @@ class TestManager(unittest2.TestCase):
             chroot='/tmp/target')
         self.assertEqual('expected_version', self.mgr.driver.grub.version)
 
+    @mock.patch('fuel_agent.manager.hw', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.manager.gu', create=True)
@@ -185,8 +207,9 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.Manager, 'mount_target')
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_grub1(self, mock_umount, mock_mount, mock_utils,
-                                 mock_gu, mock_open):
+                                 mock_gu, mock_open, mock_bu, mock_hw):
         # actually covers only grub1 related logic
+        mock_hw.is_multipath_device.return_value = False
         mock_utils.execute.return_value = ('fake_UUID\n', None)
         mock_gu.guess_initrd.return_value = 'guessed_initrd'
         mock_gu.guess_kernel.return_value = 'guessed_kernel'
@@ -207,6 +230,8 @@ class TestManager(unittest2.TestCase):
         self.assertFalse(mock_gu.grub2_cfg.called)
         self.assertFalse(mock_gu.grub2_install.called)
 
+    @mock.patch('fuel_agent.manager.hw', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.manager.gu', create=True)
@@ -214,8 +239,9 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.Manager, 'mount_target')
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_grub2(self, mock_umount, mock_mount, mock_utils,
-                                 mock_gu, mock_open):
+                                 mock_gu, mock_open, mock_bu, mock_hw):
         # actually covers only grub2 related logic
+        mock_hw.is_multipath_device.return_value = False
         mock_utils.execute.return_value = ('fake_UUID\n', None)
         mock_gu.guess_grub_version.return_value = 2
         self.mgr.do_bootloader()
@@ -231,13 +257,52 @@ class TestManager(unittest2.TestCase):
         self.assertFalse(mock_gu.grub1_cfg.called)
         self.assertFalse(mock_gu.grub1_install.called)
 
+    @mock.patch('fuel_agent.manager.hw', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
+    @mock.patch('fuel_agent.manager.open',
+                create=True, new_callable=mock.mock_open)
+    @mock.patch('fuel_agent.manager.gu', autospec=True)
+    @mock.patch('fuel_agent.manager.utils', autospec=True)
+    @mock.patch.object(manager.Manager, 'mount_target')
+    @mock.patch.object(manager.Manager, 'umount_target')
+    def test_do_bootloader_with_multipath(
+            self, mock_umount, mock_mount, mock_utils, mock_gu, mock_open,
+            mock_bu, mock_hw):
+        # actually covers only multipath related logic
+        # Lets assume that only /dev/sda device is not-multipath
+        mock_hw.is_multipath_device.side_effect = False, False, True
+        mock_hw.udevreport.side_effect = (
+            {'DEVLINKS': ['/dev/disk/by-id/fake1']},
+            {'DEVLINKS': ['/dev/disk/by-id/fake21', '/dev/disk/by-id/fake22']}
+        )
+        mock_utils.execute.return_value = ('fake_UUID\n', None)
+        mock_gu.guess_grub_version.return_value = 2
+        self.mgr.do_bootloader()
+        mock_bu.override_lvm_config.assert_called_once_with(
+            '/tmp/target',
+            {'devices': {
+                'scan': ['/dev/disk/', '/dev/mapper/'],
+                'preferred_names': ['^/dev/mapper/'],
+                'global_filter': [
+                    'a|^/dev/disk/by-id/fake1(p)?(-part)?[0-9]*|',
+                    'a|^/dev/disk/by-id/fake21(p)?(-part)?[0-9]*|',
+                    'a|^/dev/disk/by-id/fake22(p)?(-part)?[0-9]*|',
+                    'r|^/dev/disk/.*|',
+                    'a|^/dev/mapper/.*|',
+                    'r/.*/']}},
+            update_initramfs=True,
+            lvm_conf_path='/etc/lvm/lvm.conf')
+
+    @mock.patch('fuel_agent.manager.hw', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.gu', create=True)
     @mock.patch('fuel_agent.manager.utils', create=True)
     @mock.patch.object(manager.Manager, 'mount_target')
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_writes(self, mock_umount, mock_mount, mock_utils,
-                                  mock_gu):
+                                  mock_gu, mock_bu, mock_hw):
         # actually covers only write() calls
+        mock_hw.is_multipath_device.return_value = False
         mock_utils.execute.return_value = ('fake_UUID\n', None)
         with mock.patch('fuel_agent.manager.open', create=True) as mock_open:
             file_handle_mock = mock_open.return_value.__enter__.return_value
@@ -308,6 +373,7 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.utils, 'blacklist_udev_rules')
     @mock.patch.object(manager.utils, 'unblacklist_udev_rules')
     @mock.patch.object(manager.utils, 'execute')
+    @mock.patch.object(manager.utils, 'udevadm_trigger_blocks')
     @mock.patch.object(mu, 'mdclean_all')
     @mock.patch.object(lu, 'lvremove_all')
     @mock.patch.object(lu, 'vgremove_all')
@@ -325,8 +391,8 @@ class TestManager(unittest2.TestCase):
     def test_do_partitioning_md(self, mock_hu_lbd, mock_pu_ml, mock_pu_mp,
                                 mock_pu_spf, mock_pu_sgt, mock_mu_m, mock_lu_p,
                                 mock_lu_v, mock_lu_l, mock_fu_mf, mock_pvr,
-                                mock_vgr, mock_lvr, mock_mdr, mock_exec,
-                                mock_unbl, mock_bl, mock_os_path):
+                                mock_vgr, mock_lvr, mock_mdr, mock_udevtrig,
+                                mock_exec, mock_unbl, mock_bl, mock_os_path):
         mock_hu_lbd.return_value = test_nailgun.LIST_BLOCK_DEVICES_SAMPLE
         mock_os_path.return_value = True
         self.mgr.driver.partition_scheme.mds = [
@@ -346,6 +412,7 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.utils, 'blacklist_udev_rules')
     @mock.patch.object(manager.utils, 'unblacklist_udev_rules')
     @mock.patch.object(manager.utils, 'execute')
+    @mock.patch.object(manager.utils, 'udevadm_trigger_blocks')
     @mock.patch.object(mu, 'mdclean_all')
     @mock.patch.object(lu, 'lvremove_all')
     @mock.patch.object(lu, 'vgremove_all')
@@ -363,8 +430,8 @@ class TestManager(unittest2.TestCase):
     def test_do_partitioning(self, mock_hu_lbd, mock_pu_ml, mock_pu_mp,
                              mock_pu_spf, mock_pu_sgt, mock_mu_m, mock_lu_p,
                              mock_lu_v, mock_lu_l, mock_fu_mf, mock_pvr,
-                             mock_vgr, mock_lvr, mock_mdr, mock_exec,
-                             mock_unbl, mock_bl, mock_os_path):
+                             mock_vgr, mock_lvr, mock_mdr, mock_udevtrig,
+                             mock_exec, mock_unbl, mock_bl, mock_os_path):
         mock_os_path.return_value = True
         mock_hu_lbd.return_value = test_nailgun.LIST_BLOCK_DEVICES_SAMPLE
         self.mgr.do_partitioning()
