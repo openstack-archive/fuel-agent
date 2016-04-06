@@ -118,3 +118,9 @@ def umount_fs(fs_mount, try_lazy_umount=False):
                 utils.execute('umount', '-l', fs_mount, check_exit_code=[0])
             else:
                 raise
+
+
+def get_fs_type(device):
+    output = utils.execute('blkid', '-o', 'value', '-s', 'TYPE',
+                           '-c', '/dev/null', device)[0]
+    return output.strip()
