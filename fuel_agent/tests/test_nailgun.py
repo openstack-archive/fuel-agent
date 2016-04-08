@@ -1545,6 +1545,16 @@ class TestNailgunMockedMeta(unittest2.TestCase):
             self.assertEqual(CEPH_DATA['partition_guid'],
                              p_scheme.parteds[disk].partitions[part].guid)
 
+    def test_grub_stage1_on_all_disks(self, mock_lbd, mock_image_meta):
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        data['ks_meta']['pm_data']['ks_spaces'] = FIRST_DISK_HUGE_KS_SPACES
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
+        drv = nailgun.Nailgun(data)
+        for parted in drv.partition_scheme.parteds:
+            # check that the first partition was created for stage1
+            # it should have very specific flag 'bios_grub'
+            self.assertIn('bios_grub', parted.partitions[0].flags)
+
     def test_grub_centos_26(self, mock_lbd, mock_image_meta):
         data = copy.deepcopy(PROVISION_SAMPLE_DATA)
         data['profile'] = 'centos'
