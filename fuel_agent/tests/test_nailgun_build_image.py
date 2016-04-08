@@ -20,7 +20,6 @@ from six.moves.urllib.parse import urlsplit
 import unittest2
 
 from fuel_agent.drivers.nailgun import NailgunBuildImage
-from fuel_agent import errors
 from fuel_agent import objects
 
 DEFAULT_TRUSTY_PACKAGES = [
@@ -107,13 +106,6 @@ class TestNailgunBuildImage(unittest2.TestCase):
     def test_default_trusty_packages(self):
         self.assertEqual(NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
                          DEFAULT_TRUSTY_PACKAGES)
-
-    @mock.patch.object(NailgunBuildImage, 'parse_schemes')
-    def test_parse_operating_system_error_bad_codename(self,
-                                                       mock_parse_schemes):
-        with self.assertRaises(errors.WrongInputDataError):
-            data = {'codename': 'not-trusty'}
-            NailgunBuildImage(data)
 
     @mock.patch('fuel_agent.objects.RepoProxies')
     @mock.patch('fuel_agent.objects.Ubuntu')

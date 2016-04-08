@@ -779,11 +779,6 @@ class NailgunBuildImage(BaseDataDriver):
         return None
 
     def parse_operating_system(self):
-        if self.data.get('codename').lower() != 'trusty':
-            raise errors.WrongInputDataError(
-                'Currently, only Ubuntu Trusty is supported, given '
-                'codename is {0}'.format(self.data.get('codename')))
-
         packages = self.data.get('packages', self.DEFAULT_TRUSTY_PACKAGES)
 
         repos = []
