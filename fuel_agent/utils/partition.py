@@ -156,7 +156,7 @@ def make_partition(dev, begin, end, ptype):
 
     utils.udevadm_settle()
     out, err = utils.execute(
-        'parted', '-a', 'optimal', '-s', dev, 'unit', 'MiB',
+        'parted', '-a', 'minimal', '-s', dev, 'unit', 'MiB',
         'mkpart', ptype, str(begin), str(end), check_exit_code=[0, 1])
     LOG.debug('Parted output: \n%s' % out)
     reread_partitions(dev, out=out)
