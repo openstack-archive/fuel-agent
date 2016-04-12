@@ -336,19 +336,19 @@ class Nailgun(BaseDataDriver):
             LOG.debug('Adding gpt table on disk %s' % disk['name'])
             parted = partition_scheme.add_parted(
                 name=self._disk_dev(disk), label='gpt')
-            if disk in self.boot_disks:
-                # we install bootloader only on every suitable disk
-                LOG.debug('Adding bootloader stage0 on disk %s' % disk['name'])
-                parted.install_bootloader = True
 
-                # legacy boot partition
-                LOG.debug('Adding bios_grub partition on disk %s: size=24' %
-                          disk['name'])
-                parted.add_partition(size=24, flags=['bios_grub'])
-                # uefi partition (for future use)
-                LOG.debug('Adding UEFI partition on disk %s: size=200' %
-                          disk['name'])
-                parted.add_partition(size=200)
+            # we install bootloader only on every suitable disk
+            LOG.debug('Adding bootloader stage0 on disk %s' % disk['name'])
+            parted.install_bootloader = True
+
+            # legacy boot partition
+            LOG.debug('Adding bios_grub partition on disk %s: size=24' %
+                      disk['name'])
+            parted.add_partition(size=24, flags=['bios_grub'])
+            # uefi partition (for future use)
+            LOG.debug('Adding UEFI partition on disk %s: size=200' %
+                      disk['name'])
+            parted.add_partition(size=200)
 
             LOG.debug('Looping over all volumes on disk %s' % disk['name'])
             for volume in disk['volumes']:
