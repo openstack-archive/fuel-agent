@@ -1,8 +1,8 @@
 #!/bin/bash -x
 
 LOG_NAME='multipath-reload'
-TIMEOUT='360s'
-KILL_TIMEOUT='120s'
+TIMEOUT='360'
+KILL_TIMEOUT='120'
 SETTLE_ATTEMPTS='10'
 
 wait_for_udev_settle() {
