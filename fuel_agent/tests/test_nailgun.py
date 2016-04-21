@@ -1757,6 +1757,15 @@ class TestNailgunMockedMeta(unittest2.TestCase):
             drv.partition_scheme.fs_by_mount('/boot').device,
             '/dev/sda3')
 
+    def test_boot_partition_bootable_flag(self, mock_lbd, mock_image_meta):
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        data['ks_meta']['pm_data']['ks_spaces'][1]['bootable'] = True
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
+        drv = nailgun.Nailgun(data)
+        self.assertEqual(
+            drv.partition_scheme.fs_by_mount('/boot').device,
+            '/dev/sdb3')
+
     def test_elevate_keep_data_single_disk(self, mock_lbd, mock_image_meta):
         data = copy.deepcopy(PROVISION_SAMPLE_DATA)
         data['ks_meta']['pm_data']['ks_spaces'] = SINGLE_DISK_KS_SPACES

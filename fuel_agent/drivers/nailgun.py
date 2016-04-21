@@ -137,6 +137,10 @@ class Nailgun(BaseDataDriver):
 
     @property
     def boot_disks(self):
+        """Property to get suitable list of disks to place '/boot'
+
+        :returns: list of disk where boot partition can be placed
+        """
         # FIXME(agordeev): NVMe drives should be skipped as
         # accessing such drives during the boot typically
         # requires using UEFI which is still not supported
@@ -163,9 +167,19 @@ class Nailgun(BaseDataDriver):
         md_boot_disks = [
             disk for disk in self.md_os_disks if disk in suitable_disks]
         if md_boot_disks:
-            return md_boot_disks
+            disks = md_boot_disks
         else:
-            return suitable_disks
+            disks = suitable_disks
+        bootable_disk = [disk for disk in disks
+                         if disk.get('bootable')]
+        if bootable_disk:
+            if len(bootable_disk) >= 2:
+                raise errors.WrongPartitionSchemeError(
+                    "More than one bootable disk found! %{0}".
+                    format(bootable_disk))
+            return bootable_disk
+
+        return disks
 
     def _have_boot_partition(self, disks):
         return any(self._is_boot_disk(d) for d in disks)
