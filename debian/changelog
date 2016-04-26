@@ -1,3 +1,9 @@
+fuel-agent (9.0.0-2) unstable; urgency=low
+
+  * Build depends on dh-python.
+
+ -- Alexander Tsamutali <atsamutali@mirantis.com>  Wed, 11 May 2016 22:47:00 +0200
+
 fuel-agent (9.0.0-1) unstable; urgency=low
 
   * Align fuel package versioning schema
