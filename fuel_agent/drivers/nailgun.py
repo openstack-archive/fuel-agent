@@ -251,7 +251,8 @@ class Nailgun(BaseDataDriver):
             if all((
                 v["size"] <= 0
                 for v in disk["volumes"]
-                if v["type"] != "boot" and v.get("mount") != "/boot"
+                if v["type"] not in ("boot", 'lvm_meta_pool')
+                    and v.get("mount") != "/boot"
             )):
                 continue
             LOG.debug('Processing disk %s' % disk['name'])
