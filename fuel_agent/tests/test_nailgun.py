@@ -1016,6 +1016,157 @@ MANY_HUGE_DISKS_KS_SPACES = [
     }
 ]
 
+LVM_META_POOL_KS_SPACES = [
+    {
+        'name': 'sda',
+        'volumes': [
+            {
+                'type': 'boot',
+                'size': 300
+            },
+            {
+                'mount': '/boot',
+                'size': 200,
+                'type': 'raid',
+                'file_system': 'ext2',
+                'name': 'Boot'
+            },
+            {
+                'type': 'lvm_meta_pool',
+                'size': 0
+            },
+            {
+                'size': 40592,
+                'type': 'pv',
+                'lvm_meta_size': 64,
+                'vg': 'os'
+            },
+            {
+                'size': 61308,
+                'type': 'pv',
+                'lvm_meta_size': 64,
+                'vg': 'vm'
+            }
+        ],
+        'extra': [],
+        'size': 102400,
+        'type': 'disk',
+        'id': 'sda',
+        'free_space': 0
+    },
+    {
+        'name': 'sdb',
+        'volumes': [
+            {
+                'type': 'boot',
+                'size': 300
+            },
+            {
+                'mount': '/boot',
+                'size': 200,
+                'type': 'raid',
+                'file_system': 'ext2',
+                'name': 'Boot'
+            },
+            {
+                'type': 'lvm_meta_pool',
+                'size': 128
+            },
+            {
+                'size': 0,
+                'type': 'pv',
+                'lvm_meta_size': 0,
+                'vg': 'os'
+            },
+            {
+                'size': 0,
+                'type': 'pv',
+                'lvm_meta_size': 0,
+                'vg': 'vm'
+            }
+        ],
+        'extra': [],
+        'size': 2048,
+        'type': 'disk',
+        'id': 'sdb',
+        'free_space': 1420
+    },
+    {
+        'name': 'sdc',
+        'volumes': [
+            {
+                'type': 'boot',
+                'size': 300
+            },
+            {
+                'mount': '/boot',
+                'size': 200,
+                'type': 'raid',
+                'file_system': 'ext2',
+                'name': 'Boot'
+            },
+            {
+                'type': 'lvm_meta_pool',
+                'size': 128},
+            {
+                'size': 0,
+                'type': 'pv',
+                'lvm_meta_size': 0,
+                'vg': 'os'
+            },
+            {
+                'size': 0,
+                'type': 'pv',
+                'lvm_meta_size': 0,
+                'vg': 'vm'
+            }
+        ],
+        'extra': [],
+        'size': 358400,
+        'type': 'disk',
+        'id': 'sdc',
+        'free_space': 357772
+    },
+    {
+        'min_size': 40528,
+        'volumes': [
+            {
+                'mount': '/',
+                'size': 20480,
+                'type': 'lv',
+                'name': 'root',
+                'file_system': 'ext4'
+            },
+            {
+                'mount': 'swap',
+                'size': 20048,
+                'type': 'lv',
+                'name': 'swap',
+                'file_system': 'swap'
+            }
+        ],
+        'type': 'vg',
+        '_allocate_size': 'min',
+        'id': 'os',
+        'label': 'Base System'
+    },
+    {
+        'min_size': 5120,
+        'volumes': [
+            {
+                'mount': '/var/lib/nova',
+                'size': 61244,
+                'type': 'lv',
+                'name': 'nova',
+                'file_system': 'xfs'
+            }
+        ],
+        'type': 'vg',
+        '_allocate_size': 'all',
+        'id': 'vm',
+        'label': 'Virtual Storage'}
+]
+
 SINGLE_NVME_DISK_KS_SPACES = [
     {
         'extra': ['disk/by-id/wwn-0x65cd2e4080864356494e000000010000'],
@@ -1731,6 +1882,17 @@ class TestNailgunMockedMeta(unittest2.TestCase):
             drv.partition_scheme.fs_by_mount('/').device,
             '/dev/sda3')
         self.assertIsNone(drv.partition_scheme.fs_by_mount('/boot'))
+
+    def test_unallocated_disks_lvm_meta(self, mock_lbd, mock_image_meta):
+        # even if a disk contains /boot partition or lvm_meta_pool volume
+        # it still should be considered as unallocated.
+        # these things are just leftovers from volume manager.
+        data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        data['ks_meta']['pm_data']['ks_spaces'] = LVM_META_POOL_KS_SPACES
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
+        drv = nailgun.Nailgun(data)
+        for parted in drv.partition_scheme.parteds:
+            self.assertNotIn(parted.name, ['/dev/sdb', '/dev/sdc'])
 
     def test_boot_partition_is_on_rootfs_ironic(self, mock_lbd,
                                                 mock_image_meta):
