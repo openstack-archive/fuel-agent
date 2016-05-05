@@ -380,19 +380,21 @@ class TestManager(unittest2.TestCase):
         self.assertEqual(mock_pu_ml_expected_calls, mock_pu_ml.call_args_list)
 
         mock_pu_mp_expected_calls = [
-            mock.call('/dev/sda', 1, 25, 'primary'),
-            mock.call('/dev/sda', 25, 225, 'primary'),
-            mock.call('/dev/sda', 225, 425, 'primary'),
-            mock.call('/dev/sda', 425, 625, 'primary'),
-            mock.call('/dev/sda', 625, 20063, 'primary'),
-            mock.call('/dev/sda', 20063, 65660, 'primary'),
-            mock.call('/dev/sda', 65660, 65680, 'primary'),
-            mock.call('/dev/sdb', 1, 25, 'primary'),
-            mock.call('/dev/sdb', 25, 225, 'primary'),
-            mock.call('/dev/sdb', 225, 65196, 'primary'),
-            mock.call('/dev/sdc', 1, 25, 'primary'),
-            mock.call('/dev/sdc', 25, 225, 'primary'),
-            mock.call('/dev/sdc', 225, 65196, 'primary')]
+            mock.call('/dev/sda', 1, 25, 'primary', alignment='optimal'),
+            mock.call('/dev/sda', 26, 226, 'primary', alignment='optimal'),
+            mock.call('/dev/sda', 227, 427, 'primary', alignment='optimal'),
+            mock.call('/dev/sda', 428, 628, 'primary', alignment='optimal'),
+            mock.call('/dev/sda', 629, 20067, 'primary', alignment='optimal'),
+            mock.call('/dev/sda', 20068, 65665, 'primary',
+                      alignment='optimal'),
+            mock.call('/dev/sda', 65666, 65686, 'primary',
+                      alignment='optimal'),
+            mock.call('/dev/sdb', 1, 25, 'primary', alignment='optimal'),
+            mock.call('/dev/sdb', 26, 226, 'primary', alignment='optimal'),
+            mock.call('/dev/sdb', 227, 65198, 'primary', alignment='optimal'),
+            mock.call('/dev/sdc', 1, 25, 'primary', alignment='optimal'),
+            mock.call('/dev/sdc', 26, 226, 'primary', alignment='optimal'),
+            mock.call('/dev/sdc', 227, 65198, 'primary', alignment='optimal')]
         self.assertEqual(mock_pu_mp_expected_calls, mock_pu_mp.call_args_list)
 
         mock_pu_spf_expected_calls = [mock.call('/dev/sda', 1, 'bios_grub'),
