@@ -286,15 +286,15 @@ class TestParted(unittest2.TestCase):
 
     def test_next_begin_last_extended_partition(self):
         self.prtd.partitions.append(
-            objects.Partition('name', 'count', 'device', 1, 100,
+            objects.Partition('name', 'count', 'device', 'begin', 'end',
                               'extended'))
-        self.assertEqual(2, self.prtd.next_begin())
+        self.assertEqual('begin', self.prtd.next_begin())
 
     def test_next_begin_no_last_extended_partition(self):
         self.prtd.partitions.append(
-            objects.Partition('name', 'count', 'device', 1, 100,
+            objects.Partition('name', 'count', 'device', 'begin', 'end',
                               'primary'))
-        self.assertEqual(101, self.prtd.next_begin())
+        self.assertEqual('end', self.prtd.next_begin())
 
     def test_next_count_no_logical(self):
         self.assertEqual(1, self.prtd.next_count('primary'))

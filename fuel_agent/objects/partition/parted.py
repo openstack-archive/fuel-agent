@@ -89,8 +89,8 @@ class Parted(base.Serializable):
         if not self.partitions:
             return 1
         if self.partitions[-1] == self.extended:
-            return self.partitions[-1].begin + 1
-        return self.partitions[-1].end + 1
+            return self.partitions[-1].begin
+        return self.partitions[-1].end
 
     def next_name(self):
         if self.next_type() == 'extended':
