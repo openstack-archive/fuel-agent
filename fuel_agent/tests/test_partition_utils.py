@@ -134,6 +134,35 @@ class TestPartitionUtils(unittest2.TestCase):
         self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
         mock_rerd.assert_called_once_with('/dev/fake', out='out')
 
+    @mock.patch.object(utils, 'udevadm_settle')
+    @mock.patch.object(pu, 'reread_partitions')
+    @mock.patch.object(pu, 'info')
+    @mock.patch.object(utils, 'execute')
+    def test_make_partition_minimal(self, mock_exec, mock_info, mock_rerd,
+                                    mock_udev):
+        # should run parted OS command
+        # in order to create new partition
+        mock_exec.return_value = ('out', '')
+
+        mock_info.return_value = {
+            'parts': [
+                {'begin': 0, 'end': 1000, 'fstype': 'free'},
+            ]
+        }
+        pu.make_partition('/dev/fake', 100, 200, 'primary',
+                          alignment='minimal')
+        mock_exec_expected_calls = [
+            mock.call('parted', '-a', 'minimal', '-s', '/dev/fake', 'unit',
+                      'MiB', 'mkpart', 'primary', '100', '200',
+                      check_exit_code=[0, 1])]
+        mock_udev.assert_called_once_with()
+        self.assertEqual(mock_exec_expected_calls, mock_exec.call_args_list)
+        mock_rerd.assert_called_once_with('/dev/fake', out='out')
+
+    def test_make_partition_wrong_alignment(self):
+        self.assertRaises(errors.WrongPartitionSchemeError, pu.make_partition,
+                          '/dev/fake', 1, 10, 'primary', 'invalid')
+
     @mock.patch.object(utils, 'execute')
     def test_make_partition_wrong_ptype(self, mock_exec):
         # should check if partition type is one of
