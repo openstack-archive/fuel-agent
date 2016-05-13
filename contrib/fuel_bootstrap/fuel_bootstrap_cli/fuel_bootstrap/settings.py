@@ -15,24 +15,29 @@
 #    under the License.
 
 import os
+import sys
+
 import yaml
 
 from fuel_bootstrap import consts
-from fuel_bootstrap import errors
 
 
 class Configuration(object):
     def __init__(self, config_file=None):
+        data = {}
         if not config_file:
             config_file = consts.CONFIG_FILE
         if os.path.exists(config_file):
             with open(config_file) as f:
                 data = yaml.load(f)
         else:
-            raise errors.ConfigFileNotExists(
-                "Default config couldn't be found in {0}"
-                .format(config_file))
+            # TODO(atolochkova): need to add logger
+            sys.stderr.write("Default config couldn't be found in {0}"
+                             .format(config_file))
         self._data = data
 
     def __getattr__(self, name):
         return self._data.get(name)
+
+
+CONF = Configuration()
