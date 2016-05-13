@@ -233,6 +233,14 @@ class ExecuteTestCase(unittest2.TestCase):
         self.assertRaises(errors.HttpUrlConnectionError,
                           utils.init_http_request, 'http://fake_url')
 
+    @mock.patch('time.sleep')
+    @mock.patch.object(requests, 'get')
+    def test_init_http_request_max_retries_exceeded_HTTPerror(
+            self, mock_req, mock_s):
+        mock_req.side_effect = requests.exceptions.HTTPError
+        self.assertRaises(errors.HttpUrlConnectionError,
+                          utils.init_http_request, 'http://fake_url')
+
     @mock.patch('fuel_agent.utils.utils.os.makedirs')
     @mock.patch('fuel_agent.utils.utils.os.path.isdir', return_value=False)
     def test_makedirs_if_not_exists(self, mock_isdir, mock_makedirs):
