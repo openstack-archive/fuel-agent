@@ -245,12 +245,14 @@ def init_http_request(url, byte_range=0, proxies=None, noproxy_addrs=None):
                     timeout=CONF.http_request_timeout,
                     headers={'Range': 'bytes=%s-' % byte_range},
                     proxies=proxies)
+                response_obj.raise_for_status()
             except (socket.timeout,
                     urllib3.exceptions.DecodeError,
                     urllib3.exceptions.ProxyError,
                     requests.exceptions.ConnectionError,
                     requests.exceptions.Timeout,
-                    requests.exceptions.TooManyRedirects) as e:
+                    requests.exceptions.TooManyRedirects,
+                    requests.exceptions.HTTPError) as e:
                 LOG.debug("Got non-critical error when accessing to %s "
                           "on %s attempt: %s", url, retry + 1, e)
             else:
@@ -262,7 +264,6 @@ def init_http_request(url, byte_range=0, proxies=None, noproxy_addrs=None):
         else:
             raise errors.HttpUrlConnectionError(
                 "Exceeded maximum http request retries for %s".format(url))
-    response_obj.raise_for_status()
     return response_obj
 
 
