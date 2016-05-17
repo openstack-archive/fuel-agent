@@ -24,7 +24,7 @@ from fuel_bootstrap import consts
 from fuel_bootstrap import errors
 from fuel_bootstrap import settings
 
-CONF = settings.Configuration()
+CONF = settings.CONF
 
 
 class BootstrapDataBuilder(object):

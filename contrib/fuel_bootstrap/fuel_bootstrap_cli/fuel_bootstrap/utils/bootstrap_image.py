@@ -32,7 +32,7 @@ from fuel_bootstrap import settings
 from fuel_bootstrap.utils import data as data_util
 from fuel_bootstrap.utils import notifier
 
-CONF = settings.Configuration()
+CONF = settings.CONF
 LOG = logging.getLogger(__name__)
 ACTIVE = 'active'
 
