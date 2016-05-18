@@ -31,6 +31,15 @@ class FuelBootstrap(app.App):
 
     """
 
+    def __init__(self, **kwargs):
+        super(FuelBootstrap, self).__init__(
+            description='Command line Fuel bootstrap manager',
+            version='0.0.2',
+            command_manager=CommandManager('fuel_bootstrap',
+                                           convert_underscores=True),
+            **kwargs
+        )
+
     def initialize_app(self, argv):
         LOG.debug('initialize app')
 
@@ -45,10 +54,4 @@ class FuelBootstrap(app.App):
 
 
 def main(argv=sys.argv[1:]):
-    fuel_bootstrap_app = FuelBootstrap(
-        description='Command line Fuel bootstrap manager',
-        version='0.0.2',
-        command_manager=CommandManager('fuel_bootstrap',
-                                       convert_underscores=True)
-    )
-    return fuel_bootstrap_app.run(argv)
+    return FuelBootstrap().run(argv)
