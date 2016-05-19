@@ -251,14 +251,46 @@ class Manager(object):
             if not found_images:
                 fu.make_fs(fs.type, fs.options, fs.label, fs.device)
 
-    def do_configdrive(self):
-        LOG.debug('--- Creating configdrive (do_configdrive) ---')
+    def _make_configdrive_image(self, src_files):
+        bs = 4096
+        configdrive_device = self.driver.partition_scheme.configdrive_device()
+        size = utils.execute('blockdev', '--getsize64', configdrive_device)[0]
+        size = int(size.strip())
+
+        utils.execute('truncate', '--size=%d' % size, CONF.config_drive_path)
+        fu.make_fs(
+            fs_type='ext2',
+            fs_options=' -b %d -F ' % bs,
+            fs_label='-L config-2',
+            dev=six.text_type(CONF.config_drive_path))
+
+        mount_point = tempfile.mkdtemp(dir=CONF.tmp_path)
+        try:
+            fu.mount_fs('ext2', CONF.config_drive_path, mount_point)
+            for file_path in src_files:
+                name = os.path.basename(file_path)
+                if os.path.isdir(file_path):
+                    shutil.copytree(file_path, os.path.join(mount_point, name))
+                else:
+                    shutil.copy2(file_path, mount_point)
+        except Exception as exc:
+            LOG.error('Error copying files to configdrive: %s', exc)
+            raise
+        finally:
+            fu.umount_fs(mount_point)
+            os.rmdir(mount_point)
+
+    def _prepare_configdrive_files(self):
+        # see data sources part of cloud-init documentation
+        # for directory structure
+        cd_root = tempfile.mkdtemp(dir=CONF.tmp_path)
+        cd_latest = os.path.join(cd_root, 'openstack', 'latest')
+        md_output_path = os.path.join(cd_latest, 'meta_data.json')
+        ud_output_path = os.path.join(cd_latest, 'user_data')
+        os.makedirs(cd_latest)
+
         cc_output_path = os.path.join(CONF.tmp_path, 'cloud_config.txt')
         bh_output_path = os.path.join(CONF.tmp_path, 'boothook.txt')
-        # NOTE:file should be strictly named as 'user-data'
-        #      the same is for meta-data as well
-        ud_output_path = os.path.join(CONF.tmp_path, 'user-data')
-        md_output_path = os.path.join(CONF.tmp_path, 'meta-data')
 
         tmpl_dir = CONF.nc_template_path
         utils.render_and_save(
@@ -275,18 +307,24 @@ class Manager(object):
         )
         utils.render_and_save(
             tmpl_dir,
-            self.driver.configdrive_scheme.template_names('meta-data'),
+            self.driver.configdrive_scheme.template_names('meta-data_json'),
             self.driver.configdrive_scheme.template_data(),
             md_output_path
         )
 
-        utils.execute('write-mime-multipart', '--output=%s' % ud_output_path,
-                      '%s:text/cloud-boothook' % bh_output_path,
-                      '%s:text/cloud-config' % cc_output_path)
-        utils.execute('genisoimage', '-output', CONF.config_drive_path,
-                      '-volid', 'cidata', '-joliet', '-rock', ud_output_path,
-                      md_output_path)
+        utils.execute(
+            'write-mime-multipart', '--output=%s' % ud_output_path,
+            '%s:text/cloud-boothook' % bh_output_path,
+            '%s:text/cloud-config' % cc_output_path)
+        return [os.path.join(cd_root, 'openstack')]
 
+    def do_configdrive(self):
+        LOG.debug('--- Creating configdrive (do_configdrive) ---')
+        files = self._prepare_configdrive_files()
+        self._make_configdrive_image(files)
+        self._add_configdrive_image()
+
+    def _add_configdrive_image(self):
         configdrive_device = self.driver.partition_scheme.configdrive_device()
         if configdrive_device is None:
             raise errors.WrongPartitionSchemeError(
@@ -294,10 +332,13 @@ class Manager(object):
                 'configdrive device not found')
         size = os.path.getsize(CONF.config_drive_path)
         md5 = utils.calculate_md5(CONF.config_drive_path, size)
+
+        fs_type = fu.get_fs_type(CONF.config_drive_path)
+
         self.driver.image_scheme.add_image(
             uri='file://%s' % CONF.config_drive_path,
             target_device=configdrive_device,
-            format='iso9660',
+            format=fs_type,
             container='raw',
             size=size,
             md5=md5,
