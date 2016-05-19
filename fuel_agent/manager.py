@@ -436,6 +436,85 @@ class Manager(object):
                 LOG.debug('Extending %s %s' %
                           (image.format, image.target_device))
                 fu.extend_fs(image.format, image.target_device)
+        self.move_files_to_their_places()
+
+    def move_files_to_their_places(self, remove_src=True):
+        """Move files from mount points to where those files should be.
+
+        :param remove_src: Remove source files after sync if True (default).
+        """
+
+        # NOTE(kozhukalov): The thing is that sometimes we
+        # have file system images and mount point hierachies
+        # which are not aligned. Let's say, we have root file system
+        # image, while partition scheme says that two file systems should
+        # be created on the node: / and /var.
+        # In this case root image has /var directory with a set of files.
+        # Obviously, we need to move all these files from /var directory
+        # on the root file system to /var file system because /var
+        # directory will be used as mount point.
+        # In order to achieve this we mount all existent file
+        # systems into a flat set of temporary directories. We then
+        # try to find specific paths which correspond to mount points
+        # and move all files from these paths to corresponding file systems.
+
+        mount_map = self.mount_target_flat()
+        for fs_mount in sorted(mount_map):
+            head, tail = os.path.split(fs_mount)
+            while head != fs_mount:
+                LOG.debug('Trying to move files for %s file system', fs_mount)
+                if head in mount_map:
+                    LOG.debug('File system %s is mounted into %s',
+                              head, mount_map[head])
+                    check_path = os.path.join(mount_map[head], tail)
+                    LOG.debug('Trying to check if path %s exists', check_path)
+                    if os.path.exists(check_path):
+                        LOG.debug('Path %s exists. Trying to sync all files '
+                                  'from there to %s', mount_map[fs_mount])
+                        src_path = check_path + '/'
+                        utils.execute('rsync', '-avH', src_path,
+                                      mount_map[fs_mount])
+                        if remove_src:
+                            shutil.rmtree(check_path)
+                        break
+                if head == '/':
+                    break
+                head, _tail = os.path.split(head)
+                tail = os.path.join(_tail, tail)
+        self.umount_target_flat(mount_map)
+
+    def mount_target_flat(self):
+        """Mount a set of file systems into a set of temporary directories
+
+        :returns: Mount map dict
+        """
+
+        LOG.debug('Mounting target file systems into a flat set '
+                  'of temporary directories')
+        mount_map = {}
+        for fs in self.driver.partition_scheme.fss:
+            if fs.mount == 'swap':
+                continue
+            # It is an ugly hack to resolve python2/3 encoding issues and
+            # should be removed after transistion to python3
+            try:
+                type(fs.mount) is unicode
+                fs_mount = fs.mount.encode('ascii', 'ignore')
+            except NameError:
+                fs_mount = fs.mount
+            mount_map[fs_mount] = fu.mount_fs_temp(fs.type, str(fs.device))
+        LOG.debug('Flat mount map: %s', mount_map)
+        return mount_map
+
+    def umount_target_flat(self, mount_map):
+        """Umount file systems previously mounted into temporary directories.
+
+        :param mount_map: Mount map dict
+        """
+
+        for mount_point in six.itervalues(mount_map):
+            fu.umount_fs(mount_point)
+            shutil.rmtree(mount_point)
 
     @staticmethod
     def _update_metadata_with_repos(metadata, repos):
@@ -826,20 +905,6 @@ class Manager(object):
         utils.makedirs_if_not_exists(os.path.join(chroot, 'etc/nailgun-agent'))
         with open(os.path.join(chroot, 'etc/nailgun-agent/nodiscover'), 'w'):
             pass
-
-        # FIXME(kozhukalov): When we have just os-root fs image and don't have
-        # os-var-log fs image while / and /var/log are supposed to be
-        # separate file systems and os-var-log is mounted into
-        # non-empty directory on the / file system, those files in /var/log
-        # directory become unavailable.
-        # The thing is that among those file there is /var/log/upstart
-        # where upstart daemon writes its logs. We have specific upstart job
-        # which is to flush open files once all file systems are mounted.
-        # This job needs upstart directory to be available on os-var-log
-        # file system.
-        # This is just a temporary fix and correct fix will be available soon
-        # via updates.
-        utils.execute('mkdir', '-p', chroot + '/var/log/upstart')
 
         with open(chroot + '/etc/fstab', 'wt', encoding='utf-8') as f:
             for fs in self.driver.partition_scheme.fss:

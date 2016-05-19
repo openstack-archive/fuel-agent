@@ -161,6 +161,14 @@ class TestFSUtils(unittest2.TestCase):
         self.assertEqual(fu.format_fs_label(long_label),
                          template.format(long_label_trimmed))
 
+    @mock.patch('fuel_agent.utils.fs.mount_fs')
+    @mock.patch('fuel_agent.utils.fs.tempfile.mkdtemp')
+    def test_mount_fs_temp(self, mock_mkdtemp, mock_mount, mock_exec):
+        mock_mkdtemp.return_value = '/tmp/dir'
+        self.assertEqual('/tmp/dir', fu.mount_fs_temp('ext4', '/dev/fake'))
+        mock_mkdtemp.assert_called_once_with(dir=None, suffix='')
+        mock_mount.assert_called_once_with('ext4', '/dev/fake', '/tmp/dir')
+
 
 class TestFSRetry(unittest2.TestCase):
 

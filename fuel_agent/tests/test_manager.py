@@ -572,6 +572,7 @@ class TestManager(unittest2.TestCase):
         self.assertRaises(errors.WrongPartitionSchemeError,
                           self.mgr.do_configdrive)
 
+    @mock.patch('fuel_agent.manager.Manager.move_files_to_their_places')
     @mock.patch.object(manager.os.path, 'exists')
     @mock.patch.object(hu, 'is_block_device')
     @mock.patch.object(utils, 'calculate_md5')
@@ -589,7 +590,7 @@ class TestManager(unittest2.TestCase):
     def test_do_copyimage(self, mock_lbd, mock_u_ras, mock_u_e, mock_au_c,
                           mock_au_h, mock_au_l, mock_au_g, mock_fu_ef,
                           mock_http_req, mock_yaml, mock_get_size, mock_md5,
-                          mock_ibd, mock_os_path):
+                          mock_ibd, mock_os_path, mock_mfttp):
         mock_os_path.return_value = True
         mock_ibd.return_value = True
         mock_lbd.return_value = test_nailgun.LIST_BLOCK_DEVICES_SAMPLE
@@ -616,6 +617,7 @@ class TestManager(unittest2.TestCase):
         mock_fu_ef_expected_calls = [
             mock.call('ext4', '/dev/mapper/os-root')]
         self.assertEqual(mock_fu_ef_expected_calls, mock_fu_ef.call_args_list)
+        self.assertTrue(mock_mfttp.called)
 
     @mock.patch.object(manager.os.path, 'exists')
     @mock.patch.object(hu, 'is_block_device')
@@ -676,6 +678,7 @@ class TestManager(unittest2.TestCase):
         with self.assertRaisesRegexp(errors.WrongDeviceError, msg):
             self.mgr.do_copyimage()
 
+    @mock.patch('fuel_agent.manager.Manager.move_files_to_their_places')
     @mock.patch.object(manager.os.path, 'exists')
     @mock.patch.object(hu, 'is_block_device')
     @mock.patch.object(utils, 'calculate_md5')
@@ -694,7 +697,7 @@ class TestManager(unittest2.TestCase):
                                       mock_au_c, mock_au_h, mock_au_l,
                                       mock_au_g, mock_fu_ef, mock_http_req,
                                       mock_yaml, mock_get_size, mock_md5,
-                                      mock_ibd, mock_os_path):
+                                      mock_ibd, mock_os_path, mock_mfttp):
         mock_os_path.return_value = True
         mock_ibd.return_value = True
         mock_get_size.return_value = 123
@@ -710,6 +713,7 @@ class TestManager(unittest2.TestCase):
                               mock.call('/dev/mapper/os-root', 1234),
                               mock.call('/dev/sda7', 123)]
         self.assertEqual(expected_md5_calls, mock_md5.call_args_list)
+        self.assertTrue(mock_mfttp.called)
 
     @mock.patch.object(hu, 'is_block_device')
     @mock.patch.object(manager.os.path, 'exists')
@@ -837,6 +841,77 @@ none /run/shm tmpfs rw,nosuid,nodev 0 0"""
                           mock.call('fake_chroot/var'),
                           mock.call('fake_chroot/')],
                          mock_fu.umount_fs.call_args_list)
+
+    @mock.patch('fuel_agent.utils.fs.mount_fs_temp')
+    def test_mount_target_flat(self, mock_mfst):
+        def mfst_side_effect(*args, **kwargs):
+            if '/dev/fake1' in args:
+                return '/tmp/dir1'
+            elif '/dev/fake2' in args:
+                return '/tmp/dir2'
+        mock_mfst.side_effect = mfst_side_effect
+        self.mgr.driver._partition_scheme = objects.PartitionScheme()
+        self.mgr.driver.partition_scheme.add_fs(
+            device='/dev/fake1', mount='/', fs_type='ext4')
+        self.mgr.driver.partition_scheme.add_fs(
+            device='/dev/fake2', mount='/var/lib', fs_type='ext4')
+        self.assertEqual({'/': '/tmp/dir1', '/var/lib': '/tmp/dir2'},
+                         self.mgr.mount_target_flat())
+        self.assertEqual([mock.call('ext4', '/dev/fake1'),
+                          mock.call('ext4', '/dev/fake2')],
+                         mock_mfst.call_args_list)
+
+    @mock.patch('fuel_agent.manager.shutil.rmtree')
+    @mock.patch('fuel_agent.utils.fs.umount_fs')
+    def test_umount_target_flat(self, mock_umfs, mock_rmtree):
+        mount_map = {'/': '/tmp/dir1', '/var/lib': '/tmp/dir2'}
+        self.mgr.umount_target_flat(mount_map)
+        mock_umfs.assert_has_calls(
+            [mock.call('/tmp/dir1'), mock.call('/tmp/dir2')],
+            any_order=True)
+
+    @mock.patch('fuel_agent.manager.shutil.rmtree')
+    @mock.patch('fuel_agent.manager.os.path.exists')
+    @mock.patch('fuel_agent.manager.utils.execute')
+    @mock.patch('fuel_agent.manager.Manager.umount_target_flat')
+    @mock.patch('fuel_agent.manager.Manager.mount_target_flat')
+    def test_move_files_to_their_places(self, mock_mtf, mock_utf,
+                                        mock_ute, mock_ope, mock_shrmt):
+
+        def ope_side_effect(path):
+            if path == '/tmp/dir1/var/lib':
+                return True
+
+        mock_ope.side_effect = ope_side_effect
+        mock_mtf.return_value = {'/': '/tmp/dir1', '/var/lib': '/tmp/dir2'}
+        self.mgr.move_files_to_their_places()
+        self.assertEqual(
+            [mock.call('rsync', '-avH', '/tmp/dir1/var/lib/', '/tmp/dir2')],
+            mock_ute.call_args_list)
+        self.assertEqual(
+            [mock.call('/tmp/dir1/var/lib')],
+            mock_shrmt.call_args_list)
+
+    @mock.patch('fuel_agent.manager.shutil.rmtree')
+    @mock.patch('fuel_agent.manager.os.path.exists')
+    @mock.patch('fuel_agent.manager.utils.execute')
+    @mock.patch('fuel_agent.manager.Manager.umount_target_flat')
+    @mock.patch('fuel_agent.manager.Manager.mount_target_flat')
+    def test_move_files_to_their_places_not_remove(self, mock_mtf, mock_utf,
+                                                   mock_ute, mock_ope,
+                                                   mock_shrmt):
+
+        def ope_side_effect(path):
+            if path == '/tmp/dir1/var/lib':
+                return True
+
+        mock_ope.side_effect = ope_side_effect
+        mock_mtf.return_value = {'/': '/tmp/dir1', '/var/lib': '/tmp/dir2'}
+        self.mgr.move_files_to_their_places(remove_src=False)
+        self.assertEqual(
+            [mock.call('rsync', '-avH', '/tmp/dir1/var/lib/', '/tmp/dir2')],
+            mock_ute.call_args_list)
+        self.assertFalse(mock_shrmt.called)
 
 
 class TestImageBuild(unittest2.TestCase):
