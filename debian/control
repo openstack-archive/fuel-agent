@@ -3,6 +3,7 @@ Section: net
 Priority: extra
 Maintainer: PKG OpenStack <openstack-devel@lists.alioth.debian.org>
 Build-Depends: debhelper (>= 9),
+               dh-python,
                dh-systemd,
 	       openstack-pkg-tools (>= 8~),
 	       python-all (>= 2.6.6-3),
