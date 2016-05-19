@@ -126,3 +126,9 @@ def mount_fs_temp(fs_type, fs_dev, tmpdir=None, suffix=''):
     mount_point = tempfile.mkdtemp(dir=tmpdir, suffix=suffix)
     mount_fs(fs_type, fs_dev, mount_point)
     return mount_point
+
+
+def get_fs_type(device):
+    output = utils.execute('blkid', '-o', 'value', '-s', 'TYPE',
+                           '-c', '/dev/null', device)[0]
+    return output.strip()

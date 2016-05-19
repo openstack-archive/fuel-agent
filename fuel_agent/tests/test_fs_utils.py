@@ -169,6 +169,15 @@ class TestFSUtils(unittest2.TestCase):
         mock_mkdtemp.assert_called_once_with(dir=None, suffix='')
         mock_mount.assert_called_once_with('ext4', '/dev/fake', '/tmp/dir')
 
+    def test_get_fs_type(self, mock_exec):
+        output = "megafs\n"
+        mock_exec.return_value = (output, '')
+        ret = fu.get_fs_type('/dev/sda4')
+        mock_exec.assert_called_once_with('blkid', '-o', 'value',
+                                          '-s', 'TYPE', '-c', '/dev/null',
+                                          '/dev/sda4')
+        self.assertEqual(ret, 'megafs')
+
 
 class TestFSRetry(unittest2.TestCase):
 
