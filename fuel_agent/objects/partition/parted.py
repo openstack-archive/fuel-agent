@@ -89,8 +89,10 @@ class Parted(base.Serializable):
         if not self.partitions:
             return 1
         if self.partitions[-1] == self.extended:
-            return self.partitions[-1].begin
-        return self.partitions[-1].end
+            # NOTE(agordeev): this 1M room could be enough for minimal
+            # partition alignment mode for the most of cases.
+            return self.partitions[-1].begin + 1
+        return self.partitions[-1].end + 1
 
     def next_name(self):
         if self.next_type() == 'extended':
