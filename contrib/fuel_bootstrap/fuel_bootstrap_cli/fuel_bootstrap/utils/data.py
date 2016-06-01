@@ -114,13 +114,13 @@ class BootstrapDataBuilder(object):
         return list(dirs)
 
     def _prepare_modules(self):
-        modules = copy.copy(consts.BOOTSTRAP_MODULES)
+        modules = copy.deepcopy(consts.BOOTSTRAP_MODULES)
         for module in modules:
             module['uri'] = module['uri'].format(uuid=self.uuid)
         return modules
 
     def _prepare_image_data(self):
-        image_data = copy.copy(consts.IMAGE_DATA)
+        image_data = copy.deepcopy(consts.IMAGE_DATA)
         image_data['/']['uri'] = image_data['/']['uri'].format(uuid=self.uuid)
         return image_data
 
