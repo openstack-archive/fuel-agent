@@ -1203,13 +1203,14 @@ class TestNailgunMockedMeta(unittest2.TestCase):
 
     def test_boot_partition_ok_first_disk_huge(self, mock_lbd,
                                                mock_image_meta):
+        # /boot should be on first disk even if it's huge
         data = copy.deepcopy(PROVISION_SAMPLE_DATA)
         data['ks_meta']['pm_data']['ks_spaces'] = FIRST_DISK_HUGE_KS_SPACES
         mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
         drv = nailgun.Nailgun(data)
         self.assertEqual(
             drv.partition_scheme.fs_by_mount('/boot').device,
-            '/dev/sdb3')
+            '/dev/sda3')
 
     def test_boot_partition_ok_many_huge_disks(self, mock_lbd,
                                                mock_image_meta):

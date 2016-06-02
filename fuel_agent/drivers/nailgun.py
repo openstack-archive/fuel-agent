@@ -126,11 +126,6 @@ class Nailgun(BaseDataDriver):
             self.partition_data())
 
     @property
-    def small_ks_disks(self):
-        """Get those disks which are smaller than 2T"""
-        return [d for d in self.ks_disks if d['size'] <= 2097152]
-
-    @property
     def ks_vgs(self):
         return filter(
             lambda x: x['type'] == 'vg',
@@ -329,19 +324,13 @@ class Nailgun(BaseDataDriver):
 
                     elif volume.get('mount') == '/boot' \
                             and not self._boot_partition_done \
-                            and 'nvme' not in disk['name'] \
-                            and (disk in self.small_ks_disks or
-                                 not self.small_ks_disks):
+                            and 'nvme' not in disk['name']:
                         # FIXME(agordeev): NVMe drives should be skipped as
                         # accessing such drives during the boot typically
                         # requires using UEFI which is still not supported
                         # by fuel-agent (it always installs BIOS variant of
                         # grub)
                         # * grub bug (http://savannah.gnu.org/bugs/?41883)
-                        # NOTE(kozhukalov): On some hardware GRUB is not able
-                        # to see disks larger than 2T due to firmware bugs,
-                        # so we'd better avoid placing /boot on such
-                        # huge disks if it is possible.
                         LOG.debug('Adding /boot partition on disk %s: '
                                   'size=%s', disk['name'], volume['size'])
                         prt = parted.add_partition(
