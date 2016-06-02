@@ -138,11 +138,7 @@ class Nailgun(BaseDataDriver):
         # by fuel-agent (it always installs BIOS variant of
         # grub)
         # * grub bug (http://savannah.gnu.org/bugs/?41883)
-        # NOTE(kozhukalov): On some hardware GRUB is not able
-        # to see disks larger than 2T due to firmware bugs,
-        # so we'd better avoid placing /boot on such
-        # huge disks if it is possible.
-        disks = self.small_ks_disks or self.ks_disks
+        disks = self.ks_disks
         suitable_disks = [
             disk for disk in disks
             if ('nvme' not in disk['name'] and self._is_boot_disk(disk))
@@ -185,11 +181,6 @@ class Nailgun(BaseDataDriver):
     def md_os_disks(self):
         return [d for d in self.ks_disks
                 if d['name'].startswith('md') and self._is_os_disk(d)]
-
-    @property
-    def small_ks_disks(self):
-        """Get those disks which are smaller than 2T"""
-        return [d for d in self.ks_disks if d['size'] <= 2097152]
 
     @property
     def ks_vgs(self):
