@@ -127,3 +127,6 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755,root,root)  %{_datadir}/fuel_bootstrap_cli/files/trusty/usr/bin/multipath-reload
 %attr(0755,root,root)  %{_datadir}/fuel_bootstrap_cli/files/trusty/etc/rc.local
 %attr(0755,root,root)  %{_datadir}/fuel_bootstrap_cli/files/trusty/usr/share/initramfs-tools/hooks/netifnames
+%attr(0755,root,root)  %{_datadir}/fuel_bootstrap_cli/files/xenial/usr/bin/fix-configs-on-startup
+%attr(0755,root,root)  %{_datadir}/fuel_bootstrap_cli/files/xenial/usr/bin/send2syslog.py
+%attr(0755,root,root)  %{_datadir}/fuel_bootstrap_cli/files/xenial/etc/rc.local
