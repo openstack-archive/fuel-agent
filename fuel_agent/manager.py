@@ -18,6 +18,8 @@ import shutil
 import signal
 import tempfile
 
+from oslo_config import cfg
+from oslo_log import log as logging
 import six
 import yaml
 
@@ -31,9 +33,6 @@ from fuel_agent.utils import lvm as lu
 from fuel_agent.utils import md as mu
 from fuel_agent.utils import partition as pu
 from fuel_agent.utils import utils
-
-from oslo_config import cfg
-from oslo_log import log as logging
 
 opts = [
     cfg.StrOpt(

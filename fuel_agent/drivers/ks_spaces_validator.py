@@ -13,10 +13,9 @@
 # limitations under the License.
 
 import jsonschema
+from oslo_log import log as logging
 
 from fuel_agent import errors
-
-from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 

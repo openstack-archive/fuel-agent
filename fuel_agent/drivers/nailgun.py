@@ -16,6 +16,8 @@ import itertools
 import math
 import os
 
+from oslo_config import cfg
+from oslo_log import log as logging
 import six
 from six.moves.urllib.parse import urljoin
 from six.moves.urllib.parse import urlparse
@@ -28,9 +30,6 @@ from fuel_agent import errors
 from fuel_agent import objects
 from fuel_agent.utils import hardware as hu
 from fuel_agent.utils import utils
-
-from oslo_config import cfg
-from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 

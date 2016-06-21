@@ -24,6 +24,7 @@ import tempfile
 import time
 import uuid
 
+from oslo_log import log as logging
 import signal
 import six
 import yaml
@@ -32,8 +33,6 @@ from fuel_agent import errors
 from fuel_agent.utils import fs as fu
 from fuel_agent.utils import hardware as hu
 from fuel_agent.utils import utils
-
-from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 

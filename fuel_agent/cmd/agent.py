@@ -16,15 +16,14 @@ import os
 import signal
 import sys
 
+from oslo_config import cfg
+from oslo_log import log as logging
 import six
 import yaml
 
 from fuel_agent import errors
 from fuel_agent import manager as manager
 from fuel_agent import version
-
-from oslo_config import cfg
-from oslo_log import log as logging
 
 cli_opts = [
     cfg.StrOpt(

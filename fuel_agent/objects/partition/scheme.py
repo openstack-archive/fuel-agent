@@ -15,6 +15,8 @@
 #    under the License.
 import os
 
+from oslo_log import log as logging
+
 from fuel_agent import errors
 from fuel_agent.objects.partition.fs import FileSystem
 from fuel_agent.objects.partition.lv import LogicalVolume
@@ -22,8 +24,6 @@ from fuel_agent.objects.partition.md import MultipleDevice
 from fuel_agent.objects.partition.parted import Parted
 from fuel_agent.objects.partition.pv import PhysicalVolume
 from fuel_agent.objects.partition.vg import VolumeGroup
-
-from oslo_log import log as logging
 
 
 LOG = logging.getLogger(__name__)

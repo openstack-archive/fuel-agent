@@ -18,13 +18,12 @@ import tarfile
 import tempfile
 import zlib
 
+from oslo_config import cfg
+from oslo_log import log as logging
 import six
 
 from fuel_agent import errors
 from fuel_agent.utils import utils
-
-from oslo_config import cfg
-from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 

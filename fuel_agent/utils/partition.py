@@ -14,9 +14,10 @@
 
 import time
 
+from oslo_log import log as logging
+
 from fuel_agent import errors
 from fuel_agent.utils import utils
-from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 PARTITION_ALIGMENT = ('none', 'cylinder', 'minimal', 'optimal')

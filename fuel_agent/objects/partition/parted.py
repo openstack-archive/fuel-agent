@@ -16,9 +16,9 @@
 
 import copy
 
-from fuel_agent.objects import base
 from oslo_log import log as logging
 
+from fuel_agent.objects import base
 
 LOG = logging.getLogger(__name__)
 

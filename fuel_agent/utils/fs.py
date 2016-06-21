@@ -14,11 +14,12 @@
 
 import tempfile
 
+from oslo_log import log as logging
+import six
+
 from fuel_agent import errors
 from fuel_agent.utils import utils
-from oslo_log import log as logging
 
-import six
 
 LOG = logging.getLogger(__name__)
 MAX_MKFS_TRIES = 5
