@@ -105,14 +105,37 @@ puppet:
 
 runcmd:
 {% if puppet.enable != 1 %}
+ - if [ -x /bin/systemctl ]; then
+ - /bin/systemctl stop puppet
+ - /bin/systemctl disable puppet
+ - else
  - /usr/sbin/invoke-rc.d puppet stop
  - /usr/sbin/update-rc.d -f puppet remove
+ - echo manual > /etc/init/puppet.override
+ - fi
+{% else %}
+ - if [ -x /bin/systemctl ]; then
+ - /bin/systemctl enable puppet
+ - else
+ - rm -f /etc/init/puppet.override
+ - fi
 {% endif %}
 {% if mcollective.enable != 1 %}
+ - if [ -x /bin/systemctl ]; then
+ - /bin/systemctl stop mcollective
+ - /bin/systemctl disable mcollective
+ - else
  - /usr/sbin/invoke-rc.d mcollective stop
+ - /usr/sbin/update-rc.d -f mcollective remove
  - echo manual > /etc/init/mcollective.override
+ - fi
 {% else %}
+ - if [ -x /bin/systemctl ]; then
+ - /bin/systemctl unmask mcollective
+ - /bin/systemctl enable mcollective
+ - else
  - rm -f /etc/init/mcollective.override
+ - fi
 {% endif %}
  - iptables -t filter -F INPUT
  - iptables -t filter -F FORWARD
