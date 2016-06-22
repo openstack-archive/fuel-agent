@@ -22,6 +22,7 @@ Requires:    python-babel
 Requires:    python-eventlet
 Requires:    python-jsonschema
 Requires:    python-oslo-config >= 1:1.6.0
+Requires:    python-oslo-log >= 1.14.0
 Requires:    python-oslo-serialization >= 1.0.0
 Requires:    python-iso8601
 Requires:    python-six
