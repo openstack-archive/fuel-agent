@@ -46,7 +46,6 @@ Requires:    parted
 Requires:    cloud-utils
 Requires:    e2fsprogs
 Requires:    gdisk
-Requires:    genisoimage
 Requires:    xfsprogs
 Requires:    pciutils
 Requires:    ethtool
