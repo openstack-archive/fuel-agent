@@ -912,7 +912,7 @@ none /run/shm tmpfs rw,nosuid,nodev 0 0"""
         self.mgr.driver.partition_scheme.add_fs(
             device='/dev/fake1', mount='/', fs_type='ext4')
         self.mgr.driver.partition_scheme.add_fs(
-            device='/dev/fake2', mount='/var/lib', fs_type='ext4')
+            device='/dev/fake2', mount='/var/lib/', fs_type='ext4')
         self.assertEqual({'/': '/tmp/dir1', '/var/lib': '/tmp/dir2'},
                          self.mgr.mount_target_flat())
         self.assertEqual([mock.call('ext4', '/dev/fake1'),
