@@ -195,6 +195,13 @@ def do_post_inst(chroot, hashed_root_password,
     # to prevent confusing messages in its log (regarding connection errors).
     with open(os.path.join(chroot, 'etc/init/mcollective.override'), 'w') as f:
         f.write("manual\n")
+    # NOTE(mzhnichkov): skip auto networking configuration at cloud-init stage
+    cloud_path = os.path.join(chroot, 'var/lib/cloud')
+    if os.path.exists(cloud_path):
+        os.mkdir(os.path.join(cloud_path, 'data'))
+        with open(os.path.join(cloud_path, 'data', 'upgraded-network'), 'w'):
+            pass
+
     # NOTE(agordeev): remove custom policy-rc.d which is needed to disable
     # execution of post/pre-install package hooks and start of services
     remove_files(chroot, ['usr/sbin/policy-rc.d'])

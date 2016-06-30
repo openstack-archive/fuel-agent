@@ -171,6 +171,7 @@ class BuildUtilsTestCase(unittest2.TestCase):
         self.assertEqual('chroot', mock_files.call_args[0][0])
         self.assertEqual(files, set(mock_files.call_args[0][1]))
 
+    @mock.patch('fuel_agent.utils.build.os.mkdir')
     @mock.patch('fuel_agent.utils.build.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.utils.build.os.path')
@@ -178,7 +179,7 @@ class BuildUtilsTestCase(unittest2.TestCase):
     @mock.patch.object(bu, 'remove_files')
     @mock.patch.object(utils, 'execute')
     def test_do_post_inst(self, mock_exec, mock_files, mock_clean, mock_path,
-                          mock_open):
+                          mock_open, mock_mkdir):
         mock_path.join.return_value = 'fake_path'
         mock_path.exists.return_value = True
 
@@ -192,6 +193,7 @@ class BuildUtilsTestCase(unittest2.TestCase):
                         force_ipv4_file='fake_force_ipv4')
         file_handle_mock = mock_open.return_value.__enter__.return_value
         file_handle_mock.write.assert_called_once_with('manual\n')
+
         mock_exec_expected_calls = [
             mock.call('sed',
                       '-i',
@@ -213,9 +215,13 @@ class BuildUtilsTestCase(unittest2.TestCase):
             mock.call('chroot', 'etc/shadow'),
             mock.call('chroot', 'etc/init.d/puppet'),
             mock.call('chroot', 'etc/init/mcollective.override'),
+            mock.call('chroot', 'var/lib/cloud'),
+            mock.call('fake_path', 'data'),
+            mock.call('fake_path', 'data', 'upgraded-network'),
             mock.call('/', bu.GRUB2_DMRAID_SETTINGS)]
         self.assertEqual(mock_path_join_expected_calls,
                          mock_path.join.call_args_list)
+        mock_mkdir.assert_called_once_with('fake_path')
 
     @mock.patch('fuel_agent.utils.build.open',
                 create=True, new_callable=mock.mock_open)
