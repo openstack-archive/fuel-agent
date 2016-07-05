@@ -17,6 +17,8 @@
 import logging
 import sys
 
+from pbr import version
+
 from cliff import app
 from cliff.commandmanager import CommandManager
 
@@ -34,7 +36,7 @@ class FuelBootstrap(app.App):
     def __init__(self, **kwargs):
         super(FuelBootstrap, self).__init__(
             description='Command line Fuel bootstrap manager',
-            version='0.0.2',
+            version=version.VersionInfo('fuel-bootstrap').version_string(),
             command_manager=CommandManager('fuel_bootstrap',
                                            convert_underscores=True),
             **kwargs
