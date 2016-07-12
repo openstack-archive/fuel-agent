@@ -123,12 +123,17 @@ class TestPartitionScheme(unittest2.TestCase):
         self.assertEqual(expected_fs, actual_fs)
 
     def test_fs_by_mount(self):
-        expected_fs = objects.FileSystem('d', mount='mount')
+        expected_fs = objects.FileSystem('d', mount='/mount')
         self.p_scheme.fss.append(expected_fs)
         self.p_scheme.fss.append(objects.FileSystem('w_d',
-                                                    mount='wrong_mount'))
-        actual_fs = self.p_scheme.fs_by_mount('mount')
+                                                    mount='/wrong_mount'))
+        actual_fs = self.p_scheme.fs_by_mount('/mount')
         self.assertEqual(expected_fs, actual_fs)
+
+    def test_fs_malformed_mount(self):
+        self.assertRaises(errors.WrongFSMount, self.p_scheme.add_fs,
+                          device='device', mount='fake_mount',
+                          fs_type='xfs', fs_label='fake_label')
 
     def test_pv_by_name(self):
         expected_pv = objects.PhysicalVolume('pv')
@@ -184,21 +189,21 @@ class TestPartitionScheme(unittest2.TestCase):
         self.assertEqual(0, len(self.p_scheme.mds))
         self.assertEqual(0, len(self.p_scheme.fss))
         expected_md = objects.MultipleDevice('name', 'level')
-        expected_fs = objects.FileSystem('name', mount='mount')
+        expected_fs = objects.FileSystem('name', mount='/mount')
         self.p_scheme.mds.append(expected_md)
         self.p_scheme.fss.append(expected_fs)
         self.p_scheme.fss.append(objects.FileSystem('wrong_name',
-                                 mount='wrong_mount'))
-        self.assertEqual(expected_md, self.p_scheme.md_by_mount('mount'))
+                                 mount='/wrong_mount'))
+        self.assertEqual(expected_md, self.p_scheme.md_by_mount('/mount'))
 
     def test_md_attach_by_mount_md_exists(self):
         self.assertEqual(0, len(self.p_scheme.mds))
         self.assertEqual(0, len(self.p_scheme.fss))
         expected_md = objects.MultipleDevice('name', 'level')
-        expected_fs = objects.FileSystem('name', mount='mount')
+        expected_fs = objects.FileSystem('name', mount='/mount')
         self.p_scheme.mds.append(expected_md)
         self.p_scheme.fss.append(expected_fs)
-        actual_md = self.p_scheme.md_attach_by_mount('device', 'mount')
+        actual_md = self.p_scheme.md_attach_by_mount('device', '/mount')
         self.assertIn('device', actual_md.devices)
         self.assertEqual(expected_md, actual_md)
 
@@ -206,12 +211,12 @@ class TestPartitionScheme(unittest2.TestCase):
         self.assertEqual(0, len(self.p_scheme.mds))
         self.assertEqual(0, len(self.p_scheme.fss))
         actual_md = self.p_scheme.md_attach_by_mount(
-            'device', 'mount', fs_type='fs_type', fs_options='-F',
+            'device', '/mount', fs_type='fs_type', fs_options='-F',
             fs_label='fs_label', name='name', level='level')
         self.assertIn('device', actual_md.devices)
         self.assertEqual(1, len(self.p_scheme.fss))
         self.assertEqual('name', self.p_scheme.fss[0].device)
-        self.assertEqual('mount', self.p_scheme.fss[0].mount)
+        self.assertEqual('/mount', self.p_scheme.fss[0].mount)
         self.assertEqual('fs_type', self.p_scheme.fss[0].type)
         self.assertEqual('fs_label', self.p_scheme.fss[0].label)
         self.assertEqual('-F', self.p_scheme.fss[0].options)
@@ -229,7 +234,7 @@ class TestPartitionScheme(unittest2.TestCase):
         self.p_scheme.add_lv(name='fake_lv', vgname=vg.name, size=1)
         lv = self.p_scheme.lvs[0]
 
-        self.p_scheme.add_fs(device=lv.device_name, mount='fake_mount',
+        self.p_scheme.add_fs(device=lv.device_name, mount='/fake/mount',
                              fs_type='xfs', fs_label='fake_label')
         fs = self.p_scheme.fss[0]
 

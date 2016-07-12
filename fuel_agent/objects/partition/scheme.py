@@ -60,6 +60,9 @@ class PartitionScheme(object):
 
     def add_fs(self, **kwargs):
         fs = FileSystem(**kwargs)
+        if not os.path.isabs(fs.mount) and fs.mount != 'swap':
+            raise errors.WrongFSMount(
+                'Incorrect mount point %s' % fs.mount)
         self.fss.append(fs)
         return fs
 
