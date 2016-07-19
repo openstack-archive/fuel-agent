@@ -178,6 +178,11 @@ opts = [
         'default_root_password',
         default='r00tme',
         help='Default password for root user',
+    ),
+    cfg.BoolOpt(
+        'use_uuid_root',
+        default=False,
+        help='Add extra "root=UUID" option to the kernel cmdline'
     )
 ]
 
@@ -895,8 +900,8 @@ class Manager(object):
         boot_device = self.driver.partition_scheme.boot_device(grub.version)
         install_devices = [d.name for d in self.driver.partition_scheme.parteds
                            if d.install_bootloader]
-
-        grub.append_kernel_params('root=UUID=%s ' % mount2uuid['/'])
+        if CONF.use_uuid_root:
+            grub.append_kernel_params('root=UUID=%s ' % mount2uuid['/'])
 
         kernel = grub.kernel_name or gu.guess_kernel(chroot=chroot,
                                                      regexp=grub.kernel_regexp)

@@ -88,7 +88,7 @@ class TestManager(unittest2.TestCase):
         self.assertFalse(mock_gu.grub2_cfg.called)
         self.assertFalse(mock_gu.grub2_install.called)
         mock_gu.grub1_cfg.assert_called_once_with(
-            kernel_params='fake_kernel_params root=UUID= ',
+            kernel_params='fake_kernel_params',
             initrd='guessed_initrd', kernel='guessed_kernel',
             chroot='/tmp/target', grub_timeout=10)
         mock_gu.grub1_install.assert_called_once_with(
@@ -122,7 +122,7 @@ class TestManager(unittest2.TestCase):
         self.assertFalse(mock_gu.grub2_cfg.called)
         self.assertFalse(mock_gu.grub2_install.called)
         mock_gu.grub1_cfg.assert_called_once_with(
-            kernel_params='fake_kernel_params root=UUID= ',
+            kernel_params='fake_kernel_params',
             initrd='initrd_name', kernel='kernel_name', chroot='/tmp/target',
             grub_timeout=10)
         mock_gu.grub1_install.assert_called_once_with(
@@ -149,6 +149,7 @@ class TestManager(unittest2.TestCase):
                 return ('FAKE_ROOTFS_UUID', None)
             else:
                 return ('FAKE_UUID', None)
+        CONF.use_uuid_root = True
         mock_hw.is_multipath_device.return_value = False
         mock_utils.execute.side_effect = _fake_uuid
         mock_grub.version = 2
@@ -219,7 +220,7 @@ class TestManager(unittest2.TestCase):
             chroot='/tmp/target')
         mock_gu.grub1_cfg.assert_called_once_with(
             kernel_params=' console=ttyS0,9600 console=tty0 rootdelay=90 '
-                          'nomodeset root=UUID=fake_UUID ',
+                          'nomodeset',
             initrd='guessed_initrd',
             chroot='/tmp/target',
             kernel='guessed_kernel',
@@ -249,7 +250,7 @@ class TestManager(unittest2.TestCase):
             chroot='/tmp/target')
         mock_gu.grub2_cfg.assert_called_once_with(
             kernel_params=' console=ttyS0,9600 console=tty0 rootdelay=90 '
-                          'nomodeset root=UUID=fake_UUID ',
+                          'nomodeset',
             chroot='/tmp/target', grub_timeout=10)
         mock_gu.grub2_install.assert_called_once_with(
             ['/dev/sda', '/dev/sdb', '/dev/sdc'],
