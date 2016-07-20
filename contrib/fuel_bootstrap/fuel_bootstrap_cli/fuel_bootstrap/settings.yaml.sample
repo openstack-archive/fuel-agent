@@ -20,6 +20,7 @@ output_dir: /tmp/
 kernel_flavor: linux-image-generic-lts-trusty
 # Define packages list
 packages:
+  - daemonize
   - fuel-agent
   - hwloc
   - hpsa-dkms
@@ -40,6 +41,7 @@ packages:
   - ntp
   - openssh-client
   - openssh-server
+  - puppet
   - squashfs-tools
   - ubuntu-minimal
   - vim
