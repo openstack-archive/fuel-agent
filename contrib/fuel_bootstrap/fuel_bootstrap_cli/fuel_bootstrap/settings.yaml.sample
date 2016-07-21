@@ -4,28 +4,26 @@
 root_ssh_authorized_file: /root/.ssh/id_rsa.pub
 # Extended kernel PXE options
 extend_kopts: "biosdevname=0 net.ifnames=1 debug ignore_loglevel log_buf_len=10M print_fatal_signals=1 LOGLEVEL=8"
-# Choose the Ubuntu release (currently supports only trusty). Keep in mind,
+# Choose the Ubuntu release (currently supports only Xenial). Keep in mind,
 # that you also should fix 'kernel_flavor' parameter.
-ubuntu_release: trusty
+ubuntu_release: xenial
 # Directory that will be injected to the image
 # root filesystem. **NOTE** Files/packages will be
 # injected after installing all packages, but before
 # generating system initramfs - thus it's possible to
 # adjust initramfs
 extra_dirs:
-  - /usr/share/fuel_bootstrap_cli/files/trusty
+  - /usr/share/fuel_bootstrap_cli/files/xenial
 # Save generated bootstrap container to
 output_dir: /tmp/
 # Defines kernel version
-kernel_flavor: linux-image-generic-lts-trusty
+kernel_flavor: linux-image-generic-lts-xenial
 # Define packages list
 packages:
   - fuel-agent
   - hwloc
-  - hpsa-dkms
   - i40e-dkms
   - linux-firmware
-  - linux-firmware-nonfree
   - linux-headers-generic
   - live-boot
   - live-boot-initramfs-tools
@@ -38,6 +36,7 @@ packages:
   - nailgun-mcagents
   - network-checker
   - ntp
+  - ntpdate
   - openssh-client
   - openssh-server
   - squashfs-tools
@@ -59,21 +58,21 @@ packages:
 #    name: ubuntu
 #    priority: null
 #    section: "main universe multiverse"
-#    suite: trusty
+#    suite: xenial
 #    type: deb
 #    uri: "http://archive.ubuntu.com/ubuntu"
 #  -
 #    name: ubuntu-updates
 #    priority: null
 #    section: "main universe multiverse"
-#    suite: trusty-updates
+#    suite: xenial-updates
 #    type: deb
 #    uri: "http://archive.ubuntu.com/ubuntu"
 #  -
 #    name: ubuntu-security
 #    priority: null
 #    section: "main universe multiverse"
-#    suite: trusty-security
+#    suite: xenial-security
 #    type: deb
 #    uri: "http://archive.ubuntu.com/ubuntu"
 #  -
@@ -108,7 +107,7 @@ packages:
 #    name: Extra_repo
 #    priority: null
 #    section: main
-#    suite: trusty
+#    suite: xenial
 #    type: deb
 #    uri: "http://archive.ubuntu.com/ubuntu"
 # For import\activate commands only.
