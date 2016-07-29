@@ -71,6 +71,8 @@
 # Add udev rules for NIC remapping (boolean value)
 #fix_udev_net_rules=true
 
+# Add extra "root=UUID" option to the kernel cmdline (boolean value)
+# use_uuid_root=false
 
 #
 # Options defined in fuel_agent.cmd.agent
