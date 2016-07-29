@@ -1,3 +1,9 @@
+fuel-agent (8.0.0-1) unstable; urgency=low
+
+  * Align package version to openstack policy
+
+ -- Denis Puchkin <dpuchkin@mirantis.com>  Fri, 29 Jul 2016 12:44:07 +0300
+
 fuel-agent (8.0-1) unstable; urgency=low
 
   * Bump version to 8.0
