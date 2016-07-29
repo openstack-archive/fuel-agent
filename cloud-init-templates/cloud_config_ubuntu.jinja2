@@ -133,6 +133,9 @@ runcmd:
  - if [ -x /bin/systemctl ]; then
  - /bin/systemctl unmask mcollective
  - /bin/systemctl enable mcollective
+# TODO(dteselkin) rework start sequence when bug
+# https://bugs.launchpad.net/fuel/+bug/1543063 is fixed
+ - /bin/systemctl start mcollective
  - else
  - rm -f /etc/init/mcollective.override
  - fi
