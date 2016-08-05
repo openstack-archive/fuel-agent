@@ -162,3 +162,7 @@ class WrongDeviceError(BaseError):
 
 class UnexpectedProcessError(BaseError):
     pass
+
+
+class UnsupportedNetworkConfiguration(BaseError):
+    pass
