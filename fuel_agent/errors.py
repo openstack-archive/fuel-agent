@@ -182,3 +182,7 @@ class WrongOutputContainer(BaseError):
 
 class BootstrapFileAlreadyExists(BaseError):
     pass
+
+
+class UnsupportedNetworkConfiguration(BaseError):
+    pass

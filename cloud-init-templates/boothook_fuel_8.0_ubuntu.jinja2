@@ -12,26 +12,6 @@ function add_str_to_file_if_not_exists {
 
 cloud-init-per instance wipe_sources_list_templates /bin/sh -c 'echo | tee /etc/cloud/templates/sources.list.ubuntu.tmpl'
 
-# configure udev rules
-
-# udev persistent net
-cloud-init-per instance udev_persistent_net1 /etc/init.d/networking stop
-
-ADMIN_MAC={{ common.admin_mac }}
-ADMIN_IF=$(echo {{ common.udevrules }} | sed 's/[,=]/\n/g' | grep "$ADMIN_MAC" | cut -d_ -f2 | head -1)
-# Check if we do not already have static config (or interface seems unconfigured)
-if [ ! -d "/etc/network/interfaces.d" ]; then
-    mkdir -p /etc/network/interfaces.d
-    echo 'source /etc/network/interfaces.d/*' > /etc/network/interfaces
-fi
-if [ ! -e "/etc/network/interfaces.d/ifcfg-$ADMIN_IF" ]; then
-    echo -e "auto $ADMIN_IF\niface $ADMIN_IF inet static\n\taddress {{ common.admin_ip }}\n\tnetmask {{ common.admin_mask }}\n\tgateway {{ common.gw }}" > /etc/network/interfaces.d/ifcfg-"$ADMIN_IF"
-fi
-
-cloud-init-per instance udev_persistent_net5 /etc/init.d/networking start
-
-# end of udev
-
 #FIXME(agordeev): if operator updates dns settings on masternode after the node had been provisioned,
 #                 cloud-init will start to generate resolv.conf with non-actual data
 cloud-init-per instance resolv_conf_mkdir mkdir -p /etc/resolvconf/resolv.conf.d
