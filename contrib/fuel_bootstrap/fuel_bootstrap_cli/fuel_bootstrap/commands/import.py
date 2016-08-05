@@ -14,12 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from cliff import command
-
+from fuel_bootstrap.commands import base
 from fuel_bootstrap.utils import bootstrap_image as bs_image
 
 
-class ImportCommand(command.Command):
+class ImportCommand(base.BaseCommand):
     """Import already created bootstrap image to the system."""
 
     def get_parser(self, prog_name):
@@ -39,6 +38,7 @@ class ImportCommand(command.Command):
         return parser
 
     def take_action(self, parsed_args):
+        super(ImportCommand, self).take_action(parsed_args)
         # Cliff handles errors by itself
         image_uuid = bs_image.import_image(parsed_args.filename)
         self.app.stdout.write("Bootstrap image {0} has been imported.\n"

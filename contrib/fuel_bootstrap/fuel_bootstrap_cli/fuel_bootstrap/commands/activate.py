@@ -14,12 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from cliff import command
-
+from fuel_bootstrap.commands import base
 from fuel_bootstrap.utils import bootstrap_image as bs_image
 
 
-class ActivateCommand(command.Command):
+class ActivateCommand(base.BaseCommand):
     """Activate specified bootstrap image."""
 
     def get_parser(self, prog_name):
@@ -33,6 +32,7 @@ class ActivateCommand(command.Command):
         return parser
 
     def take_action(self, parsed_args):
+        super(ActivateCommand, self).take_action(parsed_args)
         # cliff handles errors by itself
         image_uuid = bs_image.activate(parsed_args.id)
         self.app.stdout.write("Bootstrap image {0} has been activated.\n"

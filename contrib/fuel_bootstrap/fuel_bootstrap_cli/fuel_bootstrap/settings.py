@@ -19,20 +19,19 @@ import sys
 
 import yaml
 
-from fuel_bootstrap import consts
-
 
 class Configuration(object):
-    def __init__(self, config_file=None):
+    def __init__(self):
+        self._data = {}
+
+    def read(self, config_file):
         data = {}
-        if not config_file:
-            config_file = consts.CONFIG_FILE
         if os.path.exists(config_file):
             with open(config_file) as f:
                 data = yaml.load(f)
         else:
             # TODO(atolochkova): need to add logger
-            sys.stderr.write("Default config couldn't be found in {0}"
+            sys.stderr.write("The config file couldn't be found: {0}"
                              .format(config_file))
         self._data = data
 

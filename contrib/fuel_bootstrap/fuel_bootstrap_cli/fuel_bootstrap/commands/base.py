@@ -14,21 +14,28 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from cliff import lister
+from cliff import command
 
-from fuelclient.common import data_utils
+from fuel_bootstrap import consts
+from fuel_bootstrap import settings
 
-from fuel_bootstrap.commands import base
-from fuel_bootstrap.utils import bootstrap_image as bs_image
+CONF = settings.CONF
 
 
-class ListCommand(base.BaseCommand, lister.Lister):
-    """List all available bootstrap images."""
+class BaseCommand(command.Command):
 
-    columns = ('uuid', 'label', 'status')
+    def get_parser(self, prog_name):
+        parser = super(BaseCommand, self).get_parser(prog_name)
+        parser.add_argument(
+            '--config',
+            dest='config_file',
+            type=str,
+            metavar='FILE',
+            default=consts.CONFIG_FILE,
+            help="The config file is to be used for taking configuration"
+                 " parameters from during building of the bootstrap."
+        )
+        return parser
 
     def take_action(self, parsed_args):
-        super(ListCommand, self).take_action(parsed_args)
-        data = bs_image.get_all()
-        data = data_utils.get_display_data_multi(self.columns, data)
-        return (self.columns, data)
+        CONF.read(parsed_args.config_file)

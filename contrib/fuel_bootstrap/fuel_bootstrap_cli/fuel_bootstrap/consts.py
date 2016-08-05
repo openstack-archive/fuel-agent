@@ -17,7 +17,7 @@
 
 # These consts shouldn't be configured
 
-# TODO(asvechnikov): add possibility to specify custom config file
+# There is a possibility to specify custom config file with the key --config
 CONFIG_FILE = "/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml"
 METADATA_FILE = "metadata.yaml"
 COMPRESSED_CONTAINER_FORMAT = "tar.gz"

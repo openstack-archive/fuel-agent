@@ -14,12 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from cliff import command
-
+from fuel_bootstrap.commands import base
 from fuel_bootstrap.utils import bootstrap_image as bs_image
 
 
-class DeleteCommand(command.Command):
+class DeleteCommand(base.BaseCommand):
     """Delete specified bootstrap image from the system."""
 
     def get_parser(self, prog_name):
@@ -33,6 +32,7 @@ class DeleteCommand(command.Command):
         return parser
 
     def take_action(self, parsed_args):
+        super(DeleteCommand, self).take_action(parsed_args)
         # cliff handles errors by itself
         image_uuid = bs_image.delete(parsed_args.id)
         self.app.stdout.write("Bootstrap image {0} has been deleted.\n"

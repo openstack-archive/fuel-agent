@@ -17,6 +17,7 @@ import copy
 
 import mock
 
+from fuel_bootstrap import consts
 from fuel_bootstrap.tests import base
 
 PARSED_ARGS = {'extend_kopts': None,
@@ -39,7 +40,8 @@ PARSED_ARGS = {'extend_kopts': None,
                'extra_dirs': None,
                'no_default_packages': False,
                'no_default_extra_dirs': False,
-               'packages': None}
+               'packages': None,
+               'config_file': consts.CONFIG_FILE}
 
 UUID = 'fake_uuid'
 PATH = 'fake_path'
