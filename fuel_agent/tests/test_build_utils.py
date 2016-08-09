@@ -159,12 +159,14 @@ class BuildUtilsTestCase(unittest2.TestCase):
     @mock.patch.object(bu, 'remove_files')
     @mock.patch.object(bu, 'clean_dirs')
     def test_clean_apt_settings(self, mock_dirs, mock_files):
-        bu.clean_apt_settings('chroot', 'unsigned', 'force_ipv4')
+        bu.clean_apt_settings('chroot', 'unsigned', 'force_ipv4',
+                              'pipeline_depth')
         mock_dirs.assert_called_once_with(
             'chroot', ['etc/apt/preferences.d', 'etc/apt/sources.list.d'])
         files = set(['etc/apt/sources.list', 'etc/apt/preferences',
                      'etc/apt/apt.conf.d/%s' % 'force_ipv4',
                      'etc/apt/apt.conf.d/%s' % 'unsigned',
+                     'etc/apt/apt.conf.d/%s' % 'pipeline_depth',
                      'etc/apt/apt.conf.d/01fuel_agent-use-proxy-ftp',
                      'etc/apt/apt.conf.d/01fuel_agent-use-proxy-http',
                      'etc/apt/apt.conf.d/01fuel_agent-use-proxy-https'])
@@ -191,7 +193,8 @@ class BuildUtilsTestCase(unittest2.TestCase):
         bu.do_post_inst('chroot',
                         hashed_root_password=password,
                         allow_unsigned_file='fake_unsigned',
-                        force_ipv4_file='fake_force_ipv4')
+                        force_ipv4_file='fake_force_ipv4',
+                        pipeline_depth_file='fake_pipeline_depth')
         file_handle_mock = mock_open.return_value.__enter__.return_value
         file_handle_mock.write.assert_called_once_with('manual\n')
 
@@ -209,9 +212,11 @@ class BuildUtilsTestCase(unittest2.TestCase):
         self.assertEqual([mock.call('chroot', ['usr/sbin/policy-rc.d']),
                           mock.call('chroot', [bu.GRUB2_DMRAID_SETTINGS])],
                          mock_files.call_args_list)
-        mock_clean.assert_called_once_with('chroot',
-                                           allow_unsigned_file='fake_unsigned',
-                                           force_ipv4_file='fake_force_ipv4')
+        mock_clean.assert_called_once_with(
+            'chroot',
+            allow_unsigned_file='fake_unsigned',
+            force_ipv4_file='fake_force_ipv4',
+            pipeline_depth_file='fake_pipeline_depth')
         mock_path_join_expected_calls = [
             mock.call('chroot', 'etc/shadow'),
             mock.call('chroot', 'etc/init.d/puppet'),
@@ -496,20 +501,26 @@ class BuildUtilsTestCase(unittest2.TestCase):
         with mock.patch('six.moves.builtins.open', create=True) as mock_open:
             file_handle_mock = mock_open.return_value.__enter__.return_value
             bu.pre_apt_get('chroot', allow_unsigned_file='fake_unsigned',
-                           force_ipv4_file='fake_force_ipv4')
+                           force_ipv4_file='fake_force_ipv4',
+                           pipeline_depth_file='fake_pipeline_depth')
             expected_calls = [
                 mock.call('APT::Get::AllowUnauthenticated 1;\n'),
-                mock.call('Acquire::ForceIPv4 "true";\n')]
+                mock.call('Acquire::ForceIPv4 "true";\n'),
+                mock.call('Acquire::http::Pipeline-Depth 0;\n')]
             self.assertEqual(expected_calls,
                              file_handle_mock.write.call_args_list)
-        mock_clean.assert_called_once_with('chroot',
-                                           allow_unsigned_file='fake_unsigned',
-                                           force_ipv4_file='fake_force_ipv4')
+        mock_clean.assert_called_once_with(
+            'chroot',
+            allow_unsigned_file='fake_unsigned',
+            force_ipv4_file='fake_force_ipv4',
+            pipeline_depth_file='fake_pipeline_depth')
         expected_join_calls = [
             mock.call('chroot', 'etc/apt/apt.conf.d',
                       'fake_unsigned'),
             mock.call('chroot', 'etc/apt/apt.conf.d',
-                      'fake_force_ipv4')]
+                      'fake_force_ipv4'),
+            mock.call('chroot', 'etc/apt/apt.conf.d',
+                      'fake_pipeline_depth')]
         self.assertEqual(expected_join_calls, mock_path.join.call_args_list)
 
     @mock.patch.object(bu.utils, 'execute')
