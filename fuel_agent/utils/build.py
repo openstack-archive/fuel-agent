@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
+import glob
 import gzip
 import os
 import re
@@ -455,3 +457,33 @@ def containerize(filename, container, chunk_size=1048576):
     raise errors.WrongImageDataError(
         'Error while image initialization: '
         'unsupported image container: {container}'.format(container=container))
+
+
+def recompress_initramfs(chroot, compress='xz', initrd_mask='initrd*'):
+    """Remove old and rebuild initrd
+
+    :param chroot:
+    :param compress: compression type for initrd
+    :return:
+    :initrd_mask: search kernel file by Unix style pathname
+    """
+    env_vars = copy.deepcopy(os.environ)
+    add_env_vars = {'TMPDIR': '/tmp',
+                    'TMP': '/tmp'}
+
+    LOG.debug('Changing initramfs compression type to: %s', compress)
+    utils.execute(
+        'sed', '-i', 's/^COMPRESS=.*/COMPRESS={0}/'.format(compress),
+        os.path.join(chroot, 'etc/initramfs-tools/initramfs.conf'))
+
+    boot_dir = os.path.join(chroot, 'boot')
+    initrds = glob.glob(os.path.join(boot_dir, initrd_mask))
+    LOG.debug('Removing initrd images: %s', initrds)
+    remove_files('/', initrds)
+
+    env_vars.update(add_env_vars)
+    LOG.info('Building initramfs')
+    cmds = ['chroot', chroot, 'update-initramfs -v -c -k all']
+    utils.execute(*cmds,
+                  env_variables=env_vars, logged=True)
+    LOG.debug('Running "update-initramfs" completed')

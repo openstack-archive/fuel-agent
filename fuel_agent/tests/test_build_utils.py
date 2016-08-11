@@ -502,3 +502,18 @@ class BuildUtilsTestCase(unittest2.TestCase):
     def test_containerize_bad_container(self):
         self.assertRaises(errors.WrongImageDataError, bu.containerize, 'file',
                           'fake')
+
+    @mock.patch.object(utils, 'execute')
+    @mock.patch.object(bu, 'remove_files')
+    @mock.patch('fuel_agent.utils.build.glob.glob', return_value=[])
+    @mock.patch('fuel_agent.utils.build.os', environ={})
+    def test_recompress_initramfs(self, mock_os, mock_glob, mock_rm_files,
+                                  mock_exec):
+        bu.recompress_initramfs('/test/path')
+        mock_rm_files.assert_called_with('/', [])
+        mock_exec.assert_called_with(
+            'chroot', '/test/path',
+            'update-initramfs -v -c -k all',
+            logged=True,
+            env_variables={'TMP': '/tmp', 'TMPDIR': '/tmp'}
+        )

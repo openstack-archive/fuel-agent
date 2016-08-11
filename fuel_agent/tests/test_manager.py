@@ -47,6 +47,7 @@ class TestManager(unittest2.TestCase):
         self.mgr = manager.Manager(test_nailgun.PROVISION_SAMPLE_DATA)
 
     @mock.patch('fuel_agent.manager.provision', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.manager.gu', create=True)
@@ -56,7 +57,7 @@ class TestManager(unittest2.TestCase):
     def test_do_bootloader_grub1_kernel_initrd_guessed(self, mock_umount,
                                                        mock_mount, mock_utils,
                                                        mock_gu, mock_open,
-                                                       mock_prov):
+                                                       mock_bu, mock_prov):
         mock_utils.execute.return_value = ('', '')
         mock_gu.guess_grub_version.return_value = 1
         # grub has kernel_name and initrd_name both set to None
@@ -83,6 +84,7 @@ class TestManager(unittest2.TestCase):
             regexp='fake_kernel_regexp', chroot='/tmp/target')
 
     @mock.patch('fuel_agent.manager.provision', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.manager.gu', create=True)
@@ -92,7 +94,7 @@ class TestManager(unittest2.TestCase):
     def test_do_bootloader_grub1_kernel_initrd_set(self, mock_umount,
                                                    mock_mount, mock_utils,
                                                    mock_gu, mock_open,
-                                                   mock_prov):
+                                                   mock_bu, mock_prov):
         mock_utils.execute.return_value = ('', '')
         mock_gu.guess_grub_version.return_value = 1
         self.mgr.driver.grub.kernel_params = 'fake_kernel_params'
@@ -113,6 +115,7 @@ class TestManager(unittest2.TestCase):
         self.assertFalse(mock_gu.guess_kernel.called)
 
     @mock.patch('fuel_agent.manager.provision', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.objects.bootloader.Grub', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
@@ -122,7 +125,7 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_rootfs_uuid(self, mock_umount, mock_mount,
                                        mock_utils, mock_gu, mock_open,
-                                       mock_grub, mock_prov):
+                                       mock_grub, mock_bu, mock_prov):
         def _fake_uuid(*args, **kwargs):
             if len(args) >= 6 and args[5] == '/dev/mapper/os-root':
                 return ('FAKE_ROOTFS_UUID', None)
@@ -153,6 +156,7 @@ class TestManager(unittest2.TestCase):
                           self.mgr.do_bootloader)
 
     @mock.patch('fuel_agent.manager.provision', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.manager.gu', create=True)
@@ -161,7 +165,7 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_grub_version_changes(
             self, mock_umount, mock_mount, mock_utils, mock_gu, mock_open,
-            mock_prov):
+            mock_bu, mock_prov):
         # actually covers only grub1 related logic
         mock_utils.execute.return_value = ('fake_UUID\n', None)
         mock_gu.guess_grub_version.return_value = 'expected_version'
@@ -171,6 +175,7 @@ class TestManager(unittest2.TestCase):
         self.assertEqual('expected_version', self.mgr.driver.grub.version)
 
     @mock.patch('fuel_agent.manager.provision', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.manager.gu', create=True)
@@ -178,7 +183,7 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.Manager, 'mount_target')
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_grub1(self, mock_umount, mock_mount, mock_utils,
-                                 mock_gu, mock_open, mock_prov):
+                                 mock_gu, mock_open, mock_bu, mock_prov):
         # actually covers only grub1 related logic
         mock_utils.execute.return_value = ('fake_UUID\n', None)
         mock_gu.guess_initrd.return_value = 'guessed_initrd'
@@ -201,6 +206,7 @@ class TestManager(unittest2.TestCase):
         self.assertFalse(mock_gu.grub2_install.called)
 
     @mock.patch('fuel_agent.manager.provision', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.open',
                 create=True, new_callable=mock.mock_open)
     @mock.patch('fuel_agent.manager.gu', create=True)
@@ -208,7 +214,7 @@ class TestManager(unittest2.TestCase):
     @mock.patch.object(manager.Manager, 'mount_target')
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_grub2(self, mock_umount, mock_mount, mock_utils,
-                                 mock_gu, mock_open, mock_prov):
+                                 mock_gu, mock_open, mock_bu, mock_prov):
         # actually covers only grub2 related logic
         mock_utils.execute.return_value = ('fake_UUID\n', None)
         mock_gu.guess_grub_version.return_value = 2
@@ -226,12 +232,13 @@ class TestManager(unittest2.TestCase):
         self.assertFalse(mock_gu.grub1_install.called)
 
     @mock.patch('fuel_agent.manager.provision', autospec=True)
+    @mock.patch('fuel_agent.manager.bu', autospec=True)
     @mock.patch('fuel_agent.manager.gu', create=True)
     @mock.patch('fuel_agent.manager.utils', create=True)
     @mock.patch.object(manager.Manager, 'mount_target')
     @mock.patch.object(manager.Manager, 'umount_target')
     def test_do_bootloader_writes(self, mock_umount, mock_mount, mock_utils,
-                                  mock_gu, mock_prov):
+                                  mock_gu, mock_bu, mock_prov):
         # actually covers only write() calls
         mock_utils.execute.return_value = ('fake_UUID\n', None)
         with mock.patch('fuel_agent.manager.open', create=True) as mock_open:
@@ -261,6 +268,26 @@ class TestManager(unittest2.TestCase):
             ip=self.mgr.driver.configdrive_scheme.common.admin_ip,
             netmask=self.mgr.driver.configdrive_scheme.common.admin_mask,
             gw=self.mgr.driver.configdrive_scheme.common.gw)
+        mock_bu.recompress_initramfs.assert_called_once_with('/tmp/target')
+
+        expected_execute_calls = [
+            mock.call('blkid', '-o', 'value', '-s', 'UUID',
+                      '/dev/sda3', check_exit_code=[0]),
+            mock.call('blkid', '-o', 'value', '-s', 'UUID',
+                      '/dev/sda4', check_exit_code=[0]),
+            mock.call('blkid', '-o', 'value', '-s', 'UUID',
+                      '/dev/mapper/os-root', check_exit_code=[0]),
+            mock.call('blkid', '-o', 'value', '-s', 'UUID',
+                      '/dev/mapper/os-swap', check_exit_code=[0]),
+            mock.call('blkid', '-o', 'value', '-s', 'UUID',
+                      '/dev/mapper/image-glance', check_exit_code=[0]),
+            mock.call('sed', '-i', '-e', '$aexport\\ NEED_PERSISTENT_NET=yes',
+                      '/tmp/target/etc/initramfs-tools/update-initramfs.conf'),
+            mock.call('chroot', '/tmp/target', 'dpkg-divert', '--local',
+                      '--add', '/etc/initramfs-tools/update-initramfs.conf'),
+            mock.call('mkdir', '-p', '/tmp/target/var/log/upstart')]
+        self.assertEqual(expected_execute_calls,
+                         mock_utils.execute.call_args_list)
 
     @mock.patch('fuel_agent.drivers.nailgun.Nailgun.parse_image_meta',
                 return_value={})

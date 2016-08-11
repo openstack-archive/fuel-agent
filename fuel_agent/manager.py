@@ -441,6 +441,17 @@ class Manager(object):
         provision.udev_nic_naming_rules(
             chroot, self.driver.configdrive_scheme.common.udevrules)
 
+        # NOTE(agordeev): NEED_PERSISTENT_NET allows the including of
+        # 70-persistent-net.rules udev rule into the initramfs.
+        # Actual only for Trusty. udev hook from Xenial will include
+        # custom udev rules automatically.
+        update_initramfs_conf = 'etc/initramfs-tools/update-initramfs.conf'
+        utils.execute(
+            'sed', '-i', '-e', '$aexport\ NEED_PERSISTENT_NET=yes',
+            os.path.join(chroot, update_initramfs_conf))
+        utils.execute('chroot', chroot, 'dpkg-divert', '--local', '--add',
+                      os.path.join(os.path.sep, update_initramfs_conf))
+
         # FIXME(agordeev): Normally, that should be handled out side of
         # fuel-agent. Just a temporary fix to avoid dealing with cloud-init
         # boothooks.
@@ -491,6 +502,10 @@ class Manager(object):
                 else:
                     f.write('UUID=%s %s %s defaults 0 0\n' %
                             (mount2uuid[fs.mount], fs.mount, fs.type))
+
+        # NOTE(agordeev): rebuild initramfs image for including
+        # custom udev rules from /etc/udev/rules.d/
+        bu.recompress_initramfs(chroot)
 
         self.umount_target(chroot)
 

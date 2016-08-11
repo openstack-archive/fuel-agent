@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import hashlib
 import locale
 import math
@@ -76,7 +77,7 @@ def execute(*cmd, **kwargs):
     command = ' '.join(cmd)
     LOG.debug('Trying to execute command: %s', command)
     commands = [c.strip() for c in re.split(ur'\|', command)]
-    env = os.environ
+    env = kwargs.pop('env_variables', copy.deepcopy(os.environ))
     env['PATH'] = '/bin:/usr/bin:/sbin:/usr/sbin'
     env['LC_ALL'] = env['LANG'] = env['LANGUAGE'] = kwargs.pop('language', 'C')
     attempts = kwargs.pop('attempts', 1)
@@ -84,6 +85,7 @@ def execute(*cmd, **kwargs):
     ignore_exit_code = False
     to_filename = kwargs.get('to_filename')
     cwd = kwargs.get('cwd')
+    logged = kwargs.pop('logged', False)
 
     if isinstance(check_exit_code, bool):
         ignore_exit_code = not check_exit_code
@@ -127,6 +129,9 @@ def execute(*cmd, **kwargs):
                     raise errors.ProcessExecutionError(
                         exit_code=process[-1].returncode, stdout=stdout,
                         stderr=stderr, cmd=command)
+            if logged:
+                LOG.debug('Extended log: \nstdout:{0}\nstderr:{1}'.
+                          format(stdout, stderr))
             return (stdout, stderr)
         except errors.ProcessExecutionError as e:
             LOG.warning('Failed to execute command: %s', e)
