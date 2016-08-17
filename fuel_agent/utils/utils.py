@@ -262,7 +262,8 @@ def init_http_request(url, byte_range=0, proxies=None, noproxy_addrs=None):
             time.sleep(CONF.http_retry_delay)
         else:
             raise errors.HttpUrlConnectionError(
-                "Exceeded maximum http request retries for %s".format(url))
+                "Exceeded maximum http request retries for {url}".format(
+                    url=url))
     return response_obj
 
 
