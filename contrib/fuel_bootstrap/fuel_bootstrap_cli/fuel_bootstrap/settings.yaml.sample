@@ -20,6 +20,7 @@ output_dir: /tmp/
 kernel_flavor: linux-image-generic-lts-xenial
 # Define packages list
 packages:
+  - daemonize
   - fuel-agent
   - hwloc
   - i40e-dkms
@@ -39,6 +40,7 @@ packages:
   - ntpdate
   - openssh-client
   - openssh-server
+  - puppet
   - squashfs-tools
   - ubuntu-minimal
   - vim
