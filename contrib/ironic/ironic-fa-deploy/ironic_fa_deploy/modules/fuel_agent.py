@@ -50,7 +50,7 @@ from ironic.drivers.modules import image_cache
 agent_opts = [
     cfg.StrOpt('pxe_config_template',
                default=os.path.join(os.path.dirname(__file__),
-                    'fuel_config.template'),
+                                    'fuel_config.template'),
                help='Template file for PXE configuration.'),
     cfg.StrOpt('deploy_kernel',
                help='UUID (from Glance) of the default deployment kernel.'),
@@ -492,7 +492,7 @@ class FuelAgentVendor(base.VendorInterface):
 
     @base.passthru(['POST'])
     @task_manager.require_exclusive_lock
-    def pass_deploy_info(self, task, **kwargs):
+    def heartbeat(self, task, **kwargs):
         """Continues the deployment of baremetal node."""
 
         node = task.node

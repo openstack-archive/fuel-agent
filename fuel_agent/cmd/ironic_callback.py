@@ -69,8 +69,8 @@ def main():
             "error_message": "no errors"}
 
     passthru = '%(api-url)s/v1/nodes/%(deployment_id)s/vendor_passthru' \
-               '/pass_deploy_info' % {'api-url': api_url,
-                                      'deployment_id': deployment_id}
+               '/heartbeat' % {'api-url': api_url,
+                               'deployment_id': deployment_id}
     try:
         resp = requests.post(passthru, data=json.dumps(data),
                              headers={'Content-Type': 'application/json',
