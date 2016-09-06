@@ -71,6 +71,10 @@ class LVNotFoundError(BaseError):
     pass
 
 
+class WrongFSMount(BaseError):
+    pass
+
+
 class MDAlreadyExistsError(BaseError):
     pass
 
