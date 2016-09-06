@@ -19,7 +19,7 @@ import six
 from six.moves.urllib.parse import urlsplit
 import unittest2
 
-from fuel_agent.drivers.nailgun import NailgunBuildImage
+from fuel_agent.drivers import nailgun
 from fuel_agent import objects
 
 DEFAULT_TRUSTY_PACKAGES = [
@@ -104,12 +104,12 @@ IMAGE_DATA_SAMPLE = {
 class TestNailgunBuildImage(unittest2.TestCase):
 
     def test_default_trusty_packages(self):
-        self.assertEqual(NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
+        self.assertEqual(nailgun.NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
                          DEFAULT_TRUSTY_PACKAGES)
 
     @mock.patch('fuel_agent.objects.RepoProxies')
     @mock.patch('fuel_agent.objects.Ubuntu')
-    @mock.patch.object(NailgunBuildImage, 'parse_schemes')
+    @mock.patch.object(nailgun.NailgunBuildImage, 'parse_schemes')
     def test_parse_operating_system_packages_given(self, mock_parse_schemes,
                                                    mock_ub, mock_proxies):
         data = {
@@ -119,7 +119,7 @@ class TestNailgunBuildImage(unittest2.TestCase):
         }
         mock_ub_instance = mock_ub.return_value
         mock_ub_instance.packages = data['packages']
-        driver = NailgunBuildImage(data)
+        driver = nailgun.NailgunBuildImage(data)
         mock_ub.assert_called_once_with(repos=[], packages=data['packages'],
                                         major=14, minor=4,
                                         proxies=mock_proxies.return_value)
@@ -127,7 +127,7 @@ class TestNailgunBuildImage(unittest2.TestCase):
 
     @mock.patch('fuel_agent.objects.RepoProxies')
     @mock.patch('fuel_agent.objects.Ubuntu')
-    @mock.patch.object(NailgunBuildImage, 'parse_schemes')
+    @mock.patch.object(nailgun.NailgunBuildImage, 'parse_schemes')
     def test_parse_operating_system_packages_not_given(
             self, mock_parse_schemes, mock_ub, mock_proxies):
         data = {
@@ -135,18 +135,20 @@ class TestNailgunBuildImage(unittest2.TestCase):
             'codename': 'trusty'
         }
         mock_ub_instance = mock_ub.return_value
-        mock_ub_instance.packages = NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES
-        driver = NailgunBuildImage(data)
+        mock_ub_instance.packages = \
+            nailgun.NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES
+        driver = nailgun.NailgunBuildImage(data)
         mock_ub.assert_called_once_with(
-            repos=[], packages=NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
+            repos=[],
+            packages=nailgun.NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
             major=14, minor=4, proxies=mock_proxies.return_value)
         self.assertEqual(driver.operating_system.packages,
-                         NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES)
+                         nailgun.NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES)
 
     @mock.patch('fuel_agent.objects.RepoProxies')
     @mock.patch('fuel_agent.objects.DEBRepo')
     @mock.patch('fuel_agent.objects.Ubuntu')
-    @mock.patch.object(NailgunBuildImage, 'parse_schemes')
+    @mock.patch.object(nailgun.NailgunBuildImage, 'parse_schemes')
     def test_parse_operating_system_repos(self, mock_parse_schemes, mock_ub,
                                           mock_deb, mock_proxies):
         data = {
@@ -166,11 +168,12 @@ class TestNailgunBuildImage(unittest2.TestCase):
             }
             mock_deb_expected_calls.append(mock.call(**kwargs))
             repos.append(objects.DEBRepo(**kwargs))
-        driver = NailgunBuildImage(data)
+        driver = nailgun.NailgunBuildImage(data)
         mock_ub_instance = mock_ub.return_value
         mock_ub_instance.repos = repos
         mock_ub.assert_called_once_with(
-            repos=repos, packages=NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
+            repos=repos,
+            packages=nailgun.NailgunBuildImage.DEFAULT_TRUSTY_PACKAGES,
             major=14, minor=4, proxies=mock_proxies.return_value)
         self.assertEqual(mock_deb_expected_calls,
                          mock_deb.call_args_list[:len(REPOS_SAMPLE)])
@@ -181,7 +184,7 @@ class TestNailgunBuildImage(unittest2.TestCase):
     @mock.patch('fuel_agent.objects.FS')
     @mock.patch('fuel_agent.objects.PartitionScheme')
     @mock.patch('fuel_agent.objects.ImageScheme')
-    @mock.patch.object(NailgunBuildImage, 'parse_operating_system')
+    @mock.patch.object(nailgun.NailgunBuildImage, 'parse_operating_system')
     def test_parse_schemes(
             self, mock_parse_os, mock_imgsch, mock_partsch,
             mock_fs, mock_img, mock_loop):
@@ -189,7 +192,7 @@ class TestNailgunBuildImage(unittest2.TestCase):
             'image_data': IMAGE_DATA_SAMPLE,
             'output': '/some/local/path',
         }
-        driver = NailgunBuildImage(data)
+        driver = nailgun.NailgunBuildImage(data)
 
         mock_fs_expected_calls = []
         mock_img_expected_calls = []

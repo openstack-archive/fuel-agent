@@ -15,7 +15,7 @@
 import io
 
 import mock
-from six import StringIO
+import six
 import unittest2
 
 from fuel_agent import errors
@@ -473,7 +473,7 @@ GRUB_RECORDFAIL_TIMEOUT=10
                         create=True) as mock_open:
             mock_open.return_value = mock.MagicMock(spec=io.IOBase)
             handle = mock_open.return_value.__enter__.return_value
-            handle.__iter__.return_value = StringIO(orig_content)
+            handle.__iter__.return_value = six.StringIO(orig_content)
             gu.grub2_cfg(kernel_params='kernel-params-new', chroot='/target',
                          grub_timeout=10)
 
