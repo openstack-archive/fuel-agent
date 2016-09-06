@@ -18,12 +18,12 @@ import os
 from oslo_log import log as logging
 
 from fuel_agent import errors
-from fuel_agent.objects.partition.fs import FileSystem
-from fuel_agent.objects.partition.lv import LogicalVolume
-from fuel_agent.objects.partition.md import MultipleDevice
-from fuel_agent.objects.partition.parted import Parted
-from fuel_agent.objects.partition.pv import PhysicalVolume
-from fuel_agent.objects.partition.vg import VolumeGroup
+from fuel_agent.objects.partition import fs as f_fs
+from fuel_agent.objects.partition import lv as f_lv
+from fuel_agent.objects.partition import md as f_md
+from fuel_agent.objects.partition import parted as f_parted
+from fuel_agent.objects.partition import pv as f_pv
+from fuel_agent.objects.partition import vg as f_vg
 
 
 LOG = logging.getLogger(__name__)
@@ -39,27 +39,27 @@ class PartitionScheme(object):
         self.fss = []
 
     def add_parted(self, **kwargs):
-        parted = Parted(**kwargs)
+        parted = f_parted.Parted(**kwargs)
         self.parteds.append(parted)
         return parted
 
     def add_pv(self, **kwargs):
-        pv = PhysicalVolume(**kwargs)
+        pv = f_pv.PhysicalVolume(**kwargs)
         self.pvs.append(pv)
         return pv
 
     def add_vg(self, **kwargs):
-        vg = VolumeGroup(**kwargs)
+        vg = f_vg.VolumeGroup(**kwargs)
         self.vgs.append(vg)
         return vg
 
     def add_lv(self, **kwargs):
-        lv = LogicalVolume(**kwargs)
+        lv = f_lv.LogicalVolume(**kwargs)
         self.lvs.append(lv)
         return lv
 
     def add_fs(self, **kwargs):
-        fs = FileSystem(**kwargs)
+        fs = f_fs.FileSystem(**kwargs)
         if not os.path.isabs(fs.mount) and fs.mount != 'swap':
             raise errors.WrongFSMount(
                 'Incorrect mount point %s' % fs.mount)
@@ -71,7 +71,7 @@ class PartitionScheme(object):
         mdkwargs['name'] = kwargs.get('name') or self.md_next_name()
         mdkwargs['level'] = kwargs.get('level') or 'mirror'
         mdkwargs['metadata'] = kwargs.get('metadata') or 'default'
-        md = MultipleDevice(**mdkwargs)
+        md = f_md.MultipleDevice(**mdkwargs)
         self.mds.append(md)
         return md
 

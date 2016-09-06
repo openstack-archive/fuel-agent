@@ -24,7 +24,7 @@ from six.moves.urllib.parse import urlparse
 from six.moves.urllib.parse import urlsplit
 import yaml
 
-from fuel_agent.drivers.base import BaseDataDriver
+from fuel_agent.drivers import base
 from fuel_agent.drivers import ks_spaces_validator
 from fuel_agent import errors
 from fuel_agent import objects
@@ -71,7 +71,7 @@ def match_device(hu_disk, ks_disk):
     return False
 
 
-class Nailgun(BaseDataDriver):
+class Nailgun(base.BaseDataDriver):
     """Driver for parsing regular volumes metadata from Nailgun."""
 
     def __init__(self, data):
@@ -701,7 +701,7 @@ class Ironic(Nailgun):
         pass
 
 
-class NailgunBuildImage(BaseDataDriver):
+class NailgunBuildImage(base.BaseDataDriver):
 
     # TODO(kozhukalov):
     # This list of packages is used by default only if another
