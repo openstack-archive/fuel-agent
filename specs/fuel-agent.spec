@@ -117,7 +117,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n fuel-bootstrap-cli -f %{_builddir}/%{name}-%{version}/contrib/fuel_bootstrap/fuel_bootstrap_cli/INSTALLED_FILES
 %defattr(0644,root,root,0755)
-%config(noreplace) %{_sysconfdir}/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml
+%config %{_sysconfdir}/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml
 %{_datadir}/fuel_bootstrap_cli/fuel_bootstrap_cli.yaml.sample
 %attr(0755,root,root) %{_bindir}/fuel-bootstrap
 %{_datadir}/fuel_bootstrap_cli/files/*
