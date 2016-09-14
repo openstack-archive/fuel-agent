@@ -15,22 +15,6 @@ cloud-init-per instance disable_selinux_on_the_fly setenforce 0
 
 cloud-init-per instance disable_selinux sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
 
-
-# configure udev rules
-
-# udev persistent net
-cloud-init-per instance udev_persistent_net1 service network stop
-
-ADMIN_MAC={{ common.admin_mac }}
-ADMIN_IF=$(echo {{ common.udevrules }} | sed 's/[,=]/\n/g' | grep "$ADMIN_MAC" | cut -d_ -f2 | head -1)
-cloud-init-per instance configure_admin_interface /bin/sh -c "echo -e \"# FROM COBBLER SNIPPET\nDEVICE=$ADMIN_IF\nIPADDR={{ common.admin_ip }}\nNETMASK={{ common.admin_mask }}\nBOOTPROTO=none\nONBOOT=yes\nUSERCTL=no\n\" | tee /etc/sysconfig/network-scripts/ifcfg-$ADMIN_IF"
-
-cloud-init-per instance set_gateway /bin/sh -c 'echo GATEWAY="{{ common.gw }}" | tee -a /etc/sysconfig/network'
-
-cloud-init-per instance udev_persistent_net5 service network start
-
-# end of udev
-
 #FIXME(agordeev): if operator updates dns settings on masternode after the node had been provisioned,
 #                 cloud-init will start to generate resolv.conf with non-actual data
 cloud-init-per instance resolv_conf_remove rm -f /etc/resolv.conf
