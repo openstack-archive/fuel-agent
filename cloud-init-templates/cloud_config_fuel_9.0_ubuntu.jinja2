@@ -82,6 +82,7 @@ mcollective:
     plugin.rabbitmq.pool.1.user: {{ mcollective.user }}
     plugin.rabbitmq.pool.1.password: {{ mcollective.password }}
     plugin.rabbitmq.heartbeat_interval: 30
+    plugin.rabbitmq.max_hbrlck_fails: 0
 {% endif %}
     factsource: yaml
     plugin.yaml: /etc/mcollective/facts.yaml
