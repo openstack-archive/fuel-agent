@@ -1,3 +1,9 @@
+fuel-agent (10.0.0-3) unstable; urgency=low
+
+  * Replace ironic-callback upstart script by systemd.
+
+ -- Vasyl Saeinko <vsaienko@mirantis.com>  Tue, 15 Sep 2016 17:17:07 +0200
+
 fuel-agent (10.0.0-2) unstable; urgency=low
 
   * Build depends on dh-python.
