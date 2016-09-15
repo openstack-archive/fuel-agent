@@ -177,6 +177,18 @@ def clean_apt_settings(chroot, allow_unsigned_file='allow_unsigned_packages',
     clean_dirs(chroot, dirs)
 
 
+def fix_cloud_init_config(config_path):
+    # NOTE(mzhnichkov): change an order of executing cloud-init modules
+    # this change is suitable for cloud-init packages from trust/xenial
+    with open(config_path, 'r') as cloud_conf:
+        config = yaml.safe_load(cloud_conf)
+    if 'write-files' in config['cloud_init_modules']:
+        config['cloud_init_modules'].remove('write-files')
+    config['cloud_config_modules'].append('write-files')
+    with open(config_path, 'w') as cloud_conf:
+        yaml.safe_dump(config, cloud_conf, default_flow_style=False)
+
+
 def do_post_inst(chroot, hashed_root_password,
                  allow_unsigned_file='allow_unsigned_packages',
                  force_ipv4_file='force_ipv4',
@@ -201,6 +213,9 @@ def do_post_inst(chroot, hashed_root_password,
     if os.path.exists(os.path.join(chroot, 'etc/systemd/system')):
         os.symlink('/dev/null', os.path.join(chroot,
                    'etc/systemd/system/mcollective.service'))
+    cloud_init_conf = os.path.join(chroot, 'etc/cloud/cloud.cfg')
+    if os.path.exists(cloud_init_conf):
+        fix_cloud_init_config(cloud_init_conf)
     # NOTE(mzhnichkov): skip auto networking configuration at cloud-init stage
     cloud_path = os.path.join(chroot, 'var/lib/cloud')
     if os.path.exists(cloud_path):
