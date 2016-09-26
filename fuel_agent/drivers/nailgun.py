@@ -306,9 +306,9 @@ class Nailgun(base.BaseDataDriver):
         try:
             user_accounts = self.data['ks_meta']['user_accounts']
         except KeyError:
-            LOG.warn(('This environment does not support non-root accounts '
-                      'on the target nodes. Non-root user accounts will not '
-                      'be created'))
+            LOG.warning(('This environment does not support non-root accounts '
+                         'on the target nodes. Non-root user accounts will '
+                         'not be created'))
             user_accounts = []
 
         for account in user_accounts:
