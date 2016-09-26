@@ -2,6 +2,3 @@
 
 # Perform fuel bootstrap configuration
 /usr/bin/fix-configs-on-startup || /bin/true
-
-# Unlocking nailgun-agent for discovering
-/bin/rm -f /etc/nailgun-agent/nodiscover

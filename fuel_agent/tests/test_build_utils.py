@@ -189,7 +189,7 @@ class BuildUtilsTestCase(unittest2.TestCase):
             'cloud_config_modules': ['runcmd', 'write-files']
         }, mock.ANY, encoding='utf-8', default_flow_style=False)
 
-    @mock.patch('fuel_agent.utils.build.os.symlink')
+    @mock.patch('fuel_agent.utils.build.os.unlink')
     @mock.patch('fuel_agent.utils.build.os.mkdir')
     @mock.patch('fuel_agent.utils.build.open',
                 create=True, new_callable=mock.mock_open)
@@ -201,7 +201,7 @@ class BuildUtilsTestCase(unittest2.TestCase):
     @mock.patch('fuel_agent.utils.build.yaml.safe_load')
     def test_do_post_inst(self, mock_yaml_load, mock_yaml_dump, mock_exec,
                           mock_files, mock_clean, mock_path,
-                          mock_open, mock_mkdir, mock_symlink):
+                          mock_open, mock_mkdir, mock_unlink):
         mock_path.join.return_value = 'fake_path'
         mock_path.exists.return_value = True
 
@@ -240,8 +240,9 @@ class BuildUtilsTestCase(unittest2.TestCase):
             mock.call('chroot', 'etc/shadow'),
             mock.call('chroot', 'etc/init.d/puppet'),
             mock.call('chroot', 'etc/init/mcollective.override'),
-            mock.call('chroot', 'etc/systemd/system'),
-            mock.call('chroot', 'etc/systemd/system/mcollective.service'),
+            mock.call('chroot',
+                      'etc/systemd/system'
+                      '/multi-user.target.wants/mcollective.service'),
             mock.call('chroot', 'etc/cloud/cloud.cfg.d/'),
             mock.call('chroot',
                       'etc/cloud/cloud.cfg.d/99-disable-network-config.cfg'),
@@ -249,7 +250,7 @@ class BuildUtilsTestCase(unittest2.TestCase):
             mock.call('/', bu.GRUB2_DMRAID_SETTINGS)]
         self.assertEqual(mock_path_join_expected_calls,
                          mock_path.join.call_args_list)
-        mock_symlink.assert_called_once_with('/dev/null', 'fake_path')
+        mock_unlink.assert_called_once_with('fake_path')
         mock_yaml_dump.assert_called_with(mock.ANY,
                                           mock.ANY,
                                           encoding='utf-8',
