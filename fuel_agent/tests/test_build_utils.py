@@ -216,7 +216,6 @@ class BuildUtilsTestCase(unittest2.TestCase):
                         pipeline_depth_file='fake_pipeline_depth')
         file_handle_mock = mock_open.return_value.__enter__.return_value
         file_handle_mock.write.assert_called_once_with('manual\n')
-
         mock_exec_expected_calls = [
             mock.call('sed',
                       '-i',
@@ -243,13 +242,9 @@ class BuildUtilsTestCase(unittest2.TestCase):
             mock.call('chroot', 'etc/systemd/system'),
             mock.call('chroot', 'etc/systemd/system/mcollective.service'),
             mock.call('chroot', 'etc/cloud/cloud.cfg'),
-            mock.call('chroot', 'var/lib/cloud'),
-            mock.call('fake_path', 'data'),
-            mock.call('fake_path', 'data', 'upgraded-network'),
             mock.call('/', bu.GRUB2_DMRAID_SETTINGS)]
         self.assertEqual(mock_path_join_expected_calls,
                          mock_path.join.call_args_list)
-        mock_mkdir.assert_called_once_with('fake_path')
         mock_symlink.assert_called_once_with('/dev/null', 'fake_path')
 
     @mock.patch('fuel_agent.utils.build.open',
