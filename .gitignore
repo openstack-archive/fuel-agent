@@ -12,6 +12,7 @@ build
 dist
 
 *.egg
+*.eggs
 .testrepository
 .cache
 .tox
