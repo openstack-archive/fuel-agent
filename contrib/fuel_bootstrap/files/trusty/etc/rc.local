@@ -1,6 +1,7 @@
 #!/bin/sh -e
 
-# Perform fuel bootstrap configuration
-fix-configs-on-startup || true
-
+# fuel-nailgun-agent is now used to start fix-configs-on-startup on starup
+# instead of simply restarting mcollective, since we don't need two separate
+# restart which causing bug #1642377
+#fix-configs-on-startup || true
 
