@@ -843,7 +843,6 @@ class TestManager(unittest2.TestCase):
         fake_mtab = """
 proc /proc proc rw,noexec,nosuid,nodev 0 0
 sysfs /sys sysfs rw,noexec,nosuid,nodev 0 0
-none /sys/fs/fuse/connections fusectl rw 0 0
 none /sys/kernel/debug debugfs rw 0 0
 none /sys/kernel/security securityfs rw 0 0
 udev /dev devtmpfs rw,mode=0755 0 0
@@ -893,7 +892,6 @@ none /run/shm tmpfs rw,nosuid,nodev 0 0"""
         self.mgr.umount_target('fake_chroot')
         self.assertEqual([mock.call('fake_chroot/proc'),
                           mock.call('fake_chroot/dev'),
-                          mock.call('fake_chroot/sys/fs/fuse/connections'),
                           mock.call('fake_chroot/sys'),
                           mock.call('fake_chroot/var/lib'),
                           mock.call('fake_chroot/boot'),
