@@ -46,6 +46,14 @@ packages:
   - vim
   - wget
   - xz-utils
+  # NOTE(el): Packages required for new generation
+  # network checker to be run without an access
+  # to repositories.
+  - sysfsutils
+  - bridge-utils
+  - ifenslave
+  - irqbalance
+  - iputils-arping
 # Ignore proxy for this repos
 #direct_repo_addresses:
 #    - 127.0.0.1
