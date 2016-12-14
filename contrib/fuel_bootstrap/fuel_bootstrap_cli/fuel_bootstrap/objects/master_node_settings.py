@@ -23,7 +23,7 @@ class MasterNodeSettings(object):
     class_api_path = "settings/"
 
     def __init__(self):
-        self.connection = client.APIClient
+        self.connection = client.APIClient.default_client()
 
     def update(self, data):
         return self.connection.put_request(
