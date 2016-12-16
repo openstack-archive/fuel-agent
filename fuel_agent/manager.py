@@ -547,9 +547,7 @@ class Manager(object):
         LOG.debug('Mounting target file systems into a flat set '
                   'of temporary directories')
         mount_map = {}
-        for fs in self.driver.partition_scheme.fss:
-            if fs.mount == 'swap':
-                continue
+        for fs in self.driver.partition_scheme.fss_w_mountpoints:
             # It is an ugly hack to resolve python2/3 encoding issues and
             # should be removed after transistion to python3
             try:
@@ -636,8 +634,6 @@ class Manager(object):
         LOG.debug('Mounting target file systems: %s', chroot)
         # Here we are going to mount all file systems in partition scheme.
         for fs in self.driver.partition_scheme.fs_sorted_by_depth():
-            if fs.mount == 'swap':
-                continue
             mount = chroot + fs.mount
             utils.makedirs_if_not_exists(mount)
             fu.mount_fs(fs.type, str(fs.device), mount)
@@ -663,8 +659,6 @@ class Manager(object):
                 fu.umount_fs(chroot + path)
         for fs in self.driver.partition_scheme.fs_sorted_by_depth(
                 reverse=True):
-            if fs.mount == 'swap':
-                continue
             fu.umount_fs(chroot + fs.mount)
 
     def install_base_os(self, chroot):
@@ -956,7 +950,9 @@ class Manager(object):
                 # at fstab line. Currently we set it into 0 which means
                 # a corresponding file system will never be checked. We assume
                 # puppet or other configuration tool will care of it.
-                if fs.mount == '/':
+                if fs.mount is None:
+                    LOG.debug('Skipping fstab entry creation for %s', fs)
+                elif fs.mount == '/':
                     f.write(u'UUID=%s %s %s defaults,errors=panic 0 0\n' %
                             (mount2uuid[fs.mount], fs.mount, fs.type))
                 else:

@@ -26,6 +26,16 @@ from fuel_agent.objects import image
 from fuel_agent.utils import utils
 
 
+SWIFT = {
+    'disk_label': None,
+    'file_system': 'xfs',
+    'mount': 'none',
+    'name': 'swift-storage',
+    'partition_guid': 'deadbeef-9d34-4175-8ded-1ce68967a5ee',
+    'size': 10,
+    'type': 'partition'
+}
+
 CEPH_JOURNAL = {
     "partition_guid": "45b0969e-9b03-4f30-b4c6-b4b80ceff106",
     "name": "cephjournal",
@@ -1666,6 +1676,22 @@ class TestNailgunMockedMeta(unittest2.TestCase):
         self.assertEqual(3, drv._get_partition_count('Boot'))
         self.assertEqual(1, drv._get_partition_count('TMP'))
 
+    def test_partition_scheme_no_mount_fs(self, mock_lbd, mock_image_meta):
+        p_data = copy.deepcopy(PROVISION_SAMPLE_DATA)
+        for i in range(0, 3):
+            p_data['ks_meta']['pm_data']['ks_spaces'][i]['volumes'].append(
+                SWIFT)
+        mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
+        drv = nailgun.Nailgun(p_data)
+        p_scheme = drv.partition_scheme
+        self.assertEqual(4, len(list(p_scheme.fss_w_mountpoints)))
+        self.assertEqual(8, len(p_scheme.fss))
+        self.assertEqual(4, len(p_scheme.pvs))
+        self.assertEqual(3, len(p_scheme.lvs))
+        self.assertEqual(2, len(p_scheme.vgs))
+        self.assertEqual(3, len(p_scheme.parteds))
+        self.assertEqual(3, drv._get_partition_count('swift-storage'))
+
     def test_partition_scheme_ceph(self, mock_lbd, mock_image_meta):
         # TODO(agordeev): perform better testing of ceph logic
         p_data = copy.deepcopy(PROVISION_SAMPLE_DATA)
@@ -1677,6 +1703,7 @@ class TestNailgunMockedMeta(unittest2.TestCase):
         mock_lbd.return_value = LIST_BLOCK_DEVICES_SAMPLE
         drv = nailgun.Nailgun(p_data)
         p_scheme = drv.partition_scheme
+        self.assertEqual(4, len(list(p_scheme.fss_w_mountpoints)))
         self.assertEqual(5, len(p_scheme.fss))
         self.assertEqual(4, len(p_scheme.pvs))
         self.assertEqual(3, len(p_scheme.lvs))
