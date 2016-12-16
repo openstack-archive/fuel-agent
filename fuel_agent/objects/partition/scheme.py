@@ -141,7 +141,15 @@ class PartitionScheme(object):
         """
         def key(x):
             return x.mount.rstrip(os.path.sep).count(os.path.sep)
-        return sorted(self.fss, key=key, reverse=reverse)
+        return sorted(self.fss_w_mountpoints, key=key, reverse=reverse)
+
+    @property
+    def fss_w_mountpoints(self):
+        """Returns a list of file systems which have mountpoints"""
+        # NOTE: `swap` mountpoint is not a real mountpoint, so has
+        # to be skipped.
+        return filter(lambda f: f.mount is not None and f.mount != "swap",
+                      self.fss)
 
     def lv_by_device_name(self, device_name):
         return next((x for x in self.lvs if x.device_name == device_name),
