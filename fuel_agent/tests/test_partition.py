@@ -256,7 +256,7 @@ class TestParted(unittest2.TestCase):
     def test_next_name_none(self, nt_mock, nc_mock):
         nc_mock.return_value = 1
         nt_mock.return_value = 'extended'
-        self.assertEqual(None, self.prtd.next_name())
+        self.assertIsNone(self.prtd.next_name())
 
     @mock.patch.object(objects.Parted, 'next_count')
     @mock.patch.object(objects.Parted, 'next_type')
