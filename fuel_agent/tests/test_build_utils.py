@@ -160,7 +160,7 @@ class BuildUtilsTestCase(unittest2.TestCase):
     @mock.patch.object(bu, 'clean_dirs')
     def test_clean_apt_settings(self, mock_dirs, mock_files):
         bu.clean_apt_settings('chroot', 'unsigned', 'force_ipv4',
-                              'pipeline_depth')
+                              'pipeline_depth', 'install_rule')
         mock_dirs.assert_called_once_with(
             'chroot', ['etc/apt/preferences.d', 'etc/apt/sources.list.d'])
         files = set(['etc/apt/sources.list', 'etc/apt/preferences',
@@ -169,7 +169,9 @@ class BuildUtilsTestCase(unittest2.TestCase):
                      'etc/apt/apt.conf.d/%s' % 'pipeline_depth',
                      'etc/apt/apt.conf.d/01fuel_agent-use-proxy-ftp',
                      'etc/apt/apt.conf.d/01fuel_agent-use-proxy-http',
-                     'etc/apt/apt.conf.d/01fuel_agent-use-proxy-https'])
+                     'etc/apt/apt.conf.d/01fuel_agent-use-proxy-https',
+                     'etc/apt/apt.conf.d/%s' % 'install_rule',
+                     ])
         self.assertEqual('chroot', mock_files.call_args[0][0])
         self.assertEqual(files, set(mock_files.call_args[0][1]))
 
@@ -213,7 +215,8 @@ class BuildUtilsTestCase(unittest2.TestCase):
                         hashed_root_password=password,
                         allow_unsigned_file='fake_unsigned',
                         force_ipv4_file='fake_force_ipv4',
-                        pipeline_depth_file='fake_pipeline_depth')
+                        pipeline_depth_file='fake_pipeline_depth',
+                        install_rule_file='fake_install_rule')
 
         file_handle_mock = mock_open.return_value.__enter__.return_value
         file_handle_mock.write.assert_called_once_with('manual\n')
@@ -235,7 +238,8 @@ class BuildUtilsTestCase(unittest2.TestCase):
             'chroot',
             allow_unsigned_file='fake_unsigned',
             force_ipv4_file='fake_force_ipv4',
-            pipeline_depth_file='fake_pipeline_depth')
+            pipeline_depth_file='fake_pipeline_depth',
+            install_rule_file='fake_install_rule')
         mock_path_join_expected_calls = [
             mock.call('chroot', 'etc/shadow'),
             mock.call('chroot', 'etc/init.d/puppet'),
@@ -526,25 +530,33 @@ class BuildUtilsTestCase(unittest2.TestCase):
             file_handle_mock = mock_open.return_value.__enter__.return_value
             bu.pre_apt_get('chroot', allow_unsigned_file='fake_unsigned',
                            force_ipv4_file='fake_force_ipv4',
-                           pipeline_depth_file='fake_pipeline_depth')
+                           pipeline_depth_file='fake_pipeline_depth',
+                           install_rule_file='fake_install_rule')
             expected_calls = [
                 mock.call('APT::Get::AllowUnauthenticated 1;\n'),
                 mock.call('Acquire::ForceIPv4 "true";\n'),
-                mock.call('Acquire::http::Pipeline-Depth 0;\n')]
+                mock.call('Acquire::http::Pipeline-Depth 0;\n'),
+                mock.call('APT::Install-Recommends "false";\n'),
+                mock.call('APT::Install-Suggests "false";\n')]
             self.assertEqual(expected_calls,
                              file_handle_mock.write.call_args_list)
         mock_clean.assert_called_once_with(
             'chroot',
             allow_unsigned_file='fake_unsigned',
             force_ipv4_file='fake_force_ipv4',
-            pipeline_depth_file='fake_pipeline_depth')
+            pipeline_depth_file='fake_pipeline_depth',
+            install_rule_file='fake_install_rule')
         expected_join_calls = [
             mock.call('chroot', 'etc/apt/apt.conf.d',
                       'fake_unsigned'),
             mock.call('chroot', 'etc/apt/apt.conf.d',
                       'fake_force_ipv4'),
             mock.call('chroot', 'etc/apt/apt.conf.d',
-                      'fake_pipeline_depth')]
+                      'fake_pipeline_depth'),
+            mock.call('chroot', 'etc/apt/apt.conf.d',
+                      'fake_install_rule'),
+            mock.call('chroot', 'etc/apt/apt.conf.d',
+                      'fake_install_rule')]
         self.assertEqual(expected_join_calls, mock_path.join.call_args_list)
 
     @mock.patch.object(bu.utils, 'execute')
