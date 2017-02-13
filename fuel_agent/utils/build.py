@@ -161,13 +161,15 @@ def remove_files(chroot, files):
 
 def clean_apt_settings(chroot, allow_unsigned_file='allow_unsigned_packages',
                        force_ipv4_file='force_ipv4',
-                       pipeline_depth_file='pipeline_depth'):
+                       pipeline_depth_file='pipeline_depth',
+                       install_rule_file='install_rule'):
     """Cleans apt settings such as package sources and repo pinning."""
     files = [DEFAULT_APT_PATH['sources_file'],
              DEFAULT_APT_PATH['preferences_file'],
              os.path.join(DEFAULT_APT_PATH['conf_dir'], force_ipv4_file),
              os.path.join(DEFAULT_APT_PATH['conf_dir'], allow_unsigned_file),
-             os.path.join(DEFAULT_APT_PATH['conf_dir'], pipeline_depth_file)]
+             os.path.join(DEFAULT_APT_PATH['conf_dir'], pipeline_depth_file),
+             os.path.join(DEFAULT_APT_PATH['conf_dir'], install_rule_file)]
     # also remove proxies
     for p_file in six.itervalues(PROXY_PROTOCOLS):
         files.append(os.path.join(DEFAULT_APT_PATH['conf_dir'], p_file))
@@ -193,7 +195,8 @@ def fix_cloud_init_config(config_path):
 def do_post_inst(chroot, hashed_root_password,
                  allow_unsigned_file='allow_unsigned_packages',
                  force_ipv4_file='force_ipv4',
-                 pipeline_depth_file='pipeline_depth'):
+                 pipeline_depth_file='pipeline_depth',
+                 install_rule_file='install_rule'):
     # NOTE(agordeev): set up password for root
     utils.execute('sed', '-i',
                   's%root:[\*,\!]%root:' + hashed_root_password + '%',
@@ -238,7 +241,8 @@ def do_post_inst(chroot, hashed_root_password,
     utils.execute('chroot', chroot, 'apt-get', 'clean')
     clean_apt_settings(chroot, allow_unsigned_file=allow_unsigned_file,
                        force_ipv4_file=force_ipv4_file,
-                       pipeline_depth_file=pipeline_depth_file)
+                       pipeline_depth_file=pipeline_depth_file,
+                       install_rule_file=install_rule_file)
 
 
 def stop_chrooted_processes(chroot, signal=sig.SIGTERM,
@@ -537,11 +541,13 @@ def set_apt_proxy(chroot, proxies, direct_repo_addr=None):
 def pre_apt_get(chroot, allow_unsigned_file='allow_unsigned_packages',
                 force_ipv4_file='force_ipv4',
                 pipeline_depth_file='pipeline_depth',
+                install_rule_file='install_rule',
                 proxies=None, direct_repo_addr=None):
     """It must be called prior run_apt_get."""
     clean_apt_settings(chroot, allow_unsigned_file=allow_unsigned_file,
                        force_ipv4_file=force_ipv4_file,
-                       pipeline_depth_file=pipeline_depth_file)
+                       pipeline_depth_file=pipeline_depth_file,
+                       install_rule_file=install_rule_file)
     # NOTE(agordeev): allow to install packages without gpg digest
     with open(os.path.join(chroot, DEFAULT_APT_PATH['conf_dir'],
                            allow_unsigned_file), 'w') as f:
@@ -552,7 +558,12 @@ def pre_apt_get(chroot, allow_unsigned_file='allow_unsigned_packages',
     with open(os.path.join(chroot, DEFAULT_APT_PATH['conf_dir'],
                            pipeline_depth_file), 'w') as f:
         f.write('Acquire::http::Pipeline-Depth 0;\n')
-
+    with open(os.path.join(chroot, DEFAULT_APT_PATH['conf_dir'],
+                           install_rule_file), 'w') as f:
+        f.write('APT::Install-Recommends "false";\n')
+    with open(os.path.join(chroot, DEFAULT_APT_PATH['conf_dir'],
+                           install_rule_file), 'a') as f:
+        f.write('APT::Install-Suggests "false";\n')
     if proxies:
         set_apt_proxy(chroot, proxies, direct_repo_addr)
 
