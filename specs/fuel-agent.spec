@@ -53,6 +53,7 @@ Requires:    debootstrap
 Requires:    xz
 Requires:    coreutils
 Requires:    psmisc
+Requires:    rsync
 
 %description
 Fuel-agent package
