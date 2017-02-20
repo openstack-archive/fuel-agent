@@ -132,6 +132,11 @@ opts = [
         help='Create configdrive file, use pre-builded if set to False'
     ),
     cfg.BoolOpt(
+        'use_configdrive',
+        default=True,
+        help='Use separate partition for cloudinit configuration'
+    ),
+    cfg.BoolOpt(
         'fix_udev_net_rules',
         default=True,
         help='Add udev rules for NIC remapping'
@@ -363,15 +368,7 @@ class Manager(object):
             fu.umount_fs(mount_point)
             os.rmdir(mount_point)
 
-    def _prepare_configdrive_files(self):
-        # see data sources part of cloud-init documentation
-        # for directory structure
-        cd_root = tempfile.mkdtemp(dir=CONF.tmp_path)
-        cd_latest = os.path.join(cd_root, 'openstack', 'latest')
-        md_output_path = os.path.join(cd_latest, 'meta_data.json')
-        ud_output_path = os.path.join(cd_latest, 'user_data')
-        os.makedirs(cd_latest)
-
+    def _generate_cloudinit_config(self, metadata, userdata):
         cc_output_path = os.path.join(CONF.tmp_path, 'cloud_config.txt')
         bh_output_path = os.path.join(CONF.tmp_path, 'boothook.txt')
 
@@ -392,13 +389,23 @@ class Manager(object):
             tmpl_dir,
             self.driver.configdrive_scheme.template_names('meta_data_json'),
             self.driver.configdrive_scheme.template_data(),
-            md_output_path
+            metadata
         )
 
         utils.execute(
-            'write-mime-multipart', '--output=%s' % ud_output_path,
+            'write-mime-multipart', '--output=%s' % userdata,
             '%s:text/cloud-boothook' % bh_output_path,
             '%s:text/cloud-config' % cc_output_path)
+
+    def _prepare_configdrive_files(self):
+        # see data sources part of cloud-init documentation
+        # for directory structure
+        cd_root = tempfile.mkdtemp(dir=CONF.tmp_path)
+        cd_latest = os.path.join(cd_root, 'openstack', 'latest')
+        md_output_path = os.path.join(cd_latest, 'meta_data.json')
+        ud_output_path = os.path.join(cd_latest, 'user_data')
+        os.makedirs(cd_latest)
+        self._generate_cloudinit_config(md_output_path, ud_output_path)
         return [os.path.join(cd_root, 'openstack')]
 
     def do_configdrive(self):
@@ -429,6 +436,23 @@ class Manager(object):
             size=size,
             md5=md5,
         )
+
+    def _prepare_cloudinit_config_files(self, target_dir):
+        # see data sources part of cloud-init documentation
+        # for directory structure
+        md_output_path = os.path.join(target_dir, 'meta-data')
+        ud_output_path = os.path.join(target_dir, 'user-data')
+        os.makedirs(target_dir)
+        self._generate_cloudinit_config(md_output_path, ud_output_path)
+
+    def inject_cloudinit_config(self):
+        root_fs = self.driver.partition_scheme.fs_by_mount('/')
+        root = fu.mount_fs_temp(root_fs.type, str(root_fs.device))
+        try:
+            self._prepare_cloudinit_config_files(
+                os.path.join(root, 'var/lib/cloud/seed/nocloud'))
+        finally:
+            fu.umount_fs(root)
 
     def do_copyimage(self):
         LOG.debug('--- Copying images (do_copyimage) ---')
@@ -488,6 +512,8 @@ class Manager(object):
                 LOG.debug('Extending %s %s' %
                           (image.format, image.target_device))
                 fu.extend_fs(image.format, image.target_device)
+        if not CONF.use_configdrive:
+            self.inject_cloudinit_config()
         self.move_files_to_their_places()
 
     def move_files_to_their_places(self, remove_src=True):
@@ -968,7 +994,8 @@ class Manager(object):
     def do_provisioning(self):
         LOG.debug('--- Provisioning (do_provisioning) ---')
         self.do_partitioning()
-        self.do_configdrive()
+        if CONF.use_configdrive:
+            self.do_configdrive()
         self.do_copyimage()
         self.do_bootloader()
         LOG.debug('--- Provisioning END (do_provisioning) ---')
