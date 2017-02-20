@@ -538,6 +538,42 @@ class TestManager(unittest2.TestCase):
             '%s/%s:text/cloud-boothook' % (CONF.tmp_path, 'boothook.txt'),
             '%s/%s:text/cloud-config' % (CONF.tmp_path, 'cloud_config.txt'))
 
+    @mock.patch('os.makedirs')
+    @mock.patch.object(utils, 'execute')
+    @mock.patch.object(utils, 'render_and_save')
+    def test_prepare_cloudinit_config(self, mock_u_ras, mock_u_e,
+                                      mock_makedirs):
+        self.mgr._prepare_cloudinit_config_files(
+            '/var/lib/cloud/seed/nocloud')
+        mock_makedirs.assert_called_once_with('/var/lib/cloud/seed/nocloud')
+
+        mock_u_ras_expected_calls = [
+            mock.call(CONF.nc_template_path,
+                      ['cloud_config_pro_fi-le.jinja2',
+                       'cloud_config_pro.jinja2',
+                       'cloud_config_pro_fi.jinja2',
+                       'cloud_config.jinja2'],
+                      mock.ANY, '%s/%s' % (CONF.tmp_path, 'cloud_config.txt')),
+            mock.call(CONF.nc_template_path,
+                      ['boothook_pro_fi-le.jinja2',
+                       'boothook_pro.jinja2',
+                       'boothook_pro_fi.jinja2',
+                       'boothook.jinja2'],
+                      mock.ANY, '%s/%s' % (CONF.tmp_path, 'boothook.txt')),
+            mock.call(CONF.nc_template_path,
+                      ['meta_data_json_pro_fi-le.jinja2',
+                       'meta_data_json_pro.jinja2',
+                       'meta_data_json_pro_fi.jinja2',
+                       'meta_data_json.jinja2'],
+                      mock.ANY, '/var/lib/cloud/seed/nocloud/meta-data')]
+        self.assertEqual(mock_u_ras_expected_calls, mock_u_ras.call_args_list)
+
+        mock_u_e.assert_called_once_with(
+            'write-mime-multipart',
+            '--output=/var/lib/cloud/seed/nocloud/user-data',
+            '%s/%s:text/cloud-boothook' % (CONF.tmp_path, 'boothook.txt'),
+            '%s/%s:text/cloud-config' % (CONF.tmp_path, 'cloud_config.txt'))
+
     @mock.patch('fuel_agent.manager.fu', create=True)
     @mock.patch('os.path.isdir')
     @mock.patch('os.rmdir')
@@ -669,6 +705,14 @@ class TestManager(unittest2.TestCase):
             mock.call('ext4', '/dev/mapper/os-root')]
         self.assertEqual(mock_fu_ef_expected_calls, mock_fu_ef.call_args_list)
         self.assertTrue(mock_mfttp.called)
+
+    @mock.patch('fuel_agent.manager.Manager.inject_cloudinit_config')
+    @mock.patch('fuel_agent.manager.Manager.move_files_to_their_places')
+    @mock.patch('fuel_agent.manager.CONF.use_configdrive', False)
+    def test_cloudconfig_iinjection(self, mock_mfttp, mock_icc):
+        with mock.patch.object(self.mgr.driver.image_scheme, 'images', []):
+            self.mgr.do_copyimage()
+        mock_icc.assert_called_once_with()
 
     @mock.patch.object(fu, 'get_fs_type')
     @mock.patch.object(manager.os.path, 'exists')

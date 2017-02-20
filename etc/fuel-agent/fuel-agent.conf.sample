@@ -214,3 +214,4 @@ log_file=/var/log/fuel-agent.log
 # Default password for root user
 # (string value)
 default_root_password=r00tme
+use_configdrive=false
