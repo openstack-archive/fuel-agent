@@ -15,4 +15,6 @@ LABEL="net_name_onboard_end"
 NAME=="", ENV{ID_NET_NAME_SLOT}!="", NAME="$env{ID_NET_NAME_SLOT}"
 NAME=="", ENV{ID_NET_NAME_PATH}!="", NAME="$env{ID_NET_NAME_PATH}"
 
+ENV{DEVTYPE}=="fcoe", ENV{ID_NET_NAME_PATH}!="", NAME="$env{ID_NET_NAME_PATH}"
+
 LABEL="net_name_slot_end"
