@@ -5,6 +5,3 @@ multipath-reload || true
 
 # Perform fuel bootstrap configuration
 fix-configs-on-startup || true
-
-# Unlocking nailgun-agent for discovering
-rm -f /etc/nailgun-agent/nodiscover
