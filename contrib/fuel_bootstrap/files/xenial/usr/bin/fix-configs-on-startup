@@ -70,3 +70,6 @@ while true; do
 done
 echo "identity = $(head -n 1 /etc/nailgun_uid)" >> /etc/mcollective/server.cfg
 service mcollective restart
+
+# restart the dispynode service
+systemctl restart dispynode

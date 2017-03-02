@@ -54,6 +54,9 @@ packages:
   - ifenslave
   - irqbalance
   - iputils-arping
+  # Packages required for distributed serialization
+  - python-dispy
+  - python-psutil
 # Ignore proxy for this repos
 #direct_repo_addresses:
 #    - 127.0.0.1
