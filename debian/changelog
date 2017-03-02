@@ -1,3 +1,9 @@
+fuel-agent (11.0.0-1) unstable; urgency=low
+
+  * Bump version to 11.0.0
+
+ -- Vladimir Kuklin <vkuklin@mirantis.com>  Thu, 02 Mar 2017 15:48:02 +0300
+
 fuel-agent (10.0.0-3) unstable; urgency=low
 
   * Replace ironic-callback upstart script by systemd.
