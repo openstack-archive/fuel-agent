@@ -71,5 +71,5 @@ done
 echo "identity = $(head -n 1 /etc/nailgun_uid)" >> /etc/mcollective/server.cfg
 service mcollective restart
 
-# restart the dispynode service
-systemctl restart dispynode
+# starting distributed serialization worker
+/usr/bin/dask-worker --nprocs=`nproc` --nthreads 1 @MASTER_NODE_IP@:8002
