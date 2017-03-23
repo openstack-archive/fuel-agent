@@ -9,6 +9,6 @@ six>=1.9.0
 pbr>=1.6
 Jinja2>=2.6
 stevedore>=1.5.0
-requests>=2.5.2,!=2.8.0,!=2.9.0
+requests!=2.12.2,!=2.13.0,>=2.10.0
 urllib3>=1.8.3
 PyYAML>=3.1.0
