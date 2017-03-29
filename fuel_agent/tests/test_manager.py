@@ -1341,7 +1341,7 @@ class TestManagerMultipathPartition(unittest2.TestCase):
         for call in mock_utils_wait.mock_calls:
             self.assertEqual(call, mock.call(attempts=10))
 
-        self.assertEqual(len(mock_utils_trigger.call_args_list), 8)
+        self.assertEqual(len(mock_utils_trigger.call_args_list), 24)
 
         self.assertEqual(mock_make_label.mock_calls, [
             mock.call('/dev/mapper/12312', 'gpt'),
