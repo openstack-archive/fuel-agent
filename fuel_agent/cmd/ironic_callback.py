@@ -20,6 +20,10 @@ import requests
 
 from fuel_agent.utils import utils
 
+_GET_ADDR_MAX_ITERATION = 50
+_POST_CALLBACK_MAX_ITERATION = 50
+_RETRY_INTERVAL = 5
+
 
 def _process_error(message):
     sys.stderr.write(message)
@@ -56,28 +60,35 @@ def main():
     # The leading `01-' denotes the device type (Ethernet) and is not a part of
     # the MAC address
     boot_mac = bootif[3:].replace('-', ':')
-    for n in range(10):
+    for n in range(_GET_ADDR_MAX_ITERATION):
         boot_ip = utils.get_interface_ip(boot_mac)
         if boot_ip is not None:
             break
-        time.sleep(10)
+        time.sleep(_RETRY_INTERVAL)
     else:
         _process_error('Cannot find IP address of boot interface.')
 
-    data = {"address": boot_ip,
-            "status": "ready",
-            "error_message": "no errors"}
+    # NOTE(pas-ha) supporting only Ironic API >= 1.22 !!!
+    headers = {'Content-Type': 'application/json',
+               'Accept': 'application/json',
+               'X-OpenStack-Ironic-API-Version': '1.22'}
+    data = {"callback_url": "ssh://" + boot_ip}
+    heartbeat = '{api_url}/v1/heartbeat/{uuid}'.format(api_url=api_url,
+                                                       uuid=deployment_id)
 
-    passthru = '%(api-url)s/v1/nodes/%(deployment_id)s/vendor_passthru' \
-               '/heartbeat' % {'api-url': api_url,
-                               'deployment_id': deployment_id}
-    try:
-        resp = requests.post(passthru, data=json.dumps(data),
-                             headers={'Content-Type': 'application/json',
-                                      'Accept': 'application/json'})
-    except Exception as e:
-        _process_error(str(e))
-
-    if resp.status_code != 202:
-        _process_error('Wrong status code %d returned from Ironic API' %
-                       resp.status_code)
+    for attempt in range(_POST_CALLBACK_MAX_ITERATION):
+        try:
+            resp = requests.post(heartbeat, data=json.dumps(data),
+                                 headers=headers)
+        except Exception as e:
+            error = str(e)
+        else:
+            if resp.status_code != 202:
+                error = ('Wrong status code %d returned from Ironic API' %
+                         resp.status_code)
+            else:
+                break
+        time.sleep(_RETRY_INTERVAL)
+    else:
+        # executed only when whole for block was executed w/o breaks
+        _process_error(error)

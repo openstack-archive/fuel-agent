@@ -27,6 +27,7 @@ from oslo_service import loopingcall
 from oslo_utils import excutils
 from oslo_utils import fileutils
 import six
+import six.moves.urllib.parse as urlparse
 
 from ironic.common import boot_devices
 from ironic.common import dhcp_factory
@@ -473,49 +474,23 @@ class FuelAgentDeploy(base.DeployInterface):
     def take_over(self, task):
         pass
 
-
-class FuelAgentVendor(base.VendorInterface):
-
-    def get_properties(self):
-        """Return the properties of the interface.
-
-        :returns: dictionary of <property name>:<property description> entries.
-        """
-        return COMMON_PROPERTIES
-
-    def validate(self, task, method, **kwargs):
-        """Validate the driver-specific Node deployment info.
-
-        :param task: a TaskManager instance
-        :param method: method to be validated
-        """
-        _parse_driver_info(task.node)
-        if not kwargs.get('status'):
-            raise exception.MissingParameterValue(_('Unknown Fuel Agent status'
-                                                    ' on a node.'))
-        if not kwargs.get('address'):
-            raise exception.MissingParameterValue(_('Fuel Agent must pass '
-                                                    'address of a node.'))
-
-    @base.passthru(['POST'])
-    @task_manager.require_exclusive_lock
-    def heartbeat(self, task, **kwargs):
+    def heartbeat(self, task, callback_url):
         """Continues the deployment of baremetal node."""
 
         node = task.node
-        task.process_event('resume')
-        err_msg = _('Failed to continue deployment with Fuel Agent.')
 
-        agent_status = kwargs.get('status')
-        if agent_status != 'ready':
-            LOG.error(_LE('Deploy failed for node %(node)s. Fuel Agent is not '
-                      'in ready state, error: %(error)s'), {'node': node.uuid,
-                      'error': kwargs.get('error_message')})
-            deploy_utils.set_failed_state(task, err_msg)
+        # NOTE(pas-ha) this driver does not support cleaning,
+        # so the only valid state to continue on heartbeat is DEPLOYWAIT
+        if node.provision_state != states.DEPLOYWAIT:
+            LOG.warning(_LW('Call back from %(node)s in invalid provision '
+                            'state %(state)s'),
+                        {'node': node.uuid, 'state': node.provision_state})
             return
 
+        task.upgrade_lock(purpose='deploy')
+        task.process_event('resume')
         params = _parse_driver_info(node)
-        params['host'] = kwargs.get('address')
+        params['host'] = urlparse.urlparse(callback_url).netloc.split(':')[0]
         cmd = ('%s --data_driver ironic  --config-file '
                '/etc/fuel-agent/fuel-agent.conf' % params.pop('script'))
         if CONF.debug:
@@ -554,7 +529,7 @@ class FuelAgentVendor(base.VendorInterface):
             msg = (_('Deploy failed for node %(node)s. Error: %(error)s') %
                    {'node': node.uuid, 'error': e})
             LOG.error(msg)
-            deploy_utils.set_failed_state(task, msg)
+            deploy_utils.set_failed_state(task, msg, collect_logs=False)
         else:
             task.process_event('done')
             LOG.info(_LI('Deployment to node %s done'), task.node.uuid)
