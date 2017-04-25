@@ -664,7 +664,7 @@ class Nailgun(base.BaseDataDriver):
             '.yaml'
         metadata_url = urljoin(root_uri, filename)
         try:
-            image_meta = yaml.load(
+            image_meta = yaml.safe_load(
                 utils.init_http_request(metadata_url).text)
         except Exception as e:
             LOG.exception(e)

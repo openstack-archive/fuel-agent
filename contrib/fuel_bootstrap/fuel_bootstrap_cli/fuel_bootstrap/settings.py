@@ -28,7 +28,7 @@ class Configuration(object):
         data = {}
         if os.path.exists(config_file):
             with open(config_file) as f:
-                data = yaml.load(f)
+                data = yaml.safe_load(f)
         else:
             # TODO(atolochkova): need to add logger
             sys.stderr.write("The config file couldn't be found: {0}"
