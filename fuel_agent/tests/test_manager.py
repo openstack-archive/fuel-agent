@@ -337,7 +337,8 @@ class TestManager(unittest2.TestCase):
                 mock.call(
                     'UUID=fake_UUID / ext4 defaults,errors=panic 0 0\n'),
                 mock.call('UUID=fake_UUID swap swap defaults 0 0\n'),
-                mock.call('UUID=fake_UUID /var/lib/glance xfs defaults 0 0\n')
+                mock.call('UUID=fake_UUID /var/lib/glance xfs defaults 0 0\n'),
+                mock.call('none /run/shm tmpfs rw,noexec,nosuid,nodev 0 0\n')
             ]
             self.assertEqual(expected_write_calls,
                              file_handle_mock.write.call_args_list)

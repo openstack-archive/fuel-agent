@@ -961,6 +961,12 @@ class Manager(object):
                 else:
                     f.write(u'UUID=%s %s %s defaults 0 0\n' %
                             (mount2uuid[fs.mount], fs.mount, fs.type))
+            # The following two lines are used as a quick fix for bug
+            # #1690127, they shouldn't be backported to fresher branches.
+            # Please consider a patch https://review.openstack.org/#/c/465557
+            # instead.
+            LOG.debug('Append fstab with a record for /run/shm')
+            f.write(u'none /run/shm tmpfs rw,noexec,nosuid,nodev 0 0\n')
 
         self.umount_target(chroot)
 
