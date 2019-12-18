@@ -1,7 +1,0 @@
-#!/bin/sh -e
-
-# Perform multipath reload
-multipath-reload || true
-
-# Perform fuel bootstrap configuration
-fix-configs-on-startup || true

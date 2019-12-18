@@ -1,4 +1,0 @@
-#!/bin/sh -e
-
-# Perform fuel bootstrap configuration
-/usr/bin/fix-configs-on-startup || /bin/true

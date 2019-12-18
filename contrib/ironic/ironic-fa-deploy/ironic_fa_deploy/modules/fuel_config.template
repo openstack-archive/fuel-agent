@@ -1,6 +1,0 @@
-default deploy
-
-label deploy
-kernel {{ pxe_options.deployment_aki_path }}
-append initrd={{ pxe_options.deployment_ari_path }} boot=live text fetch={{ pxe_options['rootfs-url'] }} deployment_id={{ pxe_options.deployment_id }} api-url={{ pxe_options['api-url'] }} ethdevice-timeout=120
-ipappend 3

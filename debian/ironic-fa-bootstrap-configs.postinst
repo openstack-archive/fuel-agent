@@ -1,5 +1,0 @@
-#!/bin/sh
-set -e
-    chmod 755 /usr/share/ironic-fa-bootstrap-configs/usr/bin/configure-remote-logging.sh
-    chmod 755 /usr/share/ironic-fa-bootstrap-configs/usr/bin/ironic-callback.sh
-exit 0

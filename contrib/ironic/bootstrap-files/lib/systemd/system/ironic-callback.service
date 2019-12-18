@@ -1,8 +1,0 @@
-[Unit]
-After=sshd.service
-
-[Service]
-ExecStart=/usr/bin/ironic-callback.sh
-
-[Install]
-WantedBy=default.target
